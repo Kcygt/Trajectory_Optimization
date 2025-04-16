@@ -7,7 +7,7 @@ qDes = [0.1914, -0.0445, 0.3336];
 xDes = [xDes, yDes, zDes];
 
 
-xMid = [0.035, 0, 0.02];
+xMid = [0.02, 0, 0.04];
 qMid = IK(xMid(1), xMid(2), xMid(3));
 
 % Parameters
@@ -15,7 +15,7 @@ tspan = 10;
 wn = [.9 2 1.1];
 
 % Weights
-wt = [50, 1000, 0.001]; % [Target, End, Time]
+wt = [100, 1000, 0.001]; % [Target, End, Time]
 
 initPrms = [tspan, wn];
 

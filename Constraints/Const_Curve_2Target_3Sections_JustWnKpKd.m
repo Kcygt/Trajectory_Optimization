@@ -15,40 +15,52 @@ qMid2 = IK(xMid2(1), xMid2(2), xMid2(3));
 qMid = [qMid1; qMid2];
 
 % Parameters
-tspan = [5 10 15];
+tttime = [1 2 3];
 wn   = [ 0.31872      1.2428      1.9506      3.6676      1.7968      2.0165     0.39945      1.8655      1.9654];
-
+Kp = [70 70 70   70 70 70    70 70 70];
+Kd = [25 25 25   25 25 25    25 25 25];
 % Weights
-wt = [7, 0.001, 0.001]; % [Target, End, Time]
+wt = [70, 0.001, 0.001]; % [Target, End, Time]
 
-initPrms = [tspan wn];
+initPrms = [wn Kp Kd];
 
 % Initial Condition
-[ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn), [0 tspan(3)], zeros(12, 1));
+[ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tttime,  wn,Kp,Kd), [0 tttime(3)], zeros(12, 1));
 
 % Lower and Upper Limits
-lb = [0 0 0 ...
+lb = [0.1 0.1 0.1 ...
       0.1 0.1 0.1 ...
       0.1 0.1 0.1 ...
-      0.1 0.1 0.1 ]; % Wn
+      20 20 20 ...
+      20 20 20 ...
+      20 20 20 ...
+      20 20 20 ...
+      20 20 20 ...
+      20 20 20 ]; % Wn
 
 ub = [5 5 5 ...
-      20 20 20 ...
-      20 20 20 ...
-      20 20 20  ]; % Wn
+      5 5 5 ...
+      5 5 5 ...
+      100 100 100 ...
+      100 100 100 ...
+      100 100 100 ...
+      70 70 70 ...
+      70 70 70 ...
+      70 70 70 
+      ]; % Wn
 
 % Objective Function
-objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xMid, xDes);
+objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xMid, xDes,tttime);
 
 % Run optimization
 options = optimset('PlotFcns', 'optimplotfval', 'Display', 'off', 'TolCon', 1e-7); % Added constraint tolerance
 
 [Opt, fval] = fmincon(objectiveFunc, initPrms, [], [], [], [], lb, ub, ...
-                      @(prms) trajConstraint(prms, qDes, xMid), options);
+                      @(prms) trajConstraint(prms, qDes, xMid,tttime), options);
 
 % Simulate with optimal parameters
-[tt, yy] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1:3),  Opt(4:12)), ...
-                  [0 Opt(3)], zeros(12, 1));
+[tt, yy] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tttime,  Opt(1:9),Opt(10:18),Opt(19:27)), ...
+                  [0 tttime(3)], zeros(12, 1));
 
 %%% Plotting
 [xi, yi_plot, zi] = FK(yi(:,7), yi(:,8), yi(:,9)); % Initial Trajectory
@@ -70,15 +82,17 @@ ylabel('Velocity(m/s)')
 
 disp('Optimal Parameter:')
 disp(['wn: ', num2str(Opt(1:9))])
+disp(['Kp: ', num2str(Opt(10:18))])
+disp(['Kd: ', num2str(Opt(19:27))])
 
 
 % Objective Function
-function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
+function error = objectiveFunction(prms, qDes, wt, xMid, xDes,tttime)
     x0 = zeros(12, 1);
     x0(1:3) = qDes;
 
     % Simulate the system
-    [~, y] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes, prms(1:3),  prms(4:)), ...
+    [~, y] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes, tttime,  prms(1:9),prms(10:18),prms(19:27)), ...
                     [0 tttime(3)], x0);
 
     [xOut,yOut,zOut] = FK(y(:,7),y(:,8),y(:,9));
@@ -108,7 +122,7 @@ function [c, ceq] = trajConstraint(prms,qDes,xMid,tttime)
     ceq = []; % No equality constraints
 
     % Simulate trajectory
-    [tCont, yy] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,tttime,prms), ...
+    [tCont, yy] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,tttime,prms(1:9),prms(10:18),prms(19:27)), ...
                     [0 tttime(3)], zeros(12, 1));
 
     [x,y,z] = FK(yy(:,7),yy(:,8),yy(:,9));     % Optimized Trajectory
@@ -128,10 +142,9 @@ function [c, ceq] = trajConstraint(prms,qDes,xMid,tttime)
 end
 
 % Dynamics Function with Prefilter
-function dxdt= myTwolinkwithprefilter(t,x,qDes,t_st,wn)
+function dxdt= myTwolinkwithprefilter(t,x,qDes,t_st,wn,Kp,Kd)
     zeta = [1 1 1];
-    Kp = [70 70 70];
-    Kd = [35 35 35];
+
 
     A1=[zeros(3), eye(3); -diag(wn(1:3)).^2,-2*diag(zeta)*diag(wn(1:3))];
     B1=[zeros(3); diag(wn(1:3)).^2];
@@ -145,20 +158,25 @@ function dxdt= myTwolinkwithprefilter(t,x,qDes,t_st,wn)
     q=x(7:9);
     qd=x(10:12);
 
-    controller=diag(Kp)*(x(1:3)-q)+diag(Kd)*(x(4:6)-qd);
+    controller1=diag(Kp(1:3))*(x(1:3)-q)+diag(Kd(1:3))*(x(4:6)-qd);
+    controller2=diag(Kp(4:6))*(x(1:3)-q)+diag(Kd(4:6))*(x(4:6)-qd);
+    controller3=diag(Kp(7:9))*(x(1:3)-q)+diag(Kd(7:9))*(x(4:6)-qd);
 
     [M,C,G]=compute_M_C_G(q(1),q(2),q(3),qd(1),qd(2),qd(3));
     
-    tau = M*(controller)+C*qd;
+    tau1 = M*(controller1)+C*qd;
+    tau2 = M*(controller2)+C*qd;
+    tau3 = M*(controller3)+C*qd;
     
-    qdd = M\(tau-C*qd);
-  
+    qdd1 = M\(tau1-C*qd);
+    qdd2 = M\(tau2-C*qd);
+    qdd3 = M\(tau3-C*qd);
     if t < t_st(1)
-        dxdt=[A1*x(1:6)+B1*qDes(:); qd; qdd];
+        dxdt=[A1*x(1:6)+B1*qDes(:); qd; qdd1];
     elseif t>t_st(1) && t<t_st(2)  
-        dxdt=[A2*x(1:6)+B2*qDes(:); qd; qdd];
+        dxdt=[A2*x(1:6)+B2*qDes(:); qd; qdd2];
     else
-        dxdt=[A3*x(1:6)+B3*qDes(:); qd; qdd];
+        dxdt=[A3*x(1:6)+B3*qDes(:); qd; qdd3];
     end
 end
 

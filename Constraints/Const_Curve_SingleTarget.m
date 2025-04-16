@@ -7,7 +7,7 @@ qDes = [0.1914, -0.0445, 0.3336];
 xDes = [xDes, yDes, zDes];
 
 xMid = [0.015, 0, 0.04];
-xMid = [0.04, 0, 0.02];
+% xMid = [0.04, 0, 0.02];
 
 qMid = IK(xMid(1), xMid(2), xMid(3));
 

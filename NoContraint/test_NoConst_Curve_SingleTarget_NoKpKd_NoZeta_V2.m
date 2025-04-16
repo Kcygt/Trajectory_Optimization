@@ -7,15 +7,19 @@ qDes = [0.1914, -0.0445, 0.3336];
 xDes = [xDes, yDes, zDes];
 
 
-xMid = [0.02, 0, 0.05];
+xMid = [0.02, 0, 0.04];
+xMid = [0.035, 0, 0.02];
+% xMid = [0.06, 0, -0.01];
+% xMid = [-0.01, 0, 0.06];
+
 qMid = IK(xMid(1), xMid(2), xMid(3));
 
 % Parameters
 tspan = 10;
-wn = [.9 2 1.1];
+wn = [.9 2 .5];
 
 % Weights
-wt = [50, 0, 0]; % [Target, End, Time]
+wt = [1.1, 1000, 1e-5]; % [Target, End, Time]
 
 initPrms = [tspan, wn];
 
@@ -23,10 +27,10 @@ initPrms = [tspan, wn];
 [ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, tspan, qDes, wn), [0 tspan], zeros(12, 1));
 
 % Lower and Upper Limits
-lb = [2 ... % time
+lb = [0 ... % time
       0.1 0.1 0.1]; % Wn
-ub = [10 ... % time
-      20 20 20]; % Wn
+ub = [5 ... % time
+      4 4 4 ]; % Wn
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xMid, xDes);
@@ -52,8 +56,7 @@ legend('Initial Trajectory','Optimized Trajectory','Midpoint','Endpoint')
 
 disp('Optimal Parameter:')
 disp(['Time: ', num2str(Opt(1))])
-disp(['Wn: ', num2str(Opt(2:4))])
-
+disp(['wn: ', num2str(Opt(2:4))])
 % Objective Function
 function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     x0 = zeros(12, 1);
@@ -63,25 +66,24 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     [~, y] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,prms(1),qDes,prms(2:4)), ...
                     [0 prms(1)], x0);
 
-    [xOut,~,zOut] = FK(y(:,7),y(:,8),y(:,9));
-    
+    [xAct,yAct,zAct] = FK(y(:,7),y(:,8),y(:,9));
+    xOut = [xAct,zAct];
+   
     % Calculate minimum distance to middle point
-    dx = abs(xOut - xMid(1)).^2;
-    dz = abs(zOut - xMid(3)).^2;
-    distMid = sqrt(dx+dz);
+    dxMid = sqrt(sum((xOut - [xMid(1) xMid(3)]).^2,2));
+    [distMid,idxMid] = min(dxMid);
     
 
     % End point error
-    dxEnd = abs(xOut(end) - xDes(1)).^2;
-    dzEnd = abs(zOut(end) - xDes(3)).^2;
-    distEndErr = sqrt(dxEnd + dzEnd);
-    
+    dxEnd = sqrt(sum((xOut(end,:) - [xDes(1) xDes(3)]).^2,2));
+    [distEnd,idxEnd] = min(dxEnd);
+
     % Time penalty
     timePenalty = prms(1);
 
     % Composite error (normalized)
-    error = wt(1) * sum(distMid,1) + ...
-            wt(2) * distEndErr   + ...
+    error = wt(1) * distMid + ...
+            wt(2) * distEnd + ...
             wt(3) * timePenalty;
 end
 
@@ -89,7 +91,7 @@ end
 
 % Dynamics Function with Prefilter
 function dxdt= myTwolinkwithprefilter(t,x,t_st,qDes,wn)
-    zeta =[1 1 1];
+    zeta = [1 1 1];
     A1=[zeros(3), eye(3); -diag(wn).^2,-2*diag(zeta)*diag(wn)];
     B1=[zeros(3); diag(wn).^2];
 

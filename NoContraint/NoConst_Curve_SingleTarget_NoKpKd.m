@@ -16,7 +16,7 @@ zeta = [0.9 0.7 0.9];
 wn = [.9 2 1.1];
 
 % Weights
-wt = [200, 100, 0.001]; % [Target, End, Time]
+wt = [500, 1000, 1e-5]; % [Target, End, Time]
 
 initPrms = [tspan, zeta,wn];
 
@@ -24,7 +24,7 @@ initPrms = [tspan, zeta,wn];
 [ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, tspan, qDes,zeta, wn), [0 tspan], zeros(12, 1));
 
 % Lower and Upper Limits
-lb = [2 ... % time
+lb = [0 ... % time
       0.1 0.1 0.1 ... % Zeta
       0.1 0.1 0.1]; % Wn
 ub = [10 ... % time
@@ -66,25 +66,24 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     [~, y] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,prms(1),qDes,prms(2:4),prms(5:7)), ...
                     [0 prms(1)], x0);
 
-    [xOut,~,zOut] = FK(y(:,7),y(:,8),y(:,9));
-    
+    [xAct,yAct,zAct] = FK(y(:,7),y(:,8),y(:,9));
+    xOut = [xAct,zAct];
+   
     % Calculate minimum distance to middle point
-    dx = abs(xOut - xMid(1)).^2;
-    dz = abs(zOut - xMid(3)).^2;
-    distMid = sqrt(dx+dz);
+    dxMid = sqrt(sum((xOut - [xMid(1) xMid(3)]).^2,2));
+    [distMid,idxMid] = min(dxMid);
     
 
     % End point error
-    dxEnd = abs(xOut(end) - xDes(1)).^2;
-    dzEnd = abs(zOut(end) - xDes(3)).^2;
-    distEndErr = sqrt(dxEnd + dzEnd);
-    
+    dxEnd = sqrt(sum((xOut(end,:) - [xDes(1) xDes(3)]).^2,2));
+    [distEnd,idxEnd] = min(dxEnd);
+
     % Time penalty
     timePenalty = prms(1);
 
     % Composite error (normalized)
-    error = wt(1) * sum(distMid,1) + ...
-            wt(2) * distEndErr   + ...
+    error = wt(1) * distMid    + ...
+            wt(2) * distEnd + ...
             wt(3) * timePenalty;
 end
 
