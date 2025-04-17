@@ -13,7 +13,7 @@ xMid = [0.01, 0, 0.06];
 qMid = IK(xMid(1), xMid(2), xMid(3));
 
 % Parameters
-tspan = 3;
+tspan = 10;
 wn = [1 1 1];
 
 
@@ -27,7 +27,7 @@ initPrms = wn;
 
 % Lower and Upper Limits
 lb = [ 2 2 2] ; % Wn
-ub = [ 6 6 6 ]; % Wn
+ub = [ 10 10 10 ]; % Wn
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xMid, xDes,tspan);
@@ -110,6 +110,8 @@ end
 % Dynamics Function with Prefilter
 function dxdt= myTwolinkwithprefilter(t,x,qDes,t_st,wn)
     zeta = [0.7 0.7 0.7];
+    % zeta = [1 1 1];
+
     A1=[zeros(3), eye(3); -diag(wn).^2,-2*diag(zeta)*diag(wn)];
     B1=[zeros(3); diag(wn).^2];
     Kp = [69.5657   47.9683   70.4026 ];
