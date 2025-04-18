@@ -17,7 +17,7 @@ xCtrl = [0.03, 0, 0.05];
 % weights
 % wt = [1013, 100, 0.003];  %  [qMid, qEnd,Time]
 % wt = [34.4, 10, 0.003];  %  [qMid, qEnd,Time]
-wt = [100, .5, 1e-8];  %  [qMid, qEnd,Time]
+wt = [200, .5, 1e-8];  %  [qMid, qEnd,Time]
 
 initPrms = [tspan,wn1,wn2,xCtrl];
 
@@ -26,8 +26,8 @@ initPrms = [tspan,wn1,wn2,xCtrl];
 
 
 % Lower and Upper Limits
-lb = [0  0     1  1  1    1  1  1    0    0    -0.05];     % Wn
-ub = [10 10    20 20 20   20 20 20   0.05 0.05 0.05];      % wn
+lb = [0  0    1  1  1     1  1  1     0    0    -0.05];     % Wn
+ub = [5  5    20 20 20    20 20 20    0.05 0.05 0.05];      % wn
 
 
 % Objective Function
@@ -49,10 +49,10 @@ options = optimoptions('fmincon','PlotFcns', 'optimplot', 'Display', 'off', ...
                                                                     [0 Opt(2)], zeros(12, 1));
 
 %%% Plotting
-[x,y,z] = FK(yy(:,7),yy(:,8),yy(:,9));     % Optimized Trajectory
+[xFirst,yFirst,zFirst] = FK(yy(:,7),yy(:,8),yy(:,9));     % Optimized Trajectory
 
 % Calculation
-[ getX, getIdx ] = min( sqrt((  (x - xMid(1)).^2 + (y - xMid(2)).^2 + (z - xMid(3)).^2 )));
+[ getX, getIdx ] = min( sqrt((  (xFirst - xMid(1)).^2 + (yFirst - xMid(2)).^2 + (zFirst - xMid(3)).^2 )));
 
 [tt, yy] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, [tt(getIdx) tt(end)], qDes, Opt(3:5), Opt(6:8), Opt(9:11)),   ...
                                                                     [0 Opt(2)], zeros(12, 1));
@@ -64,6 +64,8 @@ options = optimoptions('fmincon','PlotFcns', 'optimplot', 'Display', 'off', ...
 figure; hold on; grid on;
 plot(xi,zi,'--')
 plot(x,z,'.-')
+plot(xFirst,zFirst,'*-')
+
 plot(xMid(1),xMid(3),'*')
 plot(Opt(9),Opt(11),'o')
 plot(xCtrl(1),xCtrl(3),'d')
