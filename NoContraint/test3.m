@@ -2,26 +2,30 @@ clear; clc;
 close all;
 
 % Define desired trajectory and Middle Points
-qDes = [ 0.2359   -0.0005    0.0353];
+qDes = [ 0.2359 -0.0005 0.0353]; % x axis along 5 cm
+% qDes = [ 0.1914 -0.0445 0.3336]; % x and z axis along 5 cm
 [xDes, yDes, zDes] = FK(qDes(1),qDes(2),qDes(3));
+KK = IK(0.05,0,0.05);
 xDes = [xDes, yDes, zDes];
 xMid = [0.03, 0, 0.02 ];
 qMid = IK(xMid(1), xMid(2), xMid(3));
 
 % Parameters
 tspan = 10;
-wn = [2 5 8]; 
+wn = [1 5 .1]; 
 
 % weights
 % wt = [1013, 100, 0.003];  %  [qMid, qEnd,Time]
-% wt = [34.4, 10, 0.003];  %  [qMid, qEnd,Time]
-wt = [1109, .5, 1e-8];  %  [qMid, qEnd,Time]
+wt = [340, 10, 0.00003];  %  [qMid, qEnd,Time]
+% wt = [1109, .5, 1e-8];  %  [qMid, qEnd,Time]
 
 initPrms = [tspan,wn];
 
 % Initial Condition
 [ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, tspan, qDes,  wn),[0 tspan], zeros(12, 1));
 
+[xi,yi,zi] = FK(yi(:,7),yi(:,8),yi(:,9));  % Initial Trajectory
+plot(xi,zi,'--')
 
 % Lower and Upper Limits
 lb = [5    ...               % time 
@@ -92,7 +96,7 @@ end
 
 % myTwolinkwithprefilter function
 function dxdt= myTwolinkwithprefilter(t, x, t_st, qDes, wn1)
-    zeta1 = [1 1 1];
+    zeta1 = [1 1 .01];
     A1 = [zeros(3), eye(3); -diag(wn1).^2, -2 * diag(zeta1) * diag(wn1)];
     B1 = [zeros(3); diag(wn1).^2];
 

@@ -5,14 +5,14 @@ close all;
 qDes = [ 0.2359   -0.0005    0.0353];
 [xDes, yDes, zDes] = FK(qDes(1),qDes(2),qDes(3));
 xDes = [xDes, yDes, zDes];
-xMid = [0.03, 0, 0.02 ];
+xMid = [0.02, 0, -0.01 ];
 qMid = IK(xMid(1), xMid(2), xMid(3));
 
 % Parameters
 tspan = [10 20];
 wn1 = [2 5 8]; 
 wn2 = [2 4 6];
-xCtrl = [0.03, 0, 0.05];
+xCtrl = [0.02, 0, -0.02];
 
 % weights
 % wt = [1013, 100, 0.003];  %  [qMid, qEnd,Time]
@@ -27,7 +27,7 @@ initPrms = [tspan,wn1,wn2,xCtrl];
 
 % Lower and Upper Limits
 lb = [0  0    1  1  1     1  1  1     0    0    -0.05];     % Wn
-ub = [5  5    20 20 20    20 20 20    0.05 0.05 0.05];      % wn
+ub = [5  5    20 20 20    20 20 20    0.07 0.05 0.05];      % wn
 
 
 % Objective Function
