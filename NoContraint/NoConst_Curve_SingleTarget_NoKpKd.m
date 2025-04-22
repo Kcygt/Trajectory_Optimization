@@ -12,8 +12,8 @@ qMid = IK(xMid(1), xMid(2), xMid(3));
 
 % Parameters
 tspan = 10;
-zeta = [0.9 0.7 0.9];
-wn = [.9 2 1.1];
+zeta = [1 1 1];
+wn = [1 1 1];
 
 % Weights
 wt = [500, 1000, 1e-5]; % [Target, End, Time]
@@ -28,14 +28,14 @@ lb = [0 ... % time
       0.1 0.1 0.1 ... % Zeta
       0.1 0.1 0.1]; % Wn
 ub = [10 ... % time
-      5 5 5 ... % Zeta  
-      20 20 20]; % Wn
+      1 1 1 ... % Zeta  
+      10 10  10]; % Wn
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xMid, xDes);
 
 % Run optimization
-options = optimset('PlotFcns', 'optimplotfval', 'Display', 'off'); % Added constraint tolerance
+options = optimoptions('fmincon','PlotFcns', 'optimplot', 'Display', 'off'); % Added constraint tolerance
 
 [Opt, fval] = fmincon(objectiveFunc, initPrms, [], [], [], [], lb, ub,[], options);
 

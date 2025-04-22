@@ -1,5 +1,5 @@
-clear; clc;
-close all;
+% clear; clc;
+% close all;
 
 % Define desired trajectory and Middle Points
 qDes = [ 0.2359   -0.0005    0.0353];
@@ -13,6 +13,7 @@ tspan = [10 20];
 wn1 = [2 5 8]; 
 wn2 = [2 4 6];
 xCtrl = [0.02, 0, 0.05];
+tspan=Opt(1:2);wn1=Opt(3:5);wn2=Opt(6:8);xCtrl=Opt(9:11);
 
 % weights
 % wt = [1013, 100, 0.003];  %  [qMid, qEnd,Time]
@@ -24,7 +25,9 @@ initPrms = [tspan,wn1,wn2,xCtrl];
 % Initial Condition
 [ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, tspan, qDes,  wn1,wn2, xCtrl),[0 tspan(2)], zeros(12, 1));
 
-
+[xFirst,yFirst,zFirst] = FK(yi(:,7),yi(:,8),yi(:,9));     % Optimized Trajectory
+plot(xFirst,zFirst)
+return
 % Lower and Upper Limits
 lb = [0  0    1  1  1     1  1  1     0    0    -0.05];     % Wn
 ub = [5  5    20 20 20    20 20 20    0.07 0.05 0.05];      % wn
@@ -94,8 +97,9 @@ function error = objectiveFunction(prms, qDes, wt, qMid,xMid,xDes,xCtrl)
     
     % Calculate the distance between the trajectory points and the xMid point
     distanceMid1 = sqrt((xOut(:,1) - xMid(1)).^2 + (xOut(:,2) - xMid(2)).^2 + (xOut(:,3) - xMid(3)).^2);
-    distanceEnd  = sqrt((xOut(end,1) - xDes(1)).^2 + (xOut(end,2) - xDes(2)).^2 + (xOut(end,3) - xDes(3)).^2);
-    
+    % distanceEnd  = sqrt((xOut(end,1) - xDes(1)).^2 + (xOut(end,2) - xDes(2)).^2 + (xOut(end,3) - xDes(3)).^2);
+    distanceEnd = sqrt(sum((xOut(end,:)- xDes).^2,2));
+
     error = wt(1) * min(distanceMid1) + ...
             wt(2) * sum((distanceEnd),1) + ...
             wt(3) * prms(1);
