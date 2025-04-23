@@ -42,7 +42,10 @@ ub = [10 ... % time
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xMid, xDes);
 
 % Run optimization
-options = optimset('PlotFcns', 'optimplotfval', 'Display', 'off', 'TolCon', 1e-7); % Added constraint tolerance
+options = optimoptions('fmincon','PlotFcns', 'optimplot', 'Display', 'off', ... 
+                        'TolCon', 1e-10); % Added constraint tolerance
+
+% options = optimset('PlotFcns', 'optimplotfval', 'Display', 'off', 'TolCon', 1e-7); % Added constraint tolerance
 
 [Opt, fval] = fmincon(objectiveFunc, initPrms, [], [], [], [], lb, ub, ...
                       @(prms) trajConstraint(prms, qDes, xMid), options);
