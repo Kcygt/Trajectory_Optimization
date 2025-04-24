@@ -1,3 +1,11 @@
+%%%%%
+% 
+% Optimal Parameter:
+% Time: 3.3134
+% zeta: 0.86265     0.55127     0.99884
+% Wn:   16.1593      3.08098      3.56322
+%%%%%
+
 clear; clc;
 close all;
 
@@ -18,7 +26,7 @@ zeta = [.5 1 .7];
 wn = [1 1 1];
 
 % Weights
-wt = [50, 1, 0.02]; % [Target, End, Time]
+wt = [50, 1, 0.08]; % [Target, End, Time]
 
 initPrms = [tspan,zeta, wn];
 
@@ -71,6 +79,10 @@ plot(xMid(1),xMid(3),'*')
 plot(xDes(1),xDes(3),'o')
 legend('Initial Trajectory','Optimized Trajectory','Midpoint','Endpoint')
 
+disp('Optimal Parameter:')
+disp(['Time: ', num2str(Opt(1))])
+disp(['zeta: ', num2str(Opt(2:4))])
+disp(['Wn:   ', num2str(Opt(5:7))])
 
 % Objective Function
 function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
@@ -86,6 +98,7 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     % Calculate minimum distance to middle point
     dx = sqrt(sum((xOut - xMid).^2,2));
     distMid = sum(dx,1);
+    % distMid = min(dx);
     
 
     % End point error

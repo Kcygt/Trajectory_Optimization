@@ -1,3 +1,9 @@
+%%%%%%
+% Optimal Parameter:
+% Time: 1      2.0009
+% zeta: 0.96585      0.5001     0.99803         0.5     0.50001     0.89636
+% Wn:   1.73107       7.0587     0.173942      14.6813     0.103588      4.71677
+%%%%%%
 clear; clc;
 close all;
 
@@ -20,7 +26,7 @@ wn1 = [1 1 1];
 wn2 = [1 1 1];
 
 % Weights
-wt = [50, 1, 0.02]; % [Target, End, Time]
+wt = [50, 1, 0.08]; % [Target, End, Time]
 
 initPrms = [tspan,zeta1,zeta2,wn1, wn2];
 
@@ -73,6 +79,10 @@ plot(xMid(1),xMid(3),'*')
 plot(xDes(1),xDes(3),'o')
 legend('Initial Trajectory','Optimized Trajectory','Midpoint','Endpoint')
 
+disp('Optimal Parameter:')
+disp(['Time: ', num2str(Opt(1:2))])
+disp(['zeta: ', num2str(Opt(3:8))])
+disp(['Wn:   ', num2str(Opt(9:14))])
 
 % Objective Function
 function error = objectiveFunction(prms, qDes, wt, xMid, xDes)

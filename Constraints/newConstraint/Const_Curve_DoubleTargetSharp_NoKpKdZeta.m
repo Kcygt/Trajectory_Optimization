@@ -1,6 +1,11 @@
 clear; clc;
 close all;
-
+%%%
+% Time   0.4579    1.4884    7.4918 
+% Wn 1 = 2.6269    0.9641    0.9804    
+% Wn 2 = 1.4005    2.9646    5.9315
+% Wn 3 = 1.0418    0.7773    2.9987
+%%%
 % Define desired trajectory and Middle Points
 qDes = [0.1914, -0.0445, 0.3336];
 [xDes, yDes, zDes] = FK(qDes(1), qDes(2), qDes(3));
@@ -19,7 +24,7 @@ qMid(2,:) = IK(xMid(2,1), xMid(2,2), xMid(2,3));
 % wn = [2 1 .9    0.5 1 9     1 1 1];
 
 tspan = [1 2 10];
-wn = [1 1 1  1 1 1 1 1 1];
+wn = [1 1 1  1 1 1  1 1 1];
 
 % Weights
 wt = [50, 1, 0.02]; % [Target, End, Time]

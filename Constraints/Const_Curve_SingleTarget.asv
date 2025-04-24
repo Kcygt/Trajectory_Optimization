@@ -74,7 +74,7 @@ disp(['zeta: ', num2str(Opt(2:4))])
 disp(['Wn:   ', num2str(Opt(5:7))])
 exitFlag
 output
-L
+
 grad
 % Objective Function
 function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
