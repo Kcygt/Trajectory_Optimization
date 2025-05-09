@@ -22,16 +22,69 @@ qMid = IK(xMid(1), xMid(2), xMid(3));
 
 % Parameters
 tspan = 10;
-zeta = [.5 1 .7];
-wn = [1 1 1];
+zeta = [1 1 1];
+wn1 = [3 1 1.5];
+wn2 = [1 5 1];
+wn3 = [2 3 5];
 
-% Weights
-wt = [50, 1, 0.08]; % [Target, End, Time]
-
-initPrms = [tspan,zeta, wn];
 
 % Initial Condition
-[ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  zeta,wn), [0 tspan], zeros(12, 1));
+[ti1, yi1] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  zeta,wn1), [0 tspan], zeros(12, 1));
+[ti2, yi2] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  zeta,wn2), [0 tspan], zeros(12, 1));
+[ti3, yi3] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  zeta,wn3), [0 tspan], zeros(12, 1));
+
+[xi1, yi_plot, zi1] = FK(yi1(:,7), yi1(:,8), yi1(:,9)); % Initial Trajectory
+[xi2, yi_plot, zi2] = FK(yi2(:,7), yi2(:,8), yi2(:,9)); % Initial Trajectory
+[xi3, yi_plot, zi3] = FK(yi3(:,7), yi3(:,8), yi3(:,9)); % Initial Trajectory
+
+colors = ["#77AC30", "#7E2F8E", "#0072BD"];
+
+figure
+subplot 131
+hold on; grid on
+plot(ti2,yi2(:,7),"Color",colors(2),'LineWidth',1.5)
+plot(ti1,yi1(:,7),"Color",colors(1),'LineWidth',1.5)
+plot(ti3,yi3(:,7),"Color",colors(3),'LineWidth',1.5)
+xlabel('Time (s)')
+ylabel('Joint Position (rad)')
+title(' Joint 1 for different Natural Frequency')
+text(0.4, 0.18, '\omega_{n2q_1} = 3', 'Color', colors(1), 'FontSize', 10);
+text(2.5, 0.12, '\omega_{n1q_1} = 1', 'Color', colors(2), 'FontSize', 10);
+text(1.7, 0.16, '\omega_{n3q_1} = 1.5', 'Color', colors(3), 'FontSize', 10);
+
+
+subplot 132
+hold on; grid on
+plot(ti2,yi2(:,9),"Color",colors(2),'LineWidth',1.5)
+plot(ti1,yi1(:,9),"Color",colors(1),'LineWidth',1.5)
+plot(ti3,yi3(:,9),"Color",colors(3),'LineWidth',1.5)
+xlabel('Time (s)')
+ylabel('Joint Position (rad)')
+title(' Joint 3 for different Natural Frequency')
+text(1, 0.32, '\omega_{n2q_3} = 2', 'Color', colors(1), 'FontSize', 10);
+text(2.5, 0.2, '\omega_{n1q_3} = 1', 'Color', colors(2), 'FontSize', 10);
+text(1.2, 0.3, '\omega_{n3q_3} = 5', 'Color', colors(3), 'FontSize', 10);
+
+subplot 133
+hold on; grid on
+plot(xi2,zi2,"Color",colors(2),'LineWidth',2.5)
+plot(xi1,zi1,"Color",colors(1),'LineWidth',2.5)
+plot(xi3,zi3,"Color",colors(3),'LineWidth',2.5)
+xlabel('X Axis (m)')
+ylabel('Z Axis (m)')
+title('Cartesian Space Trajectory')
+legend('Case 1(\omega_{n1q_1} = 1 \omega_{n1q_3} = 1)','Case 2(\omega_{n2q_1} = 3 \omega_{n2q_3} = 2)','Case 3(\omega_{n2q_1} = 1.5 \omega_{n2q_3} = 5)')
+
+
+% 
+% plot(xi,zi)
+% plot(0,0,'*')
+% plot(xDes(1),xDes(3),'*')
+% plot(xMid(1),xMid(3),'o')
+% xlabel('z Axis (m)')
+% ylabel('x Axis (m)')
+% title('Cartesian Space Trajectory')
+% legend('Optimized Trajectory','Start Point','End Point','Target Point')
 
 
 % Lower and Upper Limits
@@ -70,18 +123,16 @@ numStarts = 5; % Number of random starting points
                   [0 Opt(1)], zeros(12, 1));
 
 %%% Plotting
-[xi, yi_plot, zi] = FK(yi(:,7), yi(:,8), yi(:,9)); % Initial Trajectory
+[xi1, yi_plot, zi] = FK(yi1(:,7), yi1(:,8), yi1(:,9)); % Initial Trajectory
 [x_opt, y_opt, z_opt] = FK(yy(:,7), yy(:,8), yy(:,9)); % Optimized Trajectory
 
 figure; hold on; grid on;
-plot(xi, zi,'--')
+plot(xi1, zi,'--')
 plot(x_opt,z_opt,'.-')
 plot(xMid(1),xMid(3),'*')
 plot(xDes(1),xDes(3),'o')
-legend('Initial Trajectory','Optimized Trajectory','Target Point','End Point')
-xlabel('X axis (m)')
-ylabel('Y axis (m)')
-title('Cartesian Space Trajectory Results')
+legend('Initial Trajectory','Optimized Trajectory','Midpoint','Endpoint')
+
 disp('Optimal Parameter:')
 disp(['Time: ', num2str(Opt(1))])
 disp(['zeta: ', num2str(Opt(2:4))])

@@ -15,33 +15,41 @@ wn2 = [2 4 6];
 xCtrl = [0.02, 0, 0.05];
 
 % weights
-% wt = [1013, 100, 0.003];  %  [qMid, qEnd,Time]
-% wt = [34.4, 10, 0.003];  %  [qMid, qEnd,Time]
+
 wt = [200, .5, 1e-8];  %  [qMid, qEnd,Time]
 
-initPrms = [tspan,wn1,wn2,xCtrl];
+initPrms = [tspan, wn1, wn2, xCtrl];
 
 % Initial Condition
 [ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, tspan, qDes,  wn1,wn2, xCtrl),[0 tspan(2)], zeros(12, 1));
 
-
 % Lower and Upper Limits
-lb = [0  0    1  1  1     1  1  1     0    0    -0.05];     % Wn
-ub = [5  5    20 20 20    20 20 20    0.07 0.05 0.05];      % wn
+lb = [3  6    1  1  1     1  1  1     0.01    0 0.03];     % Wn
+ub = [5  10    20 20 20    20 20 20    0.03    0 0.07];      % wn
 
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, qMid,xMid,xDes,xCtrl);
 
 % Run optimization
-options = optimoptions('fmincon','PlotFcns', 'optimplot', 'Display', 'off', ...
-                        'OptimalityTolerance',1e-14, ...
-                        'FunctionTolerance',1e-14, ...
-                        'StepTolerance', 1e-14, ...
-                        'Diagnostics','on', ...
-                        'FiniteDifferenceType', 'central');
-% [Opt,fval,exitflag,output] = fmincon(objectiveFunc, initPrms, [], [], [], [], lb, ub, [], options);
-[Opt, fval, exitflag, output] = fmincon(objectiveFunc, initPrms, [], [], [], [], lb, ub, [], options);
+options = optimoptions('fmincon','PlotFcns', 'optimplot', 'Display', 'off', ... 
+                        'TolCon', 1e-10); % Added constraint tolerance
+
+% Create optimization problem
+problem = createOptimProblem('fmincon',...
+    'objective', objectiveFunc, ...
+    'x0', initPrms, ...
+    'lb', lb, ...
+    'ub', ub, ...
+    'options', options);
+    % 'nonlcon', @(prms) trajConstraint(prms, qDes, xMid));
+
+% MultiStart setup
+ms = MultiStart('UseParallel', true, 'Display', 'iter');
+numStarts = 5; % Number of random starting points
+
+% Run MultiStart optimization
+[Opt, fval] = run(ms, problem, numStarts);
 
 
 % Simulate with optimal parameters
@@ -63,22 +71,14 @@ options = optimoptions('fmincon','PlotFcns', 'optimplot', 'Display', 'off', ...
 
 figure; hold on; grid on;
 plot(xi,zi,'--')
-plot(xFirst,zFirst,'*-')
-
 plot(x,z,'.-')
+plot(xFirst,zFirst,'*-')
 
 plot(xMid(1),xMid(3),'*')
 plot(Opt(9),Opt(11),'o')
 plot(xCtrl(1),xCtrl(3),'d')
-plot(0,0.05,"^")
-legend('Initial Trajectory','Optimized Trajectory','Switching time method','Target Point', ...
-                'Optimized Control Point','Initial Control Point','End point')
-xlabel('X axis (m)')
-ylabel('Y axis (m)')
-
-
-
-
+plot(0.0,0.05,'o')
+legend('Initial Trajectory','Optimized Trajectory')
 
 disp('Optimal Parameter:')
 disp(['Time: ', num2str(Opt(1:2))])
@@ -102,8 +102,9 @@ function error = objectiveFunction(prms, qDes, wt, qMid,xMid,xDes,xCtrl)
     
     % Calculate the distance between the trajectory points and the xMid point
     distanceMid1 = sqrt((xOut(:,1) - xMid(1)).^2 + (xOut(:,2) - xMid(2)).^2 + (xOut(:,3) - xMid(3)).^2);
-    distanceEnd  = sqrt((xOut(end,1) - xDes(1)).^2 + (xOut(end,2) - xDes(2)).^2 + (xOut(end,3) - xDes(3)).^2);
-    
+    % distanceEnd  = sqrt((xOut(end,1) - xDes(1)).^2 + (xOut(end,2) - xDes(2)).^2 + (xOut(end,3) - xDes(3)).^2);
+    distanceEnd = sqrt(sum((xOut(end,:)- xDes).^2,2));
+
     error = wt(1) * min(distanceMid1) + ...
             wt(2) * sum((distanceEnd),1) + ...
             wt(3) * prms(1);

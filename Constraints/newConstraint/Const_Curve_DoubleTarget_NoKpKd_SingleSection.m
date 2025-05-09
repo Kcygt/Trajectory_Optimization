@@ -32,7 +32,7 @@ xMid = zeros(2,3);
 qMid = zeros(2,3);
 
 xMid(1,:) = [0.02, 0, 0.01];
-xMid(2,:) = [0.03, 0, 0.02];
+xMid(2,:) = [0.03, 0, 0.045];
 
 qMid(1,:) = IK(xMid(1,1), xMid(1,2), xMid(1,3));
 qMid(2,:) = IK(xMid(2,1), xMid(2,2), xMid(2,3));
@@ -95,7 +95,11 @@ plot(x_opt,z_opt,'.-')
 plot(xMid(1,1),xMid(1,3),'*')
 plot(xMid(2,1),xMid(2,3),'*')
 plot(xDes(1),xDes(3),'o')
-legend('Initial Trajectory','Optimized Trajectory','Midpoint','Endpoint')
+legend('Initial Trajectory','Optimized Trajectory','Target Point 1','Target Point 2','Endpoint')
+
+xlabel('X axis (m)')
+ylabel('Y axis (m)')
+title('Cartesian Space Trajectory Results')
 
 disp('Optimal Parameter:')
 disp(['Time: ', num2str(Opt(1))])

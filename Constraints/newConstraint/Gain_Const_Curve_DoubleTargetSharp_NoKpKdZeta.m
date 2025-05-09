@@ -1,115 +1,119 @@
 clear; clc;
 close all;
-
+%%%
+% Time   0.4579    1.4884    7.4918 
+% Wn 1 = 2.6269    0.9641    0.9804    
+% Wn 2 = 1.4005    2.9646    5.9315
+% Wn 3 = 1.0418    0.7773    2.9987
+%%%
 % Define desired trajectory and Middle Points
 qDes = [0.1914, -0.0445, 0.3336];
 [xDes, yDes, zDes] = FK(qDes(1), qDes(2), qDes(3));
 xDes = [xDes, yDes, zDes];
 
-% xMid = [0.015, 0, 0.04];
-xMid = [0.01, 0, 0.04];
+xMid = zeros(2,3);
+qMid = zeros(2,3);
+xMid(1,:) = [0.02, 0, 0.01];
+xMid(2,:) = [0.03, 0, 0.04];
 
-% xMid = [0.01, 0, 0.06];
-qMid = IK(xMid(1), xMid(2), xMid(3));
-
-% Parameters
-tspan = 5;
-wn = [1 1 1];
+qMid(1,:) = IK(xMid(1,1), xMid(1,2), xMid(1,3));
+qMid(2,:) = IK(xMid(2,1), xMid(2,2), xMid(2,3));
 
 
-% Weights
-wt = [1 1]; % [Target, End, Time]
+tspanI = [1 2 10];
+wnI = [1 1 1  1 1 1  1 1 1];
 
-initPrms = wn;
+tspanOpt = [0.4579    1.4884    7.4918 ];
+wnOpt = [2.6269    0.9641    0.9804  1.4005    2.9646    5.9315 1.0418    0.7773    2.9987];
+
+K1 = 1.5;
+tspanGain1 = tspanOpt / K1;
+wnOptGain1 = wnOpt * K1;
+
+K2 = 2;
+tspanGain2 = tspanOpt / K2;
+wnOptGain2 = wnOpt * K2;
+
+K3 = 4;
+tspanGain3 = tspanOpt * K3;
+wnOptGain3 = wnOpt * K3;
+
+K4 = 6;
+tspanGain4 = tspanOpt / K4;
+wnOptGain4 = wnOpt * K4;
+
 
 % Initial Condition
-[ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn), [0 tspan], zeros(12, 1));
+[tI, OutI] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspanI, wnI), [0 tspanI(end)], zeros(12, 1));
+[tOpt, OutOpt] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspanOpt, wnOpt), [0 tspanOpt(end)], zeros(12, 1));
+[tGain1, OutGain1] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspanGain1, wnOptGain1), [0 tspanGain1(end)], zeros(12, 1));
+[tGain2, OutGain2] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspanGain2, wnOptGain2), [0 tspanGain2(end)], zeros(12, 1));
+[tGain3, OutGain3] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspanGain3, wnOptGain3), [0 tspanGain3(end)], zeros(12, 1));
+[tGain4, OutGain4] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspanGain4, wnOptGain4), [0 tspanGain4(end)], zeros(12, 1));
 
-% Lower and Upper Limits
-lb = [ 1 1 1] ; % Wn
-ub = [ 4 4 4]; % Wn
 
-% Objective Function
-objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xMid, xDes,tspan);
+[xI,yI,zI] = FK(OutI(:,7),OutI(:,8),OutI(:,9));
+[xOpt,yOpt,zOpt] = FK(OutOpt(:,7),OutOpt(:,8),OutOpt(:,9));
+[xGain1,yGain1,zGain1] = FK(OutGain1(:,7),OutGain1(:,8),OutGain1(:,9));
+[xGain2,yGain2,zGain2] = FK(OutGain2(:,7),OutGain2(:,8),OutGain2(:,9));
+[xGain3,yGain3,zGain3] = FK(OutGain3(:,7),OutGain3(:,8),OutGain3(:,9));
+[xGain4,yGain4,zGain4] = FK(OutGain4(:,7),OutGain4(:,8),OutGain4(:,9));
 
-% Run optimization
-options =  optimoptions('fmincon','PlotFcns', 'optimplot', 'Display', 'iter',  ...
-                        'OptimalityTolerance',1e-10, 'TolCon', 1e-10,'DiffMinChange', 0.1); % Added constraint tolerance
 
-[Opt, fval,exitFlag,output,Lambda,grad] = fmincon(objectiveFunc, initPrms, [], [], [], [], lb, ub,[], options);
-
-% Simulate with optimal parameters
-[tt, yy] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  Opt), ...
-                  [0 tspan], zeros(12, 1));
-
-%%% Plotting
-[xi, yi_plot, zi] = FK(yi(:,7), yi(:,8), yi(:,9)); % Initial Trajectory
-[x_opt, y_opt, z_opt] = FK(yy(:,7), yy(:,8), yy(:,9)); % Optimized Trajectory
-distance = min(sqrt(sum(([x_opt y_opt z_opt] - xMid).^2,2)));
 
 figure; hold on; grid on;
-plot(xi, zi,'--')
-plot(x_opt,z_opt,'.-')
-plot(xMid(1),xMid(3),'*')
+plot(xI,zI)
+plot(xOpt,zOpt)
+plot(xGain1,zGain1)
+plot(xGain2,zGain2)
+plot(xGain3,zGain3)
+plot(xGain4,zGain4)
+
+plot(xMid(1,1),xMid(1,3),'*')
+plot(xMid(2,1),xMid(2,3),'*')
 plot(xDes(1),xDes(3),'o')
-legend('Initial Trajectory','Optimized Trajectory','Midpoint','Endpoint')
 
-% figure; hold on; grid on;
-% plot(tt,yy(:,10),tt,yy(:,12))
-% xlabel('Time(s)')
-% ylabel('Velocity(m/s)')
+xlabel('X axis (m)')
+ylabel('Y axis (m)')
+title('Cartesian Space Trajectory Results')
+legend('Initial Trajectory','Optimized Trajectory', ...
+        'Gain1 = 1.5',  'Gain1 = 2', 'Gain1 = 4', 'Gain1 = 6',...
+          'Target point1','Target Point 2','Endpoint')
 
-disp(['Minimum distance: ', num2str(distance)]);
-disp('Optimal Parameter:')
-disp(['wn = ', num2str(Opt)])
-exitFlag
-
-% Objective Function
-function error = objectiveFunction(prms, qDes, wt, xMid, xDes,tspan)
-    x0 = zeros(12, 1);
-    x0(1:3) = qDes;
-
-    % Simulate the system
-    [~, y] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,tspan,prms),[0 tspan], x0);
-
-    [xOut,yOut,zOut] = FK(y(:,7),y(:,8),y(:,9));
-    xOut = [xOut,yOut,zOut];
-    % Calculate minimum distance to middle point
-    dxMid = sqrt(sum((xOut - xMid).^2,2));
-    % distMid = min(dx);
-    distMid = sum(dxMid,1);
-
-    % End point error
-    dxEnd = sqrt(sum((xOut(end,:) - xDes).^2,2));
-    distEndErr = sum(dxEnd,1);
-    
-    % Composite error (normalized)
-    error = wt(1)*distMid + wt(2)*distEndErr ;
-end
 
 
 % Dynamics Function with Prefilter
 function dxdt= myTwolinkwithprefilter(t,x,qDes,t_st,wn)
-    % zeta = [0.7 0.7 0.7];
     zeta = [1 1 1];
+    A1=[zeros(3), eye(3); -diag(wn(1:3)).^2,-2*diag(zeta)*diag(wn(1:3))];
+    B1=[zeros(3); diag(wn(1:3)).^2];
+    
+    A2=[zeros(3), eye(3); -diag(wn(4:6)).^2,-2*diag(zeta)*diag(wn(4:6))];
+    B2=[zeros(3); diag(wn(4:6)).^2];
+    
+    A3=[zeros(3), eye(3); -diag(wn(7:9)).^2,-2*diag(zeta)*diag(wn(7:9))];
+    B3=[zeros(3); diag(wn(7:9)).^2];
 
-    A = [zeros(3), eye(3); -diag(wn).^2,-2*diag(zeta)*diag(wn)];
-    B = [zeros(3); diag(wn).^2];
-    Kp = [69.5657   47.9683   70.4026 ];
-    Kd = [38.0540   13.6436   32.2731];
-       
     q=x(7:9);
     qd=x(10:12);
 
-    controller=diag(Kp)*(x(1:3)-q)+diag(Kd)*(x(4:6)-qd);
+    Kp=diag([70 70 70]);  
+    Kd=diag([20 20 20]);  
+
+    controller=Kp*(x(1:3)-q)+Kd*(x(4:6)-qd);
 
     [M,C,G]=compute_M_C_G(q(1),q(2),q(3),qd(1),qd(2),qd(3));
     
     tau=M*(controller)+C*qd;
     
     qdd=M\(tau-C*qd);
-
-    dxdt=[A*x(1:6)+B*qDes(:); qd; qdd];
+    if t <= t_st(1)
+        dxdt=[A1*x(1:6)+B1*qDes(:); qd; qdd];
+    elseif t > t_st(1) && t <= t_st(2)
+        dxdt=[A2*x(1:6)+B2*qDes(:); qd; qdd];
+    else
+        dxdt=[A3*x(1:6)+B3*qDes(:); qd; qdd];
+    end
 end
 
 % Forward Kinematics (FK)

@@ -6,11 +6,11 @@ y = sin(2*pi*0.5*t) + 0.5*sin(2*pi*1.5*t + pi/4);
 s = linspace(0, 5, 1000);
 y = y + s;
 % Plot it
-plot(t, y, 'b', 'LineWidth', 1.5);
+plot(t, y, 'Color',"#7E2F8E", 'LineWidth', 2.5,'DisplayName', 'Function');
 grid on;
 xlabel('Time');
 ylabel('Amplitude');
-title('Waveform with 4 Peaks');
+title('Local and Global Minimum of a Function');
 
 
 % Find local minima
