@@ -1,52 +1,64 @@
 clear; clc;
 close all;
-%%%
-% Time   0.3967    1.4649    2.5333 
-% Wn 1 = 3.0000    2.1880    0.8855    
-% Wn 2 = 2.9993    2.9830    8.0232
-% Wn 3 = 0.7651    0.9056    2.5815
-%%%
-% Define desired trajectory and Middle Points
-qDes = [0.1914, -0.0445, 0.3336];
-[xDes, yDes, zDes] = FK(qDes(1), qDes(2), qDes(3));
-xDes = [xDes, yDes, zDes];
 
-xMid = zeros(2,3);
-qMid = zeros(2,3);
+% Define desired trajectory and Middle Points
+qDes1 = [0.1914, -0.0445,  0.3336];
+qDes2 = [0,      -0.0368,  0.3031];
+qDes = [qDes1;qDes2];
+
+[xDes1, yDes1, zDes1] = FK(qDes1(1), qDes1(2), qDes1(3));
+xDes1 = [xDes1, yDes1, zDes1];
+
+[xDes2, yDes2, zDes2] = FK(qDes2(1), qDes2(2), qDes2(3));
+xDes2 = [xDes2, yDes2, zDes2];
+xDes = [xDes1;xDes2];
+
+xMid = zeros(4,3);
+qMid = zeros(4,3);
+
 xMid(1,:) = [0.02, 0, 0.01];
 xMid(2,:) = [0.03, 0, 0.04];
+xMid(3,:) = [0.03, 0, 0.07];
+xMid(4,:) = [0.015, 0, 0.03];
 
 qMid(1,:) = IK(xMid(1,1), xMid(1,2), xMid(1,3));
 qMid(2,:) = IK(xMid(2,1), xMid(2,2), xMid(2,3));
+qMid(3,:) = IK(xMid(3,1), xMid(3,2), xMid(3,3));
+qMid(4,:) = IK(xMid(4,1), xMid(4,2), xMid(4,3));
 
 % Parameters
-% tspan = [0.8 1.1 10];
-% wn = [2 1 .9    0.5 1 9     1 1 1];
+tspan = [2 4 6 8 10 12];
+wn = [1 1 1 ... 
+      1 1 1 ...
+      1 1 1 ...
+      1 1 1 ...
+      1 1 1 ...
+      1 1 1];
 
-% tspan = [1 2 10];
-% wn = [1 1 1  1 1 1  1 1 1];
-wn = [2.6269    0.9641    0.9804  1.4005    2.9646    5.9315  1.0418    0.7773    2.9987];
-tspan = [0.4579    1.4884    7.4918];
 % Weights
 wt = [50, 1, 0.02]; % [Target, End, Time]
 
 initPrms = [tspan, wn];
 
 % Initial Condition
-[ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan, wn), [0 tspan], zeros(12, 1));
+[ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan, wn), [0 tspan(end)], zeros(12, 1));
 
 [xOut,yOut,zOut] = FK(yi(:,7),yi(:,8),yi(:,9));
 figure; hold on; grid on;
 plot(xOut,zOut)
 plot(xMid(1,1),xMid(1,3),'*')
 plot(xMid(2,1),xMid(2,3),'*')
-plot(xDes(1),xDes(3),'o')
+plot(xMid(3,1),xMid(3,3),'*')
+plot(xMid(4,1),xMid(4,3),'*')
+
+plot(xDes1(1,1),xDes1(1,3),'o')
+plot(xDes2(1,1),xDes2(1,3),'o')
 
 % Lower and Upper Limits
-lb = [0 0 0  ... % time
-      0.5 0.5 0.5  0.5 0.5 0.5  0.5 0.5 0.5 ]; % Wn
-ub = [5 5 5 ... % time
-      3 3 3   3 3 10   3 3 3]; % Wn
+lb = [0 0 0 0 0 0  ... % time
+      0.5 0.5 0.5  0.5 0.5 0.5  0.5 0.5 0.5  0.5 0.5 0.5]; % Wn
+ub = [10 10 10 10 10 10 ... % time
+      5 5 5   5 5 10   5 5 5 5 5 5 5 5 5]; % Wn
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xMid, xDes);
@@ -72,8 +84,8 @@ numStarts = 10; % Number of random starting points
 [Opt, fval] = run(ms, problem, numStarts);
 
 % Simulate with optimal parameters
-[tt, yy] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1:3),  Opt(4:12)), ...
-                  [0 Opt(3)], zeros(12, 1));
+[tt, yy] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1:6),  Opt(7:end)), ...
+                  [0 Opt(6)], zeros(12, 1));
 
 %%% Plotting
 [xi, yi_plot, zi] = FK(yi(:,7), yi(:,8), yi(:,9)); % Initial Trajectory
@@ -95,11 +107,11 @@ legend('Initial Trajectory','Optimized Trajectory','Midpoint','Endpoint')
 % Objective Function
 function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     x0 = zeros(12, 1);
-    x0(1:3) = qDes;
+    x0(1:3) = qDes(1,:);
 
     % Simulate the system
-    [~, y] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1:3),prms(4:12)), ...
-                    [0 prms(3)], x0);
+    [~, y] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1:6),prms(7:end)), ...
+                    [0 prms(6)], x0);
 
     [xOut,yOut,zOut] = FK(y(:,7),y(:,8),y(:,9));
     xOut = [xOut,yOut,zOut];
@@ -126,36 +138,51 @@ function [c, ceq] = trajConstraint(prms,qDes,xMid)
     ceq = []; % No equality constraints
 
     % Simulate trajectory
-    [~, yy] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1:3),prms(4:12)), ...
-                    [0 prms(3)], zeros(12, 1));
+    [~, yy] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1:6),prms(7:end)), ...
+                    [0 prms(6)], zeros(12, 1));
     [x,y,z] = FK(yy(:,7),yy(:,8),yy(:,9));     % Optimized Trajectory
     x = [x,y,z];
     % Calculate distances to midpoint in 3D space
     distance1 = sqrt(sum((x - xMid(1,:)).^2,2));
     distance2 = sqrt(sum((x - xMid(2,:)).^2,2));
+    distance3 = sqrt(sum((x - xMid(3,:)).^2,2));
+    distance4 = sqrt(sum((x - xMid(4,:)).^2,2));
 
     % End point error
-    distEndErr = sqrt(sum((x(end,:) - [0.05, 0.0,0.05]).^2,2));
+    distEndErr1 = sqrt(sum((x(end,:) - [0.05, 0.0,0.05]).^2,2));
+    distEndErr2 = sqrt(sum((x(end,:) - [0.05, 0.0,0.05]).^2,2));
 
     % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
     c = [min(distance1) - 0.000001;
-        min(distance2) - 0.000001;
-        % prms(1) - prms(2);
-        % prms(2) - prms(3);
-        distEndErr    - 0.000001]; 
+         min(distance2) - 0.000001;
+         min(distance3) - 0.000001;
+         min(distance4) - 0.000001;
+         % prms(1) - prms(2);
+         % prms(2) - prms(3);
+         distEndErr1    - 0.000001;
+         distEndErr2    - 0.000001]; 
 end
 
 % Dynamics Function with Prefilter
 function dxdt= myTwolinkwithprefilter(t,x,qDes,t_st,wn)
     zeta = [1 1 1];
-    A1=[zeros(3), eye(3); -diag(wn(1:3)).^2,-2*diag(zeta)*diag(wn(1:3))];
-    B1=[zeros(3); diag(wn(1:3)).^2];
+    A11=[zeros(3), eye(3); -diag(wn(1:3)).^2,-2*diag(zeta)*diag(wn(1:3))];
+    B11=[zeros(3); diag(wn(1:3)).^2];
     
-    A2=[zeros(3), eye(3); -diag(wn(4:6)).^2,-2*diag(zeta)*diag(wn(4:6))];
-    B2=[zeros(3); diag(wn(4:6)).^2];
+    A12=[zeros(3), eye(3); -diag(wn(4:6)).^2,-2*diag(zeta)*diag(wn(4:6))];
+    B12=[zeros(3); diag(wn(4:6)).^2];
     
-    A3=[zeros(3), eye(3); -diag(wn(7:9)).^2,-2*diag(zeta)*diag(wn(7:9))];
-    B3=[zeros(3); diag(wn(7:9)).^2];
+    A13=[zeros(3), eye(3); -diag(wn(7:9)).^2,-2*diag(zeta)*diag(wn(7:9))];
+    B13=[zeros(3); diag(wn(7:9)).^2];
+
+    A21=[zeros(3), eye(3); -diag(wn(10:12)).^2,-2*diag(zeta)*diag(wn(10:12))];
+    B21=[zeros(3); diag(wn(10:12)).^2];
+    
+    A22=[zeros(3), eye(3); -diag(wn(13:15)).^2,-2*diag(zeta)*diag(wn(13:15))];
+    B22=[zeros(3); diag(wn(13:15)).^2];
+    
+    A23=[zeros(3), eye(3); -diag(wn(16:18)).^2,-2*diag(zeta)*diag(wn(16:18))];
+    B23=[zeros(3); diag(wn(16:18)).^2];
 
     q=x(7:9);
     qd=x(10:12);
@@ -171,11 +198,17 @@ function dxdt= myTwolinkwithprefilter(t,x,qDes,t_st,wn)
     
     qdd=M\(tau-C*qd);
     if t <= t_st(1)
-        dxdt=[A1*x(1:6)+B1*qDes(:); qd; qdd];
+        dxdt=[A11*x(1:6)+B11*qDes(1,:)'; qd; qdd];
     elseif t > t_st(1) && t <= t_st(2)
-        dxdt=[A2*x(1:6)+B2*qDes(:); qd; qdd];
+        dxdt=[A12*x(1:6)+B12*qDes(1,:)'; qd; qdd];
+    elseif t > t_st(2) && t <= t_st(3)
+        dxdt=[A13*x(1:6)+B13*qDes(1,:)'; qd; qdd];
+    elseif t > t_st(3) && t <= t_st(4)
+        dxdt=[A21*x(1:6)+B21*qDes(2,:)'; qd; qdd];
+    elseif t > t_st(4) && t <= t_st(5)
+        dxdt=[A22*x(1:6)+B22*qDes(2,:)'; qd; qdd];
     else
-        dxdt=[A3*x(1:6)+B3*qDes(:); qd; qdd];
+        dxdt=[A23*x(1:6)+B23*qDes(2,:)'; qd; qdd];
     end
 end
 
