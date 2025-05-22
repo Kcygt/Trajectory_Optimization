@@ -1,62 +1,87 @@
+clear; clc;
+close all;
 
 % Define desired trajectory and Middle Points
-qDes = [0.1914, -0.0445, 0.3336];
-[xDes, yDes, zDes] = FK(qDes(1), qDes(2), qDes(3));
-xDes = [xDes, yDes, zDes];
+qDes1 = [0.1914, -0.0445,  0.3336];
+qDes2 = [0       -0.0130   0.1796];
+qDes = [qDes1;qDes2];
 
-xMid = [0.04, 0, 0.005];
+[xDes1, yDes1, zDes1] = FK(qDes1(1), qDes1(2), qDes1(3));
+xDes1 = [xDes1, yDes1, zDes1];
 
-qMid = IK(xMid(1), xMid(2), xMid(3));
+[xDes2, yDes2, zDes2] = FK(qDes2(1), qDes2(2), qDes2(3));
+xDes2 = [xDes2, yDes2, zDes2];
+xDes = [xDes1;xDes2];
+
+xMid = zeros(2,3);
+qMid = zeros(2,3);
+
+xMid(1,:) = [0.03, 0, 0.01];
+xMid(2,:) = [0.02, 0, 0.05];
+
+qMid(1,:) = IK(xMid(1,1), xMid(1,2), xMid(1,3));
+qMid(2,:) = IK(xMid(2,1), xMid(2,2), xMid(2,3));
+
 
 % Parameters
-tspan = 3.3134;
-zeta = [ 0.86265     0.55127     0.99884];
-wn = [16.1593      3.08098      3.56322];
-
-% Weights
-wt = [50, 1, 0.08]; % [Target, End, Time]
-
-initPrms = [tspan,zeta, wn];
+tspan = [1.1 2.5 3 5 ];
+wn = [2.5 1 1 ... 
+      1 1 4 ...
+      3 1 1 ...
+      4 1 4 ];
 
 % Initial Condition
-[ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  zeta,wn), [0 tspan], zeros(12, 1));
+[ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan, wn), [0 tspan(end)], zeros(12, 1));
+
+[xOut,yOut,zOut] = FK(yi(:,7),yi(:,8),yi(:,9));
+figure; hold on; grid on;
+plot(xOut,zOut)
+plot(xMid(1,1),xMid(1,3),'*')
+plot(xMid(2,1),xMid(2,3),'*')
+plot(xDes1(1,1),xDes1(1,3),'o')
+plot(xDes2(1,1),xDes2(1,3),'o')
 
 
-%%% Plotting
-[xi, yi_plot, zi] = FK(yi(:,7), yi(:,8), yi(:,9)); % Initial Trajectory
-[xDes, yDes, zDes] = FK(yi(:,1), yi(:,2), yi(:,3)); % Reference Trajectory
 
-figure(1); hold on; grid on;
-plot(xi, zi,'--')
-plot(xDes, zDes,'--')
-
-plot(xMid(1),xMid(3),'*')
-plot(xDes(1),xDes(3),'o')
-legend('Initial Trajectory','Desired Trajectory','Target Point','End Point')
-xlabel('X axis (m)')
-ylabel('Y axis (m)')
-title('Cartesian Space Trajectory Results')
 
 % Dynamics Function with Prefilter
-function dxdt= myTwolinkwithprefilter(t,x,qDes,t_st,zeta,wn)
-    A1=[zeros(3), eye(3); -diag(wn).^2,-2*diag(zeta)*diag(wn)];
-    B1=[zeros(3); diag(wn).^2];
+function dxdt= myTwolinkwithprefilter(t,x,qDes,t_st,wn)
+    zeta = [1 1 1];
+    A11=[zeros(3), eye(3); -diag(wn(1:3)).^2,-2*diag(zeta)*diag(wn(1:3))];
+    B11=[zeros(3); diag(wn(1:3)).^2];
+    
+    A12=[zeros(3), eye(3); -diag(wn(4:6)).^2,-2*diag(zeta)*diag(wn(4:6))];
+    B12=[zeros(3); diag(wn(4:6)).^2];
+    
+    A21=[zeros(3), eye(3); -diag(wn(7:9)).^2,-2*diag(zeta)*diag(wn(7:9))];
+    B21=[zeros(3); diag(wn(7:9)).^2];
+
+    A22=[zeros(3), eye(3); -diag(wn(10:12)).^2,-2*diag(zeta)*diag(wn(10:12))];
+    B22=[zeros(3); diag(wn(10:12)).^2];
+ 
 
     q=x(7:9);
     qd=x(10:12);
 
-    Kp=diag([10 10 10]);  
-    Kd=diag([15 15 15]);  
+    Kp=diag([70 70 70]);  
+    Kd=diag([20 20 20]);  
 
     controller=Kp*(x(1:3)-q)+Kd*(x(4:6)-qd);
 
-    [M,C,G]=com pute_M_C_G(q(1),q(2),q(3),qd(1),qd(2),qd(3));
+    [M,C,G]=compute_M_C_G(q(1),q(2),q(3),qd(1),qd(2),qd(3));
     
     tau=M*(controller)+C*qd;
     
     qdd=M\(tau-C*qd);
-
-    dxdt=[A1*x(1:6)+B1*qDes(:); qd; qdd];
+    if t <= t_st(1)
+        dxdt=[A11*x(1:6)+B11*qDes(1,:)'; qd; qdd];
+    elseif t > t_st(1) && t <= t_st(2)
+        dxdt=[A12*x(1:6)+B12*qDes(1,:)'; qd; qdd];
+    elseif t > t_st(2) && t <= t_st(3)
+        dxdt=[A21*x(1:6)+B21*qDes(2,:)'; qd; qdd];
+    else
+        dxdt=[A22*x(1:6)+B22*qDes(2,:)'; qd; qdd];
+    end
 end
 
 % Forward Kinematics (FK)
