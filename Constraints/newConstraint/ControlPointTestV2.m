@@ -13,7 +13,7 @@ qMid = IK(xMid(1), xMid(2), xMid(3));
 qDes =[qMid;qDes];
 % Parameters
 tspan = [10 20];
-wn1 = [.9 1 9];
+wn1 = [.9 1 1];
 wn2 = [1 1 1];
 CtrlPnt = xMid;
 qCtrl = IK(CtrlPnt(1), CtrlPnt(2), CtrlPnt(3));
@@ -30,27 +30,27 @@ initPrms = [tspan, wn1, wn2, CtrlPnt];
 
 % Initial Condition
 [ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,CtrlPnt), [0 tspan(2)], zeros(12, 1));
-% [xi, yi_plot, zi] = FK(yi(:,7), yi(:,8), yi(:,9)); % Initial Trajectory
+[xi, yi_plot, zi] = FK(yi(:,7), yi(:,8), yi(:,9)); % Initial Trajectory
 
-% figure(1); hold on; grid on;
-% plot(0,0,'o',xDes(1),xDes(3),'o')
-% plot(xMid(1),xMid(3),'*')
-% plot(CtrlPnt(1),CtrlPnt(3),'*')
-% 
-% plot(xi,zi)
-% 
-% xlabel('X axes')
-% ylabel('Z Axes')
-% title(' Trajectories')
-% legend('Start point', 'End Point', 'Target Point', 'Control Point', ...
-%         'Followed Trajectory')
+figure(1); hold on; grid on;
+plot(0,0,'o',xDes(1),xDes(3),'o')
+plot(xMid(1),xMid(3),'*')
+plot(CtrlPnt(1),CtrlPnt(3),'*')
+
+plot(xi,zi)
+
+xlabel('X axes')
+ylabel('Z Axes')
+title(' Trajectories')
+legend('Start point', 'End Point', 'Target Point', 'Control Point', ...
+        'Followed Trajectory')
 % Lower and Upper Limits
 % Lower and Upper Limits
 lb = [3  6    0.5 0.5 0.5      0.5 0.5 0.5     lowCtrl(1) lowCtrl(2) lowCtrl(3)];     % Wn
 ub = [5  10    20 20 20        20 20 20        UpCtrl(1)  UpCtrl(2)  UpCtrl(3)];      % wn
 
 % Objective Function
-objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xMid, xDes,CtrlPnt);
+objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xMid, xDes);
 
 % Run optimization
 options = optimoptions('fmincon','PlotFcns', 'optimplot', 'Display', 'off', ... 
@@ -63,7 +63,7 @@ problem = createOptimProblem('fmincon',...
     'lb', lb, ...
     'ub', ub, ...
     'options', options, ...
-    'nonlcon', @(prms) trajConstraint(prms, qDes, xMid,CtrlPnt));
+    'nonlcon', @(prms) trajConstraint(prms, qDes, xMid));
 
 % MultiStart setup
 ms = MultiStart('UseParallel', true, 'Display', 'iter');
@@ -99,7 +99,7 @@ disp(['Wn2:   ', num2str(Opt(6:8))])
 disp(['Control Point:   ', num2str(Opt(9:11))])
 
 % Objective Function
-function error = objectiveFunction(prms, qDes, wt, xMid, xDes,ctrlPnt)
+function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     
     x0 = zeros(12, 1);
     % x0(1:3) = qDes(1,:);  & look at it to understand why you are using
@@ -116,7 +116,7 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes,ctrlPnt)
     distMid = sum(dx,1);
     
     % Control Point distance calculation
-    dxCtrl = sqrt(sum((xOut - ctrlPnt).^2,2));
+    dxCtrl = sqrt(sum((xOut - prms(9:11)).^2,2));
     distCtrl = sum(dxCtrl,1);
 
     % End point error
@@ -134,7 +134,7 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes,ctrlPnt)
 end
 
 % Constraint Function for Midpoint Proximity
-function [c, ceq] = trajConstraint(prms,qDes,xMid,ctrlPnt)
+function [c, ceq] = trajConstraint(prms,qDes,xMid)
     ceq = []; % No equality constraints
 
     % Simulate trajectory
@@ -144,7 +144,7 @@ function [c, ceq] = trajConstraint(prms,qDes,xMid,ctrlPnt)
     x = [x,y,z];
     % Calculate distances to midpoint in 3D space
     distanceMid  = sqrt(sum((x - xMid).^2,2));
-    distanceCtrl = sqrt(sum((x - ctrlPnt).^2,2));
+    distanceCtrl = sqrt(sum((x - prms(9:11)).^2,2));
     
     % End point error
     distEndErr = sqrt(sum((x(end,:) - [0.05, 0.0,0.05]).^2,2));
