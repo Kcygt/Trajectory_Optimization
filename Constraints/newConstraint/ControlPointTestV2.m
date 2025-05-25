@@ -79,7 +79,6 @@ numStarts = 5; % Number of random starting points
 %%% Plotting
 [xi, yi_plot, zi] = FK(yi(:,7), yi(:,8), yi(:,9)); % Initial Trajectory
 [x_opt, y_opt, z_opt] = FK(yy(:,7), yy(:,8), yy(:,9)); % Optimized Trajectory
-% [xC, yC, zC] = FK(Opt(9), Opt(10), Opt(11)); % Initial Trajectory
 
 figure; hold on; grid on;
 plot(xi, zi,'--')
@@ -151,7 +150,7 @@ function [c, ceq] = trajConstraint(prms,qDes,xMid)
 
     % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
     c = [min(distanceMid) - 0.000001;
-         min(distanceCtrl) - 0.0001;
+         min(distanceCtrl) - 0.01;
          distEndErr    - 0.000001]; 
 end
 
