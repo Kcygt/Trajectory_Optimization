@@ -169,7 +169,7 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     xOut = [xOut,yOut,zOut];
     
     % Calculate minimum distance to middle point
-    dx = sqrt(sum((xOut - xMid).^2,2));
+    dx = sum((xOut - xMid).^2,2);
     distMid = sum(dx,1);
     
     % Control Point distance calculation
