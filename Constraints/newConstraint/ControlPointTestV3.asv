@@ -3,10 +3,10 @@ close all;
 
 %  SOLUTION 
 % Optimal Parameter:
-% tspan = [ 1.9238       2.929 ];
-% wn1 =  [ 4.1954     0.73198      1.8781 ];
-% wn2 =  [ 6.72901      19.9948          0.5 ];
-% CtrlPnt = [   0.030787  0.00094068    0.053058 ];
+% Time: 1.9238       2.929
+% Wn1: 4.1954     0.73198      1.8781
+% Wn2:   6.72901      19.9948          0.5
+% Control Point:   0.030787  0.00094068    0.053058
 
 % Define desired trajectory and Middle Points
 qDes = [0.1914, -0.0445, 0.3336];
@@ -35,7 +35,7 @@ qCtrl = IK(CtrlPnt(1), CtrlPnt(2), CtrlPnt(3));
 qDes =[CtrlPnt;qDes];
 
 % Weights
-wt = [150, 20,1, 0.08];   % [Target, End, Time]
+wt = [100, 20,1, 0.08];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2, CtrlPnt];
 
@@ -58,7 +58,7 @@ initPrms = [tspan, wn1, wn2, CtrlPnt];
 
 % Lower and Upper Limits
 lb = [0 0     0.5 0.5 0.5     0.5 0.5 0.5    0    0    0];     % Wn
-ub = [5 5     20 20 20        20 20 20       0.06 0.02 0.06];      % wn
+ub = [5 5     20 20 20        20 20 20       0.06 0.06 0.06];      % wn
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xMid, xDes);
@@ -78,7 +78,7 @@ problem = createOptimProblem('fmincon',...
 
 % MultiStart setup
 ms = MultiStart('UseParallel', true, 'Display', 'iter');
-numStarts = 10; % Number of random starting points
+numStarts = 5; % Number of random starting points
 
 % Run MultiStart optimization
 [Opt, fval] = run(ms, problem, numStarts);
@@ -106,10 +106,10 @@ xlabel('X axis (m)')
 ylabel('Y axis (m)')
 title('Cartesian Space Trajectory Results')
 disp('Optimal Parameter:')
-disp(['tspan = [ ', num2str(Opt(1:2)), ' ];'])
+disp(['Time = [ ', num2str(Opt(1:2)), ' ];'])
 disp(['wn1 =  [ ', num2str(Opt(3:5)), ' ];'])
-disp(['wn2 =  [ ', num2str(Opt(6:8)), ' ];'])
-disp(['CtrlPnt = [   ', num2str(Opt(9:11)), ' ];'])
+disp(['wn2    ', num2str(Opt(6:8))], ' ];')
+disp(['Control Point:   ', num2str(Opt(9:11))])
 
 % Objective Function
 function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
@@ -134,7 +134,7 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     dx3 = sum((xOut - xMid(3,:)).^2,2);
     distMid3 = sum(dx3,1);
     
-    distMidF = distMid1 +  distMid3;
+    distMidF = distMid1 + distMid2 + distMid3;
      % End point error
     dxEnd = sum((xOut(end,:) - xDes).^2,2);
     distEndErr = sum(dxEnd,1);

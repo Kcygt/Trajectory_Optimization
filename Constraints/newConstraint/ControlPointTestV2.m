@@ -1,56 +1,6 @@
 clear; clc;
 close all;
 
-
-% Solutions
-% 
-% Optimal Parameter:
-% Time: 1.3421      7.0527
-% Wn1: 8.6924      5.0251        7.36
-% Wn2:   1.2477      6.7496      2.0512
-% Control Point:   0.020032   -0.038286     0.04141
-
-% tspan = [0.51303      3.1031];
-% wn1 = [ 3.95906      9.28741      10.3817];
-% wn2 = [ 3.79744      19.9987      6.63023];
-% CtrlPnt = [ 3.1504e-05   -0.023162     0.02141];
-
-
-% 
-% Optimal Parameter:
-% Time: 0.45489       7.974
-% Wn1: 12.646      4.71548      9.13323
-% Wn2:   0.817175       12.614      19.1445
-% Control Point:   0.029044  -0.0031117    0.040103
-
-% 
-% Optimal Parameter:
-% Time: 3.298      4.0016
-% Wn1: 2.03678      0.63631      14.1554
-% Wn2:   7.9234      7.2263      9.8665
-% Control Point:   0.027884   0.0003534    0.048884
-
-% 
-% Optimal Parameter:
-% tspan = [ 3.2651           5];
-% wn1= [ 16.2906      7.59559      13.5397];
-% wn2 =[  4.6426     0.50172      6.8987]; 
-% CtrlPnt = [0.031104  -0.0017078    0.054225];
-
-% 
-% Optimal Parameter:
-% tspan = [ 1.3115       3.876];
-% Wn1 = [ 7.3859      9.7137      9.9665];
-% Wn2 =[    2.05084      13.8962      17.7257];
-% CtrlPnt =[    0.036893  0.00025087    0.051199];
-
-% Optimal Parameter:
-% tspan = [1.3115       3.876];
-% Wn1 = [ 7.3859      9.7137      9.9665];
-% Wn2 = [   2.05084      13.8962      17.7257];
-% CtrlPnt = [ 0.036893  0.00025087    0.051199];
-
-
 % Define desired trajectory and Middle Points
 qDes = [0.1914, -0.0445, 0.3336];
 [xDes, yDes, zDes] = FK(qDes(1), qDes(2), qDes(3));
@@ -65,14 +15,14 @@ qDes =[qMid;qDes];
 tspan = [10 20];
 wn1 = [1 1 1];
 wn2 = [1 1 1];
-CtrlPnt = xMid;
+CtrlPnt = xMid(1,:);
 qCtrl = IK(CtrlPnt(1), CtrlPnt(2), CtrlPnt(3));
 
 
 
 
 
-rangeFactor = 0.02;
+rangeFactor = 0.03;
 lowCtrl = CtrlPnt - rangeFactor;
 UpCtrl = CtrlPnt + rangeFactor;
 
@@ -97,7 +47,7 @@ initPrms = [tspan, wn1, wn2, CtrlPnt];
 % title(' Trajectories')
 % legend('Start point', 'End Point', 'Target Point', 'Control Point', ...
 %         'Followed Trajectory')
-% Lower and Upper Limits
+
 % Lower and Upper Limits
 lb = [0 0     0.5 0.5 0.5      0.5 0.5 0.5     lowCtrl(1) lowCtrl(2) lowCtrl(3)];     % Wn
 ub = [5 5     20 20 20        20 20 20        UpCtrl(1)  UpCtrl(2)  UpCtrl(3)];      % wn
