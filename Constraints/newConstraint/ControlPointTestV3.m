@@ -14,51 +14,29 @@ qDes = [0.1914, -0.0445, 0.3336];
 xDes = [xDes, yDes, zDes];
 
 xMid = zeros(3,3);
-qMid = zeros(3,3);
 
 xMid(1,:) = [0.015, 0, 0.005];
-xMid(2,:) = [0.025, 0, 0.035];
+xMid(2,:) = [0.03, 0, 0.02];
 xMid(3,:) = [0.045, 0, 0.035];
-
-qMid(1,:) = IK(xMid(1,1), xMid(1,2), xMid(1,3));
-qMid(2,:) = IK(xMid(2,1), xMid(2,2), xMid(2,3));
-qMid(3,:) = IK(xMid(3,1), xMid(3,2), xMid(3,3));
 
 % Parameters
 tspan = [10 20];
 wn1 = [1 1 1];
 wn2 = [1 1 1];
-CtrlPnt = xMid(2,:);
-qCtrl = IK(CtrlPnt(1), CtrlPnt(2), CtrlPnt(3));
-
+CtrlPnt = [0.03,0,0.03];
 
 qDes =[CtrlPnt;qDes];
 
 % Weights
-wt = [1000,  100, 0.01];   % [Target, End, Time]
+wt = [1000,  10, 0.01, 0.2];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2, CtrlPnt];
-
-% Initial Condition
 [ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,CtrlPnt), [0 tspan(2)], zeros(12, 1));
-% 
-% [xi, yi_plot, zi] = FK(yi(:,7), yi(:,8), yi(:,9)); % Initial Trajectory
-% figure(1); hold on; grid on;
-% plot(0,0,'o',xDes(1),xDes(3),'o')
-% plot(xMid(1),xMid(3),'*')
-% plot(CtrlPnt(1),CtrlPnt(3),'*')
-% 
-% plot(xi,zi)
-% 
-% xlabel('X axes')
-% ylabel('Z Axes')
-% title(' Trajectories')
-% legend('Start point', 'End Point', 'Target Point', 'Control Point', ...
-%         'Followed Trajectory')
+
 
 % Lower and Upper Limits
 lb = [0 0     0.5 0.5 0.5     0.5 0.5 0.5    0    0    0];     % Wn
-ub = [5 5     20 20 20        20 20 20       0.06 0.02 0.04];      % wn
+ub = [5 5     20 20 20        20 20 20       0.06 0.06 0.06];      % wn
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xMid, xDes);
@@ -97,10 +75,8 @@ plot(x_opt,z_opt,'.-')
 plot(xMid(1,1),xMid(1,3),'*')
 plot(xMid(2,1),xMid(2,3),'*')
 plot(xMid(3,1),xMid(3,3),'*')
-
 plot(xDes(1),xDes(3),'o')
 plot(Opt(9),Opt(11),'d')
-
 legend('Initial Trajectory','Optimized Trajectory','Target Point 1','Target Point 2','End Point','Control Point')
 xlabel('X axis (m)')
 ylabel('Y axis (m)')
@@ -149,7 +125,8 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     % Composite error (normalized)
     error = wt(1) * distMidF    + ...
             wt(2) * distEndErr  + ...
-            wt(3) * timePenalty;
+            wt(3) * timePenalty + ...
+            wt(4) * prms(1);
 end
 
 % Constraint Function for Midpoint Proximity
@@ -170,15 +147,12 @@ function [c, ceq] = trajConstraint(prms,qDes,xMid)
     
     % End point error
     distEndErr = sqrt(sum((x(end,:) - [0.05, 0.0,0.05]).^2,2));
-    
-
-
 
     % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
-    c = [min(distanceMid1) - 0.00000001;
-         min(distanceMid2) - 0.00000001;
-        min(distanceMid3) - 0.00000001;
-         min(distanceCtrl) - 0.01;
+    c = [min(distanceMid1) - 0.000000001;
+         min(distanceMid2) - 0.000000001;
+         min(distanceMid3) - 0.000000001;
+         min(distanceCtrl) - 0.05;
          prms(1) - prms(2);
          distEndErr    - 0.000001]; 
 end

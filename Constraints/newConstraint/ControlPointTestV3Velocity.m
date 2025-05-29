@@ -1,13 +1,6 @@
 clear; clc;
 close all;
 
-%  SOLUTION 
-% Result 1
-% tspan = [ 0.70991      4.9681 ];
-% wn1 =  [ 17.0209      17.8406      8.91961 ];
-% wn2 =  [ 3.76      3.0526      2.3705 ];
-% CtrlPnt = [   0.024018  0.00070231    0.027399 ];
-
 % Define desired trajectory and Middle Points
 qDes = [0.1914, -0.0445, 0.3336];
 [xDes, yDes, zDes] = FK(qDes(1), qDes(2), qDes(3));
@@ -17,7 +10,7 @@ xMid = zeros(3,3);
 qMid = zeros(3,3);
 
 xMid(1,:) = [0.015, 0, 0.01];
-xMid(2,:) = [0.025, 0, 0.03];
+xMid(2,:) = [0.025, 0, 0.02];
 xMid(3,:) = [0.035, 0, 0.03];
 
 qMid(1,:) = IK(xMid(1,1), xMid(1,2), xMid(1,3));
@@ -35,7 +28,7 @@ qCtrl = IK(CtrlPnt(1), CtrlPnt(2), CtrlPnt(3));
 qDes =[CtrlPnt;qDes];
 
 % Weights
-wt = [450, .02, 100, 0.08];   % [Target, End, Time]
+wt = [450, 20, 100, 0.08];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2, CtrlPnt];
 
@@ -105,6 +98,14 @@ legend('Initial Trajectory','Optimized Trajectory','Target Point 1','Target Poin
 xlabel('X axis (m)')
 ylabel('Y axis (m)')
 title('Cartesian Space Trajectory Results')
+
+
+figure; hold on; grid on;
+plot(tt,yy(:,10:12))
+xlabel('Time (s)')
+ylabel('Velocity (m/s)')
+title('Velocity for all joints')
+
 disp('Optimal Parameter:')
 disp(['tspan = [ ', num2str(Opt(1:2)), ' ];'])
 disp(['wn1 =  [ ', num2str(Opt(3:5)), ' ];'])
@@ -138,11 +139,19 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
 
     % actvel=y(1:3); actspeed=actvel'*actvel;
     %velPenaly = (actspeed - des)^2;
-
-    VelDes = velocity(ttime) ;
-    VelAct1 = sum(abs(VelDes - y(:,10)),1);
-    VelAct2 = sum(abs(VelDes - y(:,11)),1);
-    VelAct3 = sum(abs(VelDes - y(:,12)),1);
+    % Desired Velocity
+    VelDes1 = 0.3 * velocity(ttime) ;
+    VelDes2 = 0.1 * velocity(ttime) ;
+    VelDes3 = 0.5 * velocity(ttime) ;
+    % Actual Speed
+    speedAct1  = y(:,10)' * y(:,10);
+    speedAct2  = y(:,11)' * y(:,11);
+    speedAct3  = y(:,12)' * y(:,12);
+    
+    % 
+    VelAct1 = sum(abs(speedAct1 - VelDes1 ),1);
+    VelAct2 = sum(abs(speedAct2 - VelDes2 ),1);
+    VelAct3 = sum(abs(speedAct3 - VelDes3 ),1);
 
     Vel = VelAct1 + VelAct2 + VelAct3;
      % End point error
@@ -156,7 +165,8 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     error = wt(1) * distMidF    + ...
             wt(2) * Vel         + ...
             wt(3) * distEndErr  + ...
-            wt(4) * timePenalty;
+            wt(4) * timePenalty + ...
+            wt(5) * prms(1);
 end
 
 % Constraint Function for Midpoint Proximity
@@ -194,19 +204,16 @@ function [c, ceq] = trajConstraint(prms,qDes,xMid)
 end
 
 function y = velocity(time)
-    % velocity computes the velocity profile from a cubic position trajectory
-    %
-    % Based on a cubic polynomial that goes from 0 to 1 in time(end) seconds
-    % Position: p(t) = a2*t^2 + a3*t^3
-    % Velocity: v(t) = 2*a2*t + 3*a3*t^2
+    % velocity generates a Gaussian-based velocity profile
+    
+    
+    T = time(end);              % Total duration
+    mu = T / 2;                 % Center time
+    sigma = T / 6;              % Spread (adjustable)
+    A = 1;                      % Peak velocity (can be scaled)
 
-    T = time(end);
-    a2 = 3 / T^2;
-    a3 = -2 / T^3;
-
-    y = 2 * a2 .* time + 3 * a3 * (time .^ 2);
+    y = A * exp(-((time - mu).^2) / (2 * sigma^2));
 end
-
 
 
 % Dynamics Function with Prefilter
