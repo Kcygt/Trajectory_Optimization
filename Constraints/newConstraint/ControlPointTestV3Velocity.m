@@ -16,9 +16,9 @@ xDes = [xDes, yDes, zDes];
 xMid = zeros(3,3);
 qMid = zeros(3,3);
 
-xMid(1,:) = [0.015, 0, 0.005];
-xMid(2,:) = [0.03, 0, 0.02];
-xMid(3,:) = [0.045, 0, 0.03];
+xMid(1,:) = [0.015, 0, 0.01];
+xMid(2,:) = [0.025, 0, 0.03];
+xMid(3,:) = [0.035, 0, 0.03];
 
 qMid(1,:) = IK(xMid(1,1), xMid(1,2), xMid(1,3));
 qMid(2,:) = IK(xMid(2,1), xMid(2,2), xMid(2,3));
@@ -35,7 +35,7 @@ qCtrl = IK(CtrlPnt(1), CtrlPnt(2), CtrlPnt(3));
 qDes =[CtrlPnt;qDes];
 
 % Weights
-wt = [450,  100, 0.08];   % [Target, End, Time]
+wt = [450, .02, 100, 0.08];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2, CtrlPnt];
 
@@ -139,6 +139,12 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     % actvel=y(1:3); actspeed=actvel'*actvel;
     %velPenaly = (actspeed - des)^2;
 
+    VelDes = velocity(ttime) ;
+    VelAct1 = sum(abs(VelDes - y(:,10)),1);
+    VelAct2 = sum(abs(VelDes - y(:,11)),1);
+    VelAct3 = sum(abs(VelDes - y(:,12)),1);
+
+    Vel = VelAct1 + VelAct2 + VelAct3;
      % End point error
     dxEnd = sum((xOut(end,:) - xDes).^2,2);
     distEndErr = min(dxEnd);
@@ -148,8 +154,9 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
 
     % Composite error (normalized)
     error = wt(1) * distMidF    + ...
-            wt(2) * distEndErr  + ...
-            wt(3) * timePenalty;
+            wt(2) * Vel         + ...
+            wt(3) * distEndErr  + ...
+            wt(4) * timePenalty;
 end
 
 % Constraint Function for Midpoint Proximity
@@ -172,7 +179,11 @@ function [c, ceq] = trajConstraint(prms,qDes,xMid)
     distEndErr = sqrt(sum((x(end,:) - [0.05, 0.0,0.05]).^2,2));
     
 
-
+    % Velocity
+    VelDes = velocity(ttime) ;
+    VelAct1 = abs(VelDes - yy(:,10));
+    VelAct2 = abs(VelDes - yy(:,11));
+    VelAct3 = abs(VelDes - yy(:,12));
 
     % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
     c = [min(distanceMid1) - 0.000001;
@@ -182,7 +193,19 @@ function [c, ceq] = trajConstraint(prms,qDes,xMid)
          distEndErr    - 0.000001]; 
 end
 
+function y = velocity(time)
+    % velocity computes the velocity profile from a cubic position trajectory
+    %
+    % Based on a cubic polynomial that goes from 0 to 1 in time(end) seconds
+    % Position: p(t) = a2*t^2 + a3*t^3
+    % Velocity: v(t) = 2*a2*t + 3*a3*t^2
 
+    T = time(end);
+    a2 = 3 / T^2;
+    a3 = -2 / T^3;
+
+    y = 2 * a2 .* time + 3 * a3 * (time .^ 2);
+end
 
 
 
