@@ -12,3 +12,10 @@ optimization
 % Final plotting
 plotting
 
+% t = 0:0.1:5;
+% v = sin(t);  % example velocity profile
+% 
+% a = diff(v)./diff(t);
+% neg_indices = find(a < 0);
+% 
+% t_neg = t(neg_indices + 1);
