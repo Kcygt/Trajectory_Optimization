@@ -2,56 +2,39 @@ clear; clc;
 close all;
 
 % Define desired trajectory and Middle Points
-qDes = [0.1914, -0.0445, 0.3336];
+qDes = [0 0.1987 0.3278];
 [xDes, yDes, zDes] = FK(qDes(1), qDes(2), qDes(3));
 xDes = [xDes, yDes, zDes];
 
 xMid = zeros(3,3);
-qMid = zeros(3,3);
+xMid(1,:) = [ 0, 0.015, 0.005];
+xMid(2,:) = [ 0, 0.03,  0.02];
+xMid(3,:) = [ 0, 0.045, 0.035];
 
-xMid(1,:) = [0.015, 0, 0.01];
-xMid(2,:) = [0.025, 0, 0.02];
-xMid(3,:) = [0.035, 0, 0.03];
-
-qMid(1,:) = IK(xMid(1,1), xMid(1,2), xMid(1,3));
-qMid(2,:) = IK(xMid(2,1), xMid(2,2), xMid(2,3));
-qMid(3,:) = IK(xMid(3,1), xMid(3,2), xMid(3,3));
-
-% Parameters
+% Initial Parameters
 tspan = [10 20];
 wn1 = [1 1 1];
 wn2 = [1 1 1];
-CtrlPnt = xMid(2,:);
-qCtrl = IK(CtrlPnt(1), CtrlPnt(2), CtrlPnt(3));
-
+CtrlPnt = [0,0.03,0.03];
 
 qDes =[CtrlPnt;qDes];
 
 % Weights
-wt = [450, 20, 100, 0.08];   % [Target, End, Time]
+wt = [250,  5, 0.01];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2, CtrlPnt];
 
-% Initial Condition
-[ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,CtrlPnt), [0 tspan(2)], zeros(12, 1));
-% 
-% [xi, yi_plot, zi] = FK(yi(:,7), yi(:,8), yi(:,9)); % Initial Trajectory
-% figure(1); hold on; grid on;
-% plot(0,0,'o',xDes(1),xDes(3),'o')
-% plot(xMid(1),xMid(3),'*')
-% plot(CtrlPnt(1),CtrlPnt(3),'*')
-% 
-% plot(xi,zi)
-% 
-% xlabel('X axes')
-% ylabel('Z Axes')
-% title(' Trajectories')
-% legend('Start point', 'End Point', 'Target Point', 'Control Point', ...
-%         'Followed Trajectory')
-
 % Lower and Upper Limits
-lb = [0 0     0.5 0.5 0.5     0.5 0.5 0.5    0    0    0];     % Wn
-ub = [5 5     20 20 20        20 20 20       0.06 0.02 0.04];      % wn
+lb = [0 0  ...         % time switching and end
+      0.5 0.5 0.5 ...  % wn1
+      0.5 0.5 0.5 ...  % wn2 
+      0.01   0.01   0.01];      % Control point
+
+ub = [5 5 ...          % time switching and end
+      20 20 20 ...     % wn1
+      20 20 20 ...     % wn2 
+      0.05 0.05 0.05]; % Control point
+
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xMid, xDes);
@@ -88,9 +71,8 @@ figure; hold on; grid on;
 plot(xi, zi,'--')
 plot(x_opt,z_opt,'.-')
 plot(xMid(1,1),xMid(1,3),'*')
-% plot(xMid(2,1),xMid(2,3),'*')
+plot(xMid(2,1),xMid(2,3),'*')
 plot(xMid(3,1),xMid(3,3),'*')
-
 plot(xDes(1),xDes(3),'o')
 plot(Opt(9),Opt(11),'d')
 
@@ -121,40 +103,18 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     % Simulate the system
     [ttime, y] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1:2), prms(3:5), prms(6:8), prms(9:11)), ...
                     [0 prms(2)], x0);
-
+    % Forward kinematics
     [xOut,yOut,zOut] = FK(y(:,7),y(:,8),y(:,9));
     xOut = [xOut,yOut,zOut];
     
     % Calculate minimum distance to middle point
-    dx1 = sum((xOut - xMid(1,:)).^2,2);
-    distMid1 = min(dx1);
-    
-    dx2 = sum((xOut - xMid(2,:)).^2,2);
-    distMid2 = min(dx2);
-
-    dx3 = sum((xOut - xMid(3,:)).^2,2);
-    distMid3 = min(dx3);
-    
-    distMidF = distMid1 +  distMid3;
+    distances = sum(min( squeeze(sum((xOut - reshape(xMid', 1, size(xMid,2), [])).^2, 2)),[],1));
+    errTar = sum(min(distances, [], 1));
 
     % actvel=y(1:3); actspeed=actvel'*actvel;
     %velPenaly = (actspeed - des)^2;
-    % Desired Velocity
-    VelDes1 = 0.3 * velocity(ttime) ;
-    VelDes2 = 0.1 * velocity(ttime) ;
-    VelDes3 = 0.5 * velocity(ttime) ;
-    % Actual Speed
-    speedAct1  = y(:,10)' * y(:,10);
-    speedAct2  = y(:,11)' * y(:,11);
-    speedAct3  = y(:,12)' * y(:,12);
-    
-    % 
-    VelAct1 = sum(abs(VelDes1 - y(:,10)),1);
-    VelAct2 = sum(abs(VelDes2 - y(:,11)),1);
-    VelAct3 = sum(abs(VelDes3 - y(:,12)),1);
-
-    Vel = VelAct1 + VelAct2 + VelAct3;
-     % End point error
+   
+    % End point error
     dxEnd = sum((xOut(end,:) - xDes).^2,2);
     distEndErr = min(dxEnd);
     
@@ -162,55 +122,39 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     timePenalty = prms(2);
 
     % Composite error (normalized)
-    error = wt(1) * distMidF    + ...
-            wt(2) * Vel         + ...
-            wt(3) * distEndErr  + ...
-            wt(4) * timePenalty;
+    error = wt(1) * errTar    + ...
+            wt(2) * distEndErr  + ...
+            wt(3) * timePenalty ;
 end
 
 % Constraint Function for Midpoint Proximity
 function [c, ceq] = trajConstraint(prms,qDes,xMid)
-    ceq = []; % No equality constraints
-
     % Simulate trajectory
     [ttime, yy] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1:2),prms(3:5),prms(6:8),prms(9:11)), ...
                     [0 prms(2)], zeros(12, 1));
     [x,y,z] = FK(yy(:,7),yy(:,8),yy(:,9));     % Optimized Trajectory
     x = [x,y,z];
-    % Calculate distances to midpoint in 3D space
-    distanceMid1  = sum((x - xMid(1,:)).^2,2);
-    distanceMid2  = sum((x - xMid(2,:)).^2,2);
-    distanceMid3  = sum((x - xMid(3,:)).^2,2);
-
-    distanceCtrl = sqrt(sum((x - prms(9:11)).^2,2));
     
-    % End point error
-    distEndErr = sqrt(sum((x(end,:) - [0.05, 0.0,0.05]).^2,2));
+    % Target Error
+    TarErr= min(squeeze(sum((x - reshape(xMid', 1, size(xMid,2), [])).^2, 2)),[],1);
     
+    % End-point Error
+    EndErr = (x(end,:) - [0.05, 0.0,0.05]).^2;
+    
+    % Constraints
+    c = [ TarErr' - 0.0000001;
+          prms(1) - prms(2);
+          EndErr' - 0.0000001]; 
+    ceq = []; % No equality constraints
 
-    % Velocity
-    VelDes = velocity(ttime) ;
-    VelAct1 = abs(VelDes - yy(:,10));
-    VelAct2 = abs(VelDes - yy(:,11));
-    VelAct3 = abs(VelDes - yy(:,12));
-
-    % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
-    c = [min(distanceMid1) - 0.000001;
-         min(distanceMid3) - 0.000001;
-         min(distanceCtrl) - 0.01;
-         prms(1) - prms(2);
-         distEndErr    - 0.000001]; 
 end
 
 function y = velocity(time)
     % velocity generates a Gaussian-based velocity profile
-    
-    
     T = time(end);              % Total duration
     mu = T / 2;                 % Center time
     sigma = T / 6;              % Spread (adjustable)
     A = 1;                      % Peak velocity (can be scaled)
-
     y = A * exp(-((time - mu).^2) / (2 * sigma^2));
 end
 
@@ -233,13 +177,13 @@ function dxdt= myTwolinkwithprefilter(t,x,qDes,t_st,wn1,wn2,ctrlPnt)
     Kp = diag([70 70 70]);  
     Kd = diag([20 20 20]);  
 
-    controller = Kp*(x(1:3)-q)+Kd*(x(4:6)-qd);
+    controller = Kp*(x(1:3)-q) + Kd*(x(4:6)-qd);
 
-    [M,C,G]=compute_M_C_G(q(1),q(2),q(3),qd(1),qd(2),qd(3));
+    [M,C,G] = compute_M_C_G(q(1),q(2),q(3),qd(1),qd(2),qd(3));
     
-    tau=M*(controller)+C*qd;
+    tau = M*(controller)+C*qd;
     
-    qdd=M\(tau-C*qd);
+    qdd = M\(tau-C*qd);
 
     if t <= t_st(1)
         dxdt = [A1*x(1:6) + B1*qCtrl'; qd; qdd];
