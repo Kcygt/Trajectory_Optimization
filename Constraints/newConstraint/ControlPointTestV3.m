@@ -1,13 +1,6 @@
 clear; clc;
 close all;
 
-%  SOLUTION 
-% Result 1
-% tspan = [ 0.70991      4.9681 ];
-% wn1 =  [ 17.0209      17.8406      8.91961 ];
-% wn2 =  [ 3.76      3.0526      2.3705 ];
-% CtrlPnt = [   0.024018  0.00070231    0.027399 ];
-
 % Define desired trajectory and Middle Points
 qDes = [0.1914, -0.0445, 0.3336];
 [xDes, yDes, zDes] = FK(qDes(1), qDes(2), qDes(3));
@@ -20,19 +13,33 @@ xMid(2,:) = [0.03, 0, 0.02];
 xMid(3,:) = [0.045, 0, 0.035];
 
 % Parameters
-tspan = [10 20];
-wn1 = [1 1 1];
-wn2 = [1 1 1];
-CtrlPnt = [0.03,0,0.03];
+% tspan = [10 20];
+% wn1 = [1 1 1];
+% wn2 = [1 1 1];
+% CtrlPnt = [0.03,0,0.03];
+
+tspan = [ 0.2043      2.7804 ];
+wn1 =  [ 8.47139      9.18255      14.8297 ];
+wn2 =  [ 15.7596      13.9385      18.6301 ];
+CtrlPnt = [   0.050218   0.0021429    0.013284 ];
+
 
 qDes =[CtrlPnt;qDes];
 
 % Weights
-wt = [1000,  10, 0.01, 0.2];   % [Target, End, Time]
+wt = [150,  5, 0.08];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2, CtrlPnt];
 [ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,CtrlPnt), [0 tspan(2)], zeros(12, 1));
 
+[x,y,z] = FK(yi(:,7),yi(:,8),yi(:,9));
+figure; hold on; grid on;
+plot(x,z)
+plot(xMid(1,1),xMid(1,3),'o')
+plot(xMid(2,1),xMid(2,3),'o')
+plot(xMid(3,1),xMid(3,3),'o')
+plot(0,0,'.',0.05,0.05,'.')
+plot(CtrlPnt(1),CtrlPnt(3),'d')
 
 % Lower and Upper Limits
 lb = [0 0     0.5 0.5 0.5     0.5 0.5 0.5    0    0    0];     % Wn
@@ -102,15 +109,19 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     
     % Calculate minimum distance to middle point
     dx1 = sum((xOut - xMid(1,:)).^2,2);
-    distMid1 = min(dx1);
+    [distMid1, idx1 ] = min(dx1);
+    % distMid1 = dx1(idx1-5:idx1+5);
     
     dx2 = sum((xOut - xMid(2,:)).^2,2);
-    distMid2 = min(dx2);
+    [distMid2 , idx2 ] = min(dx2);
+    % distMid2 = dx2(idx2-5:idx2+5);
+
 
     dx3 = sum((xOut - xMid(3,:)).^2,2);
-    distMid3 = min(dx3);
+    [distMid3, idx3 ] = min(dx3);
+    % distMid3 = dx1(idx3-3:end);
     
-    distMidF = distMid1 + distMid2+ distMid3;
+    distMidF = sum(distMid1,1) + sum(distMid2,1)+ sum(distMid3,1);
 
     % actvel=y(1:3); actspeed=actvel'*actvel;
     %velPenaly = (actspeed - des)^2;
@@ -125,8 +136,7 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     % Composite error (normalized)
     error = wt(1) * distMidF    + ...
             wt(2) * distEndErr  + ...
-            wt(3) * timePenalty + ...
-            wt(4) * prms(1);
+            wt(3) * timePenalty ;
 end
 
 % Constraint Function for Midpoint Proximity
@@ -142,19 +152,19 @@ function [c, ceq] = trajConstraint(prms,qDes,xMid)
     distanceMid1  = sum((x - xMid(1,:)).^2,2);
     distanceMid2  = sum((x - xMid(2,:)).^2,2);
     distanceMid3  = sum((x - xMid(3,:)).^2,2);
-
-    distanceCtrl = sqrt(sum((x - prms(9:11)).^2,2));
-    
+    S = floor(length(yy)/5);
     % End point error
     distEndErr = sqrt(sum((x(end,:) - [0.05, 0.0,0.05]).^2,2));
+    vel1 = min(abs(yy(S:end-S,10)));
+    vel2 = min(abs(yy(S:end-S,11)));
+    vel3 = min(abs(yy(S:end-S,12)));
 
     % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
-    c = [min(distanceMid1) - 0.000000001;
-         min(distanceMid2) - 0.000000001;
-         min(distanceMid3) - 0.000000001;
-         min(distanceCtrl) - 0.05;
+    c = [min(distanceMid1) - 0.00001;
+         min(distanceMid2) - 0.00001;
+         min(distanceMid3) - 0.00001;
          prms(1) - prms(2);
-         distEndErr    - 0.000001]; 
+         distEndErr    - 0.0001]; 
 end
 
 
