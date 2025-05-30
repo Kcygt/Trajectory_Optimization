@@ -1,0 +1,26 @@
+% Objective Function
+objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xMid, xDes);
+
+% Run optimization
+options = optimoptions('fmincon','PlotFcns', 'optimplot', 'Display', 'off', ... 
+                        'TolCon', 1e-10); % Added constraint tolerance
+
+% Create optimization problem
+problem = createOptimProblem('fmincon',...
+    'objective', objectiveFunc, ...
+    'x0', initPrms, ...
+    'lb', lb, ...
+    'ub', ub, ...
+    'options', options, ...
+    'nonlcon', @(prms) trajConstraint(prms, qDes, xMid));
+
+% MultiStart setup
+ms = MultiStart('UseParallel', true, 'Display', 'iter');
+numStarts = 5; % Number of random starting points
+
+% Run MultiStart optimization
+[Opt, fval] = run(ms, problem, numStarts);
+
+% Simulate with optimal parameters
+[tt, yy] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1:2),  Opt(3:5), Opt(6:8),Opt(9:11)), ...
+                  [0 Opt(2)], zeros(12, 1));

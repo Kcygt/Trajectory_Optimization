@@ -1,50 +1,9 @@
 clear; clc;
 close all;
 
-% Define desired trajectory and Middle Points
-qDes = [0.1914, -0.0445, 0.3336];
-[xDes, yDes, zDes] = FK(qDes(1), qDes(2), qDes(3));
-xDes = [xDes, yDes, zDes];
-
-xMid = zeros(3,3);
-
-xMid(1,:) = [0.015, 0, 0.005];
-xMid(2,:) = [0.03, 0, 0.02];
-xMid(3,:) = [0.045, 0, 0.035];
-
-% Parameters
-tspan = [10 20];
-wn1 = [1 1 1];
-wn2 = [1 1 1];
-CtrlPnt = [0.03,0,0.03];
-
-% tspan = [ 0.2043      2.7804 ];
-% wn1 =  [ 8.47139      9.18255      14.8297 ];
-% wn2 =  [ 15.7596      13.9385      18.6301 ];
-% CtrlPnt = [   0.050218   0.0021429    0.013284 ];
 
 
-qDes =[CtrlPnt;qDes];
-
-% Weights
-wt = [150,  5, 0.08];   % [Target, End, Time]
-
-initPrms = [tspan, wn1, wn2, CtrlPnt];
-[ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,CtrlPnt), [0 tspan(2)], zeros(12, 1));
-
-[x,y,z] = FK(yi(:,7),yi(:,8),yi(:,9));
-figure; hold on; grid on;
-plot(x,z)
-plot(xMid(1,1),xMid(1,3),'o')
-plot(xMid(2,1),xMid(2,3),'o')
-plot(xMid(3,1),xMid(3,3),'o')
-plot(0,0,'.',0.05,0.05,'.')
-plot(CtrlPnt(1),CtrlPnt(3),'d')
-
-% Lower and Upper Limits
-lb = [0 0     0.5 0.5 0.5     0.5 0.5 0.5    0    0    0];     % Wn
-ub = [5 5     20 20 20        20 20 20       0.06 0.06 0.06];      % wn
-
+initPlotting
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xMid, xDes);
 
@@ -72,27 +31,7 @@ numStarts = 5; % Number of random starting points
 [tt, yy] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1:2),  Opt(3:5), Opt(6:8),Opt(9:11)), ...
                   [0 Opt(2)], zeros(12, 1));
 
-%%% Plotting
-[xi, yi_plot, zi] = FK(yi(:,7), yi(:,8), yi(:,9)); % Initial Trajectory
-[x_opt, y_opt, z_opt] = FK(yy(:,7), yy(:,8), yy(:,9)); % Optimized Trajectory
-
-figure; hold on; grid on;
-plot(xi, zi,'--')
-plot(x_opt,z_opt,'.-')
-plot(xMid(1,1),xMid(1,3),'*')
-plot(xMid(2,1),xMid(2,3),'*')
-plot(xMid(3,1),xMid(3,3),'*')
-plot(xDes(1),xDes(3),'o')
-plot(Opt(9),Opt(11),'d')
-legend('Initial Trajectory','Optimized Trajectory','Target Point 1','Target Point 2','End Point','Control Point')
-xlabel('X axis (m)')
-ylabel('Y axis (m)')
-title('Cartesian Space Trajectory Results')
-disp('Optimal Parameter:')
-disp(['tspan = [ ', num2str(Opt(1:2)), ' ];'])
-disp(['wn1 =  [ ', num2str(Opt(3:5)), ' ];'])
-disp(['wn2 =  [ ', num2str(Opt(6:8)), ' ];'])
-disp(['CtrlPnt = [   ', num2str(Opt(9:11)), ' ];'])
+plotting
 
 % Objective Function
 function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
