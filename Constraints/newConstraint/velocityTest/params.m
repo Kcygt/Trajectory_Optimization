@@ -17,7 +17,7 @@ CtrlPnt = [0,0.03,0.03];
 qDes =[CtrlPnt;qDes];
 
 % Weights
-wt = [150,  5, 0.08];   % [Target, End, Time]
+wt = [250,  5, 0.01];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2, CtrlPnt];
 

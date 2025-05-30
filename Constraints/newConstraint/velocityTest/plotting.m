@@ -3,13 +3,13 @@
 [x_opt, y_opt, z_opt] = FK(yy(:,7), yy(:,8), yy(:,9)); % Optimized Trajectory
 
 figure; hold on; grid on;
-plot(xi, zi,'--')
-plot(x_opt,z_opt,'.-')
-plot(xMid(1,1),xMid(1,3),'*')
-plot(xMid(2,1),xMid(2,3),'*')
-plot(xMid(3,1),xMid(3,3),'*')
-plot(xDes(1),xDes(3),'o')
-plot(Opt(9),Opt(11),'d')
+plot(yi_plot, zi,'--')
+plot(y_opt,z_opt,'.-')
+plot(xMid(1,2),xMid(1,3),'*')
+plot(xMid(2,2),xMid(2,3),'*')
+plot(xMid(3,2),xMid(3,3),'*')
+plot(xDes(2),xDes(3),'o')
+plot(Opt(10),Opt(11),'d')
 legend('Initial Trajectory','Optimized Trajectory','Target Point 1','Target Point 2','End Point','Control Point')
 xlabel('X axis (m)')
 ylabel('Y axis (m)')
