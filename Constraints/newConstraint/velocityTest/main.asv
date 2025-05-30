@@ -24,7 +24,7 @@ qCtrl = IK(CtrlPnt(1), CtrlPnt(2), CtrlPnt(3));
 qDes =[CtrlPnt;qDes];
 
 % Weights
-wt = [250, 1, 0.08];   % [Target, End, Time]
+wt = [150, 1, 0.08];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2, CtrlPnt];
 
@@ -114,9 +114,15 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     xOut = [xOut,yOut,zOut];
     
     % Calculate minimum distance to middle point
-    distMid1 = min(sum((xOut - xMid(1,:)).^2,2));
-    distMid2 = min(sum((xOut - xMid(2,:)).^2,2));
-    distMid3 = min(sum((xOut - xMid(3,:)).^2,2));
+    distMid1 = sum((xOut - xMid(1,:)).^2,2);
+     = min(dx1);
+    
+    dx2 = sum((xOut - xMid(2,:)).^2,2);
+    distMid2 = min(dx2);
+
+    dx3 = sum((xOut - xMid(3,:)).^2,2);
+    distMid3 = min(dx3);
+    
     distMidF = distMid1 + distMid2+ distMid3;
     
     % End point error
