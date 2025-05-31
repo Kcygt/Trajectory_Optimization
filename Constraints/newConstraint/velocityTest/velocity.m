@@ -72,10 +72,11 @@ numStarts = 5; % Number of random starting points
 
 % Run MultiStart optimization
 [Opt, fval] = run(ms, problem, numStarts);
+t_opt = 0:0.01:Opt(2);
 
 % Simulate with optimal parameters
 [tt, yy] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1:2),  Opt(3:5), Opt(6:8),Opt(9:11)), ...
-                  t_uniform, zeros(12, 1));
+                  t_opt, zeros(12, 1));
 
 %%% Plotting
 [xi, yi_plot, zi] = FK(yi(:,7), yi(:,8), yi(:,9));     % Initial Trajectory
