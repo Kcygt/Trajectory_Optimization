@@ -28,8 +28,9 @@ wt = [300, 1, 0.08];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2, CtrlPnt];
 
+t_uniform = 0:0.01:tspan(2);
 % Initial Condition
-[ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,CtrlPnt), [0 tspan(2)], zeros(12, 1));
+[ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,CtrlPnt), t_uniform, zeros(12, 1));
 % 
 % [xi, yi_plot, zi] = FK(yi(:,7), yi(:,8), yi(:,9)); % Initial Trajectory
 % figure(1); hold on; grid on;
@@ -74,7 +75,7 @@ numStarts = 5; % Number of random starting points
 
 % Simulate with optimal parameters
 [tt, yy] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1:2),  Opt(3:5), Opt(6:8),Opt(9:11)), ...
-                  [0 Opt(2)], zeros(12, 1));
+                  t_uniform, zeros(12, 1));
 
 %%% Plotting
 [xi, yi_plot, zi] = FK(yi(:,7), yi(:,8), yi(:,9));     % Initial Trajectory
@@ -105,11 +106,14 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     
     x0 = zeros(12, 1);
     % x0(1:3) = qDes(1,:);  & look at it to understand why you are using
+    % time interpolation
+    T_total = prms(2);
+    t_uniform = 0:0.01:T_total;
 
     % Simulate the system
-    [~, y] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1:2), prms(3:5), prms(6:8), prms(9:11)), ...
-                    [0 prms(2)], x0);
-
+    [t, y] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1:2), prms(3:5), prms(6:8), prms(9:11)), ...
+                    t_uniform, x0);
+    % y_uniform = interp1(t,y,t_uniform);
     [xOut,yOut,zOut] = FK(y(:,7),y(:,8),y(:,9));
     xOut = [xOut,yOut,zOut];
     
@@ -119,6 +123,8 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     distMid3 = min(sum((xOut - xMid(3,:)).^2,2));
     distMidF = distMid1 + distMid2+ distMid3;
     
+    
+    v = velocityFun(t_uniform,1);
     % End point error
     distEndErr = sum((xOut(end,:) - xDes).^2,2);
     
@@ -134,10 +140,11 @@ end
 % Constraint Function for Midpoint Proximity
 function [c, ceq] = trajConstraint(prms,qDes,xMid)
     ceq = []; % No equality constraints
-
+    T_total = prms(2);
+    t_uniform = 0:0.01:T_total;
     % Simulate trajectory
     [~, yy] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1:2),prms(3:5),prms(6:8),prms(9:11)), ...
-                    [0 prms(2)], zeros(12, 1));
+                    t_uniform, zeros(12, 1));
     [x,y,z] = FK(yy(:,7),yy(:,8),yy(:,9));     % Optimized Trajectory
     x = [x,y,z];
     % Calculate distances to midpoint in 3D space
