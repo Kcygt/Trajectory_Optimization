@@ -1,6 +1,6 @@
 clear; clc;
 close all;
-
+% Parameters
 % Define desired trajectory and Middle Points
 qDes = [0.1914, -0.0445, 0.3336];
 [xDes, yDes, zDes] = FK(qDes(1), qDes(2), qDes(3));
@@ -24,7 +24,7 @@ qCtrl = IK(CtrlPnt(1), CtrlPnt(2), CtrlPnt(3));
 qDes =[CtrlPnt;qDes];
 
 % Weights
-wt = [2000, 1, 0.08, 0.0001];   % [Target, End, Time]
+wt = [100, 1, 0.08, 0.0001];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2, CtrlPnt];
 
@@ -48,7 +48,7 @@ t_uniform = 0:0.01:tspan(2);
 
 % Lower and Upper Limits
 lb = [0 0      0.5 0.5 0.5     0.5 0.5 0.5    0.01 0.01 0.01];     % Wn
-ub = [10     40 40 40        40 40 40       0.05 0.03 0.05];      % wn
+ub = [10 10     40 40 40        40 40 40       0.05 0.03 0.05];      % wn
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xMid, xDes);
@@ -150,8 +150,8 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     % Composite error (normalized)
     error = wt(1) * distMidF    + ...
             wt(2) * distEndErr + ...
-            wt(3) * timePenalty + ...
-            wt(4) * velErr;
+            wt(3) * timePenalty;% + ...
+            % wt(4) * velErr;
 end
 
 % Constraint Function for Midpoint Proximity
@@ -186,10 +186,10 @@ function [c, ceq] = trajConstraint(prms,qDes,xMid)
          min(distanceMid2) - 0.0000001;
          min(distanceMid3) - 0.0000001;
          distEndErr    - 0.0000001;
-         prms(1) - prms(2);
-         velErr1 - 1;
-         velErr2 - 1;
-         velErr3 - 1]; 
+         prms(1) - prms(2)];
+         % velErr1 - 1;
+         % velErr2 - 1;
+         % velErr3 - 1]; 
 end
 
 % Dynamics Function with Prefilter
@@ -218,7 +218,7 @@ function dxdt= myTwolinkwithprefilter(t,x,qDes,t_st,wn1,wn2,ctrlPnt)
     
     qdd=M\(tau-C*qd);
 
-    if t <= t_st(1)/2
+    if t <= t_st(1)
         dxdt = [A1*x(1:6) + B1*qCtrl'; qd; qdd];
     else
         dxdt = [A2*x(1:6) + B2*qDes(2,:)'; qd; qdd];

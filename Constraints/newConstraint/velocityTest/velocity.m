@@ -1,6 +1,10 @@
 clear; clc;
 close all;
-
+% % Parameters
+% tspan = [ 0.84558      2.2716 ];
+% wn1 =  [ 1.1914     0.54921      1.0401 ];
+% wn2 =  [ 5.064      6.8163      8.3261 ];
+% CtrlPnt = [   0.046569    0.010029    0.012623 ];
 % Define desired trajectory and Middle Points
 qDes = [0.1914, -0.0445, 0.3336];
 [xDes, yDes, zDes] = FK(qDes(1), qDes(2), qDes(3));
