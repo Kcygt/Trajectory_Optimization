@@ -24,7 +24,7 @@ qCtrl = IK(CtrlPnt(1), CtrlPnt(2), CtrlPnt(3));
 qDes =[CtrlPnt;qDes];
 
 % Weights
-wt = [300, 1, 0.08];   % [Target, End, Time]
+wt = [100, 1, 0.08, 0.0001];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2, CtrlPnt];
 
@@ -47,8 +47,8 @@ t_uniform = 0:0.01:tspan(2);
 %         'Followed Trajectory')
 
 % Lower and Upper Limits
-lb = [0 0     0.5 0.5 0.5     0.5 0.5 0.5    0.01 0.01 0.01];     % Wn
-ub = [5 5     20 20 20        20 20 20       0.05 0.03 0.05];      % wn
+lb = [0 0      0.5 0.5 0.5     0.5 0.5 0.5    0.01 0.01 0.01];     % Wn
+ub = [10 10     40 40 40        40 40 40       0.05 0.03 0.05];      % wn
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xMid, xDes);
@@ -102,6 +102,18 @@ disp(['wn1 =  [ ', num2str(Opt(3:5)), ' ];'])
 disp(['wn2 =  [ ', num2str(Opt(6:8)), ' ];'])
 disp(['CtrlPnt = [   ', num2str(Opt(9:11)), ' ];'])
 
+
+
+% Negative Gradient
+
+function idx = negativeGrad(t,v)
+    % Compute gradient of velocity
+    dv = gradient(v, t); % or use diff(v)./diff(t) if preferred
+    
+    % Find index of the first negative gradient
+    idx = find(dv < 0, 1, 'first');
+end
+
 % Objective Function
 function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     
@@ -125,7 +137,10 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     distMidF = distMid1 + distMid2+ distMid3;
     
     
-    v = velocityFun(t_uniform,1);
+    v1 = velocityFun(t_uniform,0.3);
+    v2 = velocityFun(t_uniform,-0.1);
+    v3 = velocityFun(t_uniform,.5);
+    velErr = abs(sum((y(:,10) - v1' ) + (y(:,11) - v2') + (y(:,12) -v3'),1));
     % End point error
     distEndErr = sum((xOut(end,:) - xDes).^2,2);
     
@@ -135,7 +150,8 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     % Composite error (normalized)
     error = wt(1) * distMidF    + ...
             wt(2) * distEndErr + ...
-            wt(3) * timePenalty;
+            wt(3) * timePenalty;% + ...
+            % wt(4) * velErr;
 end
 
 % Constraint Function for Midpoint Proximity
@@ -157,12 +173,23 @@ function [c, ceq] = trajConstraint(prms,qDes,xMid)
     % End point error
     distEndErr = sum((x(end,:) - [0.05, 0.0,0.05]).^2,2);
 
+    % Velocity Contraint
+    v1 = velocityFun(t_uniform,0.7);
+    v2 = velocityFun(t_uniform,-0.3);
+    v3 = velocityFun(t_uniform,1);
+    velErr1 = abs(sum(yy(:,10) - v1'));
+    velErr2 = abs(sum(yy(:,11) - v2'));
+    velErr3 = abs(sum(yy(:,12) - v3'));
+    
     % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
-    c = [min(distanceMid1) - 0.00001;
-         min(distanceMid2) - 0.00001;
-         min(distanceMid3) - 0.00001;
-         prms(1) - prms(2);
-         distEndErr    - 0.00001]; 
+    c = [min(distanceMid1) - 0.0000001;
+         min(distanceMid2) - 0.0000001;
+         min(distanceMid3) - 0.0000001;
+         distEndErr    - 0.0000001;
+         prms(1) - prms(2)];
+         % velErr1 - 1;
+         % velErr2 - 1;
+         % velErr3 - 1]; 
 end
 
 % Dynamics Function with Prefilter
