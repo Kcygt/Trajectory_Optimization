@@ -1,0 +1,170 @@
+sym zeta omega_n real
+{Error using <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('sym', 'C:\Program Files\MATLAB\R2024b\toolbox\symbolic\symbolic\@sym\sym.m', 293)" style="font-weight:bold">sym</a> (<a href="matlab: opentoline('C:\Program Files\MATLAB\R2024b\toolbox\symbolic\symbolic\@sym\sym.m',293,0)">line 293</a>)
+Syntax with three arguments requires the second argument to be an integer or a vector of two integers specifying the dimensions.
+
+<a href="matlab:helpview('symbolic','error_sym_SecondArgumentSizeVector')" style="font-weight:bold">Related documentation</a>
+} 
+syms zeta omega_n real
+syms s
+C=omega_n^2/(s^2+2*zeta*omega_n*s+omega_n^2) 
+ 
+C =
+ 
+omega_n^2/(omega_n^2 + 2*zeta*omega_n*s + s^2)
+ 
+ilaplace(C)
+ 
+ans =
+ 
+(omega_n*exp(-omega_n*t*zeta)*sin(omega_n*t*(1 - zeta^2)^(1/2)))/(1 - zeta^2)^(1/2)
+ 
+latex(ans)
+
+ans =
+
+    '\frac{\omega _{n}\,{\mathrm{e}}^{-\omega _{n}\,t\,\zeta }\,\sin\left(\omega _{n}\,t\,\sqrt{1-\zeta ^2}\right)}{\sqrt{1-\zeta ^2}}'
+
+ilaplace(C/s)% now a step input
+ 
+ans =
+ 
+1 - exp(-omega_n*t*zeta)*(cosh(omega_n*t*(zeta^2 - 1)^(1/2)) + (zeta*sinh(omega_n*t*(zeta^2 - 1)^(1/2)))/(zeta^2 - 1)^(1/2))
+ 
+latex(ilaplace(C/s))% now a step input
+
+ans =
+
+    '1-{\mathrm{e}}^{-\omega _{n}\,t\,\zeta }\,\left(\mathrm{cosh}\left(\omega _{n}\,t\,\sqrt{\zeta ^2-1}\right)+\frac{\zeta \,\mathrm{sinh}\left(\omega _{n}\,t\,\sqrt{\zeta ^2-1}\right)}{\sqrt{\zeta ^2-1}}\right)'
+
+sin(0)
+
+ans =
+
+     0
+
+sin(1)
+
+ans =
+
+   0.841470984807897
+
+sinh(1)
+
+ans =
+
+   1.175201193643801
+
+sinh(0)
+
+ans =
+
+     0
+
+tt=0:.1:10;
+wn=1;z=.9;
+ilaplace(C/s)% now a step input
+ 
+ans =
+ 
+1 - exp(-omega_n*t*zeta)*(cosh(omega_n*t*(zeta^2 - 1)^(1/2)) + (zeta*sinh(omega_n*t*(zeta^2 - 1)^(1/2)))/(zeta^2 - 1)^(1/2))
+ 
+xx=1 - exp(-omega_n*t*zeta)*(cosh(omega_n*t*(zeta^2 - 1)^(1/2)) + (zeta*sinh(omega_n*t*(zeta^2 - 1)^(1/2)))/(zeta^2 - 1)^(1/2))
+{Unrecognized function or variable 't'.
+} 
+xx=1 - exp(-wn*tt*z)*(cosh(wn*tt*(z^2 - 1)^(1/2)) + (z*sinh(wn*tt*(z^2 - 1)^(1/2)))/(z^2 - 1)^(1/2));
+{Error using <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('mtimes')" style="font-weight:bold"> * </a>
+Incorrect dimensions for matrix multiplication. Check that the number of columns in the first matrix matches the number of rows in the second matrix. To operate on each
+element of the matrix individually, use TIMES (.*) for elementwise multiplication.
+
+<a href="matlab:helpview('matlab','error_innerdim')" style="font-weight:bold">Related documentation</a>
+} 
+xx=1 - exp(-wn*tt*z).*(cosh(wn*tt.*(z^2 - 1)^(1/2)) + (z.*sinh(wn*tt*(z^2 - 1)^(1/2)))/(z^2 - 1)^(1/2));
+figure;plot(tt,xx)
+z
+
+z =
+
+   0.900000000000000
+
+z=1;
+hold
+Current plot held
+xx=1 - exp(-wn*tt*z).*(cosh(wn*tt.*(z^2 - 1)^(1/2)) + (z.*sinh(wn*tt*(z^2 - 1)^(1/2)))/(z^2 - 1)^(1/2));
+plot(tt,xx)
+xx(1:4)
+
+ans =
+
+   NaN   NaN   NaN   NaN
+
+z=1.1;
+xx=1 - exp(-wn*tt*z).*(cosh(wn*tt.*(z^2 - 1)^(1/2)) + (z.*sinh(wn*tt*(z^2 - 1)^(1/2)))/(z^2 - 1)^(1/2));
+plot(tt,xx)
+z=.5;
+xx=1 - exp(-wn*tt*z).*(cosh(wn*tt.*(z^2 - 1)^(1/2)) + (z.*sinh(wn*tt*(z^2 - 1)^(1/2)))/(z^2 - 1)^(1/2));
+plot(tt,xx)
+%%  find the velocity of c
+c=ilaplace(C)
+ 
+c =
+ 
+(omega_n*exp(-omega_n*t*zeta)*sin(omega_n*t*(1 - zeta^2)^(1/2)))/(1 - zeta^2)^(1/2)
+ 
+t
+{Unrecognized function or variable 't'.
+} 
+syms t real
+c=ilaplace(C)
+ 
+c =
+ 
+(omega_n*exp(-omega_n*t*zeta)*sin(omega_n*t*(1 - zeta^2)^(1/2)))/(1 - zeta^2)^(1/2)
+ 
+diff(c)
+ 
+ans =
+ 
+(omega_n*zeta*exp(-omega_n*t*zeta)*sin(omega_n*t*(1 - zeta^2)^(1/2)))/(1 - zeta^2)^(3/2) - (omega_n^2*t*exp(-omega_n*t*zeta)*sin(omega_n*t*(1 - zeta^2)^(1/2)))/(1 - zeta^2)^(1/2) + (omega_n^2*t*zeta*exp(-omega_n*t*zeta)*cos(omega_n*t*(1 - zeta^2)^(1/2)))/(zeta^2 - 1)
+ 
+latex(diff(c))
+
+ans =
+
+    '\frac{\omega _{n}\,\zeta \,{\mathrm{e}}^{-\omega _{n}\,t\,\zeta }\,\sin\left(\omega _{n}\,t\,\sqrt{1-\zeta ^2}\right)}{{\left(1-\zeta ^2\right)}^{3/2}}-\frac{{\omega _{n}}^2\,t\,{\mathrm{e}}^{-\omega _{n}\,t\,\zeta }\,\sin\left(\omega _{n}\,t\,\sqrt{1-\zeta ^2}\right)}{\sqrt{1-\zeta ^2}}+\frac{{\omega _{n}}^2\,t\,\zeta \,{\mathrm{e}}^{-\omega _{n}\,t\,\zeta }\,\cos\left(\omega _{n}\,t\,\sqrt{1-\zeta ^2}\right)}{\zeta ^2-1}'
+
+dc=(omega_n*zeta*exp(-omega_n*t*zeta)*sin(omega_n*t*(1 - zeta^2)^(1/2)))/(1 - zeta^2)^(3/2) - (omega_n^2*t*exp(-omega_n*t*zeta)*sin(omega_n*t*(1 - zeta^2)^(1/2)))/(1 - zeta^2)^(1/2) + (omega_n^2*t*zeta*exp(-omega_n*t*zeta)*cos(omega_n*t*(1 - zeta^2)^(1/2)))/(zeta^2 - 1)
+ 
+dc =
+ 
+(omega_n*zeta*exp(-omega_n*t*zeta)*sin(omega_n*t*(1 - zeta^2)^(1/2)))/(1 - zeta^2)^(3/2) - (omega_n^2*t*exp(-omega_n*t*zeta)*sin(omega_n*t*(1 - zeta^2)^(1/2)))/(1 - zeta^2)^(1/2) + (omega_n^2*t*zeta*exp(-omega_n*t*zeta)*cos(omega_n*t*(1 - zeta^2)^(1/2)))/(zeta^2 - 1)
+ 
+dc=(wn*z*exp(-wn*tt*z).*sin(wn*tt*(1 - z^2)^(1/2)))/(1 - z^2)^(3/2) - (wn^2*tt*exp(-wn*tt*z).*sin(wn*tt*(1 - z^2)^(1/2)))/(1 - z^2)^(1/2) + (wn^2*tt*z*exp(-wn*tt*z).*cos(wn*tt*(1 - z^2)^(1/2)))/(z^2 - 1);
+{Error using <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('mtimes')" style="font-weight:bold"> * </a>
+Incorrect dimensions for matrix multiplication. Check that the number of columns in the first matrix matches the number of rows in the second matrix. To operate on each
+element of the matrix individually, use TIMES (.*) for elementwise multiplication.
+
+<a href="matlab:helpview('matlab','error_innerdim')" style="font-weight:bold">Related documentation</a>
+} 
+dc=(wn.*z.*exp(-wn.*tt.*z).*sin(wn.*tt.*(1 - z^2)^(1/2)))/(1 - z^2)^(3/2) - (wn^2*tt.*exp(-wn*tt*z).*sin(wn.*tt*(1 - z^2)^(1/2)))/(1 - z^2)^(1/2) + (wn^2.*tt.*z.*exp(-wn.*tt.*z).*cos(wn.*tt.*(1 - z^2)^(1/2)))/(z^2 - 1);
+figure;plot(tt,dc)
+shg
+dc=diff(c)
+ 
+dc =
+ 
+(omega_n*zeta*exp(-omega_n*t*zeta)*sin(omega_n*t*(1 - zeta^2)^(1/2)))/(1 - zeta^2)^(3/2) - (omega_n^2*t*exp(-omega_n*t*zeta)*sin(omega_n*t*(1 - zeta^2)^(1/2)))/(1 - zeta^2)^(1/2) + (omega_n^2*t*zeta*exp(-omega_n*t*zeta)*cos(omega_n*t*(1 - zeta^2)^(1/2)))/(zeta^2 - 1)
+ 
+xxdot=(wn.*z.*exp(-wn.*tt.*z).*sin(wn.*tt.*(1 - z^2)^(1/2)))/(1 - z^2)^(3/2) - (wn^2*tt.*exp(-wn*tt*z).*sin(wn.*tt*(1 - z^2)^(1/2)))/(1 - z^2)^(1/2) + (wn^2.*tt.*z.*exp(-wn.*tt.*z).*cos(wn.*tt.*(1 - z^2)^(1/2)))/(z^2 - 1);
+plot(tt,xxdot)
+plot(tt,xxdot,tt,xx)
+plot(tt,xxdot,tt,xx)
+hold on
+plot(tt(1:end-1),diff(xx)./tt(1:end-1));
+plot(tt(1:end-1),diff(xx))
+plot(tt(1:end-1),diff(xx)*6)
+plot(tt(1:end-1),-diff(xx)*12)
+gird on
+{Unrecognized function or variable 'gird'.
+} 
+grid on
+diary off

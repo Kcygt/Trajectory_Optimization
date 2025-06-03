@@ -1,16 +1,36 @@
 clear; clc;
 close all;
-% Parameters
+% % Parameters
+% tspan = [ 0.84558      2.2716 ];
+% wn1 =  [ 1.1914     0.54921      1.0401 ];
+% wn2 =  [ 5.064      6.8163      8.3261 ];
+% CtrlPnt = [   0.046569    0.010029    0.012623 ];
 % Define desired trajectory and Middle Points
-qDes = [0.1914, -0.0445, 0.3336];
+
+
+% 
+% Optimal Parameter:
+% tspan = [ 0.26696     0.83201 ];
+% wn1 =  [ 3.21964       30.335      10.7319 ];
+% wn2 =  [ 33.9988      27.2333      18.2567 ];
+% CtrlPnt = [   0.01        0.03        0.05 ];
+% 
+% Optimal Parameter:
+% tspan = [ 0.15414     0.70348 ];
+% wn1 =  [ 39.9999      10.4065      11.1872 ];
+% wn2 =  [ 7.93251      29.2536      8.92199 ];
+% CtrlPnt = [   0.024682        0.01        0.05 ];
+
+qDes = [ 0   0.198678167676855   0.327814256075948 ];
+
 [xDes, yDes, zDes] = FK(qDes(1), qDes(2), qDes(3));
 xDes = [xDes, yDes, zDes];
 
 xMid = zeros(3,3);
 
-xMid(1,:) = [0.015, 0, 0.01];
-xMid(2,:) = [0.025, 0, 0.03];
-xMid(3,:) = [0.035, 0, 0.045];
+xMid(1,:) = [0, 0.015, 0.01];
+xMid(2,:) = [0, 0.025, 0.03];
+xMid(3,:) = [0, 0.035, 0.045];
 
 
 % Parameters
@@ -21,7 +41,7 @@ CtrlPnt = xMid(2,:);
 qCtrl = IK(CtrlPnt(1), CtrlPnt(2), CtrlPnt(3));
 
 
-qDes =[CtrlPnt;qDes];
+qDes =[qCtrl;qDes];
 
 % Weights
 wt = [100, 1, 0.08, 0.0001];   % [Target, End, Time]
@@ -29,26 +49,26 @@ wt = [100, 1, 0.08, 0.0001];   % [Target, End, Time]
 initPrms = [tspan, wn1, wn2, CtrlPnt];
 
 t_uniform = 0:0.01:tspan(2);
+
 % Initial Condition
 [ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,CtrlPnt), t_uniform, zeros(12, 1));
-% 
-% [xi, yi_plot, zi] = FK(yi(:,7), yi(:,8), yi(:,9)); % Initial Trajectory
-% figure(1); hold on; grid on;
-% plot(0,0,'o',xDes(1),xDes(3),'o')
-% plot(xMid(1),xMid(3),'*')
-% plot(CtrlPnt(1),CtrlPnt(3),'*')
-% 
-% plot(xi,zi)
-% 
-% xlabel('X axes')
-% ylabel('Z Axes')
-% title(' Trajectories')
-% legend('Start point', 'End Point', 'Target Point', 'Control Point', ...
-%         'Followed Trajectory')
+
+[xi, yi_plot, zi] = FK(yi(:,7), yi(:,8), yi(:,9)); % Initial Trajectory
+% Plot
+figure(1); hold on; grid on;
+plot(0,0,'o',xDes(2),xDes(3),'o')
+plot(xMid(1,2),xMid(1,3),'*')
+plot(xMid(2,2),xMid(2,3),'*')
+plot(xMid(3,2),xMid(3,3),'*')
+plot(CtrlPnt(2),CtrlPnt(3),'d')
+plot(yi_plot,zi)
+xlabel('Y axes')
+ylabel('Z Axes')
+title(' Trajectories')
 
 % Lower and Upper Limits
 lb = [0 0      0.5 0.5 0.5     0.5 0.5 0.5    0.01 0.01 0.01];     % Wn
-ub = [10 10     40 40 40        40 40 40       0.05 0.03 0.05];      % wn
+ub = [2 2      40 40 40        40 40 40       0.05 0.03 0.05];      % wn
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xMid, xDes);
@@ -83,14 +103,14 @@ t_opt = 0:0.01:Opt(2);
 [x_opt, y_opt, z_opt] = FK(yy(:,7), yy(:,8), yy(:,9)); % Optimized Trajectory
 
 figure; hold on; grid on;
-plot(xi, zi,'--')
-plot(x_opt,z_opt,'.-')
-plot(xMid(1,1),xMid(1,3),'*')
-plot(xMid(2,1),xMid(2,3),'*')
-plot(xMid(3,1),xMid(3,3),'*')
+plot(yi_plot, zi,'--')
+plot(y_opt,z_opt,'.-')
+plot(xMid(1,2),xMid(1,3),'*')
+plot(xMid(2,2),xMid(2,3),'*')
+plot(xMid(3,2),xMid(3,3),'*')
 
-plot(xDes(1),xDes(3),'o')
-plot(Opt(9),Opt(11),'d')
+plot(xDes(2),xDes(3),'o')
+plot(Opt(10),Opt(11),'d')
 
 legend('Initial Trajectory','Optimized Trajectory','Target Point','End Point','Control Point')
 xlabel('X axis (m)')
@@ -104,21 +124,38 @@ disp(['CtrlPnt = [   ', num2str(Opt(9:11)), ' ];'])
 
 
 
-% Negative Gradient
+% 3D Plot
+figure; hold on; grid on; view(3); axis equal;
 
-function idx = negativeGrad(t,v)
-    % Compute gradient of velocity
-    dv = gradient(v, t); % or use diff(v)./diff(t) if preferred
-    
-    % Find index of the first negative gradient
-    idx = find(dv < 0, 1, 'first');
-end
+% Plot trajectories
+plot3(xi, yi_plot, zi, '--', 'LineWidth', 1.5);      % Initial Trajectory
+plot3(x_opt, y_opt, z_opt, '.-', 'LineWidth', 2);    % Optimized Trajectory
+
+% Plot important points
+plot3(xMid(1,1), xMid(1,2), xMid(1,3), '*', 'MarkerSize', 8); % Target point 1
+plot3(xMid(2,1), xMid(2,2), xMid(2,3), '*', 'MarkerSize', 8); % Target point 2
+plot3(xMid(3,1), xMid(3,2), xMid(3,3), '*', 'MarkerSize', 8); % Target point 3
+
+plot3(xDes(1), xDes(2), xDes(3), 'o', 'MarkerSize', 8, 'LineWidth', 2);  % Target point
+plot3(Opt(9), Opt(10), Opt(11), 'd', 'MarkerSize', 8);                  % Control point
+
+% Labels and legend
+legend('Initial Trajectory', 'Optimized Trajectory', ...
+       'Mid Point 1', 'Mid Point 2', 'Mid Point 3', ...
+       'Target Point', 'Control Point');
+
+xlabel('X axis (m)');
+ylabel('Y axis (m)');
+zlabel('Z axis (m)');
+title('3D Cartesian Space Trajectory Results');
+
 
 % Objective Function
 function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     
     x0 = zeros(12, 1);
     % x0(1:3) = qDes(1,:);  & look at it to understand why you are using
+
     % time interpolation
     T_total = prms(2);
     t_uniform = 0:0.01:T_total;
@@ -131,16 +168,8 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     xOut = [xOut,yOut,zOut];
     
     % Calculate minimum distance to middle point
-    distMid1 = min(sum((xOut - xMid(1,:)).^2,2));
-    distMid2 = min(sum((xOut - xMid(2,:)).^2,2));
-    distMid3 = min(sum((xOut - xMid(3,:)).^2,2));
-    distMidF = distMid1 + distMid2+ distMid3;
-    
-    
-    v1 = velocityFun(t_uniform,0.3);
-    v2 = velocityFun(t_uniform,-0.1);
-    v3 = velocityFun(t_uniform,.5);
-    velErr = abs(sum((y(:,10) - v1' ) + (y(:,11) - v2') + (y(:,12) -v3'),1));
+    distMidF = sum(min(sum((xOut - permute(xMid, [3 2 1])).^2, 2), [], 1));
+
     % End point error
     distEndErr = sum((xOut(end,:) - xDes).^2,2);
     
@@ -150,8 +179,7 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     % Composite error (normalized)
     error = wt(1) * distMidF    + ...
             wt(2) * distEndErr + ...
-            wt(3) * timePenalty;% + ...
-            % wt(4) * velErr;
+            wt(3) * timePenalty;
 end
 
 % Constraint Function for Midpoint Proximity
@@ -171,15 +199,9 @@ function [c, ceq] = trajConstraint(prms,qDes,xMid)
 
     
     % End point error
-    distEndErr = sum((x(end,:) - [0.05, 0.0,0.05]).^2,2);
+    distEndErr = sum((x(end,:) - [0.0, 0.05,0.05]).^2,2);
 
-    % Velocity Contraint
-    v1 = velocityFun(t_uniform,0.7);
-    v2 = velocityFun(t_uniform,-0.3);
-    v3 = velocityFun(t_uniform,1);
-    velErr1 = abs(sum(yy(:,10) - v1'));
-    velErr2 = abs(sum(yy(:,11) - v2'));
-    velErr3 = abs(sum(yy(:,12) - v3'));
+ 
     
     % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
     c = [min(distanceMid1) - 0.0000001;
@@ -187,9 +209,7 @@ function [c, ceq] = trajConstraint(prms,qDes,xMid)
          min(distanceMid3) - 0.0000001;
          distEndErr    - 0.0000001;
          prms(1) - prms(2)];
-         % velErr1 - 1;
-         % velErr2 - 1;
-         % velErr3 - 1]; 
+
 end
 
 % Dynamics Function with Prefilter

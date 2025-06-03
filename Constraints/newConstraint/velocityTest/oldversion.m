@@ -6,6 +6,7 @@ close all;
 % wn2 =  [ 5.064      6.8163      8.3261 ];
 % CtrlPnt = [   0.046569    0.010029    0.012623 ];
 % Define desired trajectory and Middle Points
+
 qDes = [0.1914, -0.0445, 0.3336];
 [xDes, yDes, zDes] = FK(qDes(1), qDes(2), qDes(3));
 xDes = [xDes, yDes, zDes];
@@ -25,7 +26,7 @@ CtrlPnt = xMid(2,:);
 qCtrl = IK(CtrlPnt(1), CtrlPnt(2), CtrlPnt(3));
 
 
-qDes =[CtrlPnt;qDes];
+qDes =[qCtrl;qDes];
 
 % Weights
 wt = [100, 1, 0.08, 0.0001];   % [Target, End, Time]
@@ -33,22 +34,11 @@ wt = [100, 1, 0.08, 0.0001];   % [Target, End, Time]
 initPrms = [tspan, wn1, wn2, CtrlPnt];
 
 t_uniform = 0:0.01:tspan(2);
+
 % Initial Condition
 [ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,CtrlPnt), t_uniform, zeros(12, 1));
-% 
-% [xi, yi_plot, zi] = FK(yi(:,7), yi(:,8), yi(:,9)); % Initial Trajectory
-% figure(1); hold on; grid on;
-% plot(0,0,'o',xDes(1),xDes(3),'o')
-% plot(xMid(1),xMid(3),'*')
-% plot(CtrlPnt(1),CtrlPnt(3),'*')
-% 
-% plot(xi,zi)
-% 
-% xlabel('X axes')
-% ylabel('Z Axes')
-% title(' Trajectories')
-% legend('Start point', 'End Point', 'Target Point', 'Control Point', ...
-%         'Followed Trajectory')
+
+% initialPlot
 
 % Lower and Upper Limits
 lb = [0 0      0.5 0.5 0.5     0.5 0.5 0.5    0.01 0.01 0.01];     % Wn
@@ -82,31 +72,7 @@ t_opt = 0:0.01:Opt(2);
 [tt, yy] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1:2),  Opt(3:5), Opt(6:8),Opt(9:11)), ...
                   t_opt, zeros(12, 1));
 
-%%% Plotting
-[xi, yi_plot, zi] = FK(yi(:,7), yi(:,8), yi(:,9));     % Initial Trajectory
-[x_opt, y_opt, z_opt] = FK(yy(:,7), yy(:,8), yy(:,9)); % Optimized Trajectory
-
-figure; hold on; grid on;
-plot(xi, zi,'--')
-plot(x_opt,z_opt,'.-')
-plot(xMid(1,1),xMid(1,3),'*')
-plot(xMid(2,1),xMid(2,3),'*')
-plot(xMid(3,1),xMid(3,3),'*')
-
-plot(xDes(1),xDes(3),'o')
-plot(Opt(9),Opt(11),'d')
-
-legend('Initial Trajectory','Optimized Trajectory','Target Point','End Point','Control Point')
-xlabel('X axis (m)')
-ylabel('Y axis (m)')
-title('Cartesian Space Trajectory Results')
-disp('Optimal Parameter:')
-disp(['tspan = [ ', num2str(Opt(1:2)), ' ];'])
-disp(['wn1 =  [ ', num2str(Opt(3:5)), ' ];'])
-disp(['wn2 =  [ ', num2str(Opt(6:8)), ' ];'])
-disp(['CtrlPnt = [   ', num2str(Opt(9:11)), ' ];'])
-
-
+Plotting
 
 % Negative Gradient
 
@@ -123,6 +89,7 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     
     x0 = zeros(12, 1);
     % x0(1:3) = qDes(1,:);  & look at it to understand why you are using
+
     % time interpolation
     T_total = prms(2);
     t_uniform = 0:0.01:T_total;
@@ -135,11 +102,12 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     xOut = [xOut,yOut,zOut];
     
     % Calculate minimum distance to middle point
-    distMid1 = min(sum((xOut - xMid(1,:)).^2,2));
-    distMid2 = min(sum((xOut - xMid(2,:)).^2,2));
-    distMid3 = min(sum((xOut - xMid(3,:)).^2,2));
-    distMidF = distMid1 + distMid2+ distMid3;
-    
+    % distMid1 = min(sum((xOut - xMid(1,:)).^2,2));
+    % distMid2 = min(sum((xOut - xMid(2,:)).^2,2));
+    % distMid3 = min(sum((xOut - xMid(3,:)).^2,2));
+    % distMidF = distMid1 + distMid2+ distMid3;
+    distMidF = sum(min(sum((xOut - permute(xMid, [3 2 1])).^2, 2), [], 1));
+
     
     v1 = velocityFun(t_uniform,0.3);
     v2 = velocityFun(t_uniform,-0.1);

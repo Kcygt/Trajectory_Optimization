@@ -1,0 +1,277 @@
+wn=[1 1 1];zeta=[1 1 1];
+myfn=@(t,x)A*x;
+
+myfn(0,[1;1]')
+{Unrecognized function or variable 'A'.
+
+Error in <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('@(t,x)A*x')" style="font-weight:bold">@(t,x)A*x</a>
+} 
+A=[0 1;-wn^2 -2*zeta*wn]
+{Error using <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('mpower', 'C:\Program Files\MATLAB\R2024b\toolbox\matlab\matfun\mpower.m', 52)" style="font-weight:bold"> ^ </a> (<a href="matlab: opentoline('C:\Program Files\MATLAB\R2024b\toolbox\matlab\matfun\mpower.m',52,0)">line 52</a>)
+Incorrect dimensions for raising a matrix to a power. Check that the matrix is square and the power is a scalar. To operate on each element of the matrix individually, use
+POWER (.^) for elementwise power.
+} 
+wn=3;zeta=.6;
+A=[0 1;-wn^2 -2*zeta*wn]
+
+A =
+
+                   0   1.000000000000000
+  -9.000000000000000  -3.600000000000000
+
+A=[0 1;-wn^2 -2*zeta*wn];
+myfn=@(t,x)A*x;
+[tt,yy]=ode45(myfn,[1 10],[0;0]);
+plot(tt,yy)
+myfn=@(t,x)A*x;
+help ode45
+ <strong>ode45</strong> - Solve nonstiff differential equations — medium order method
+    This MATLAB function, where tspan = [t0 tf], integrates the system of
+    differential equations y'=f(t,y) from t0 to tf with initial conditions
+    y0.
+
+    Syntax
+      [t,y] = <strong>ode45</strong>(odefun,tspan,y0)
+      [t,y] = <strong>ode45</strong>(odefun,tspan,y0,options)
+      [t,y,te,ye,ie] = <strong>ode45</strong>(odefun,tspan,y0,options)
+      sol = <strong>ode45</strong>(___)
+
+    Input Arguments
+      <a href="matlab:web('C:\Program Files\MATLAB\R2024b\help/matlab/ref/ode45.html#bu00_4l_sep_shared-odefun')">odefun</a> - Functions to solve
+        function handle
+      <a href="matlab:web('C:\Program Files\MATLAB\R2024b\help/matlab/ref/ode45.html#bu00_4l_sep_shared-tspan')">tspan</a> - Interval of integration
+        vector
+      <a href="matlab:web('C:\Program Files\MATLAB\R2024b\help/matlab/ref/ode45.html#bu00_4l_sep_shared-y0')">y0</a> - Initial conditions
+        vector
+      <a href="matlab:web('C:\Program Files\MATLAB\R2024b\help/matlab/ref/ode45.html#bu00_4l_sep_shared-options')">options</a> - Option structure
+        structure array
+
+    Output Arguments
+      <a href="matlab:web('C:\Program Files\MATLAB\R2024b\help/matlab/ref/ode45.html#bu00_4l_sep_shared-t')">t</a> - Evaluation points
+        column vector
+      <a href="matlab:web('C:\Program Files\MATLAB\R2024b\help/matlab/ref/ode45.html#bu00_4l_sep_shared-y')">y</a> - Solutions
+        array
+      <a href="matlab:web('C:\Program Files\MATLAB\R2024b\help/matlab/ref/ode45.html#bu00_4l_sep_shared-te')">te</a> - Time of events
+        column vector
+      <a href="matlab:web('C:\Program Files\MATLAB\R2024b\help/matlab/ref/ode45.html#bu00_4l_sep_shared-ye')">ye</a> - Solution at time of events
+        array
+      <a href="matlab:web('C:\Program Files\MATLAB\R2024b\help/matlab/ref/ode45.html#bu00_4l_sep_shared-ie')">ie</a> - Index of triggered event function
+        column vector
+      <a href="matlab:web('C:\Program Files\MATLAB\R2024b\help/matlab/ref/ode45.html#bu00_4l_sep_shared-sol')">sol</a> - Structure for evaluation
+        structure array
+
+    Examples
+      <a href="matlab:openExample('matlab/ODEWithSingleSolutionComponentExample')">ODE with Single Solution Component</a>
+      <a href="matlab:openExample('matlab/NonstiffVanDerPolEquationExample')">Solve Nonstiff Equation</a>
+      <a href="matlab:openExample('matlab/PassExtraArgumentsToODEFunctionExample')">Pass Extra Parameters to ODE Function</a>
+      <a href="matlab:openExample('matlab/SolveODEWithMultipleInitialConditionsExample')">Solve ODE with Multiple Initial Conditions</a>
+      <a href="matlab:openExample('matlab/ODEWithTimeDependentTermsExample')">ODE with Time-Dependent Terms</a>
+      <a href="matlab:openExample('matlab/EvaluateAndExtendSolutionStructureExample')">Evaluate and Extend Solution Structure</a>
+
+    See also <a href="matlab:help ode23 -displayBanner">ode23</a>, <a href="matlab:help ode78 -displayBanner">ode78</a>, <a href="matlab:help ode89 -displayBanner">ode89</a>, <a href="matlab:help ode113 -displayBanner">ode113</a>, <a href="matlab:help ode15s -displayBanner">ode15s</a>, <a href="matlab:help odeset -displayBanner">odeset</a>, <a href="matlab:help odeget -displayBanner">odeget</a>, <a href="matlab:help deval -displayBanner">deval</a>,
+      <a href="matlab:help odextend -displayBanner">odextend</a>
+
+    Introduced in MATLAB before R2006a
+    <a href="matlab:doc ode45">Documentation for ode45</a>
+
+[tt,yy]=ode45(myfn,[1 10],[0;0]);
+plot(tt,yy)
+myfn(1,3)
+
+ans =
+
+                   0   3.000000000000000
+ -27.000000000000000 -10.799999999999999
+
+myfn=@(t,x) A*x;
+myfn(1,[3;3])
+
+ans =
+
+   3.000000000000000
+ -37.799999999999997
+
+myfn(1,[0;0])
+
+ans =
+
+     0
+     0
+
+myfn(1,[10;0])
+
+ans =
+
+     0
+   -90
+
+[tt,yy]=ode45(myfn,[1 10],[10;0]);
+plot(tt,yy)
+myfn=@(t,x) A*x+[0;10];
+[tt,yy]=ode45(myfn,[1 10],[0;0]);
+plot(tt,yy)
+myfn=@(t,x) A*x+[0;100];
+[tt,yy]=ode45(myfn,[1 10],[0;0]);
+plot(tt,yy)
+myfn=@(t,x) A*x+[0;wn^2];
+[tt,yy]=ode45(myfn,[1 10],[0;0]);
+plot(tt,yy)
+grid
+[tt,yy]=ode45(myfn,[1 10],[0;-1]);
+hold on
+plot(tt,yy)
+hold
+Current plot released
+[tt,yy]=ode45(myfn,[0 4],[0;-1]);
+hold off
+plot(tt,yy)
+grid on
+[tt1,yy1]=ode45(myfn,[0 .5],[0;-1]);
+figure
+
+plot(tt,yy)
+plot(tt1,yy1)
+[tt2,yy2]=ode45(myfn,[.5 4],[0;-1]);
+plot(tt1,yy1,tt2,yy2)
+[tt2,yy2]=ode45(myfn,[.5 4],yy1(end));
+{Error using <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('odearguments', 'C:\Program Files\MATLAB\R2024b\toolbox\matlab\funfun\private\odearguments.m', 95)" style="font-weight:bold">odearguments</a> (<a href="matlab: opentoline('C:\Program Files\MATLAB\R2024b\toolbox\matlab\funfun\private\odearguments.m',95,0)">line 95</a>)
+@(T,X)A*X+[0;WN^2] must return a column vector.
+
+Error in <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('ode45', 'C:\Program Files\MATLAB\R2024b\toolbox\matlab\funfun\ode45.m', 104)" style="font-weight:bold">ode45</a> (<a href="matlab: opentoline('C:\Program Files\MATLAB\R2024b\toolbox\matlab\funfun\ode45.m',104,0)">line 104</a>)
+    odearguments(odeIsFuncHandle,odeTreatAsMFile, solver_name, ode, tspan, y0, options, varargin);
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+} 
+[tt2,yy2]=ode45(myfn,[.5 4],yy1(end,:));
+plot(tt1,yy1,tt2,yy2)
+A
+
+A =
+
+                   0   1.000000000000000
+  -9.000000000000000  -3.600000000000000
+
+A=[0 1;-wn^2 -2*zeta*wn];
+myfn=@(t,x) [0 1;-wn^2 -2*zeta*wn]*x+[0;wn^2];
+[tt2,yy2]=ode45(myfn,[.5 4],yy1(end,:));
+plot(tt1,yy1,tt2,yy2)
+myfn=@(t,x) if t<.5 ; [0 1;-wn(1)^2 -2*zeta(1)*wn(1)]*x+[0;wn(1)^2];else;[0 1;-wn(2)^2 -2*zeta(2)*wn(2)]*x+[0;wn(2)^2];end
+ myfn=@(t,x) if t<.5 ; [0 1;-wn(1)^2 -2*zeta(1)*wn(1)]*x+[0;wn(1)^2];else;[0 1;-wn(2)^2 -2*zeta(2)*wn(2)]*x+[0;wn(2)^2];end
+             ↑
+{Error: Illegal use of reserved keyword "if".
+} 
+t<.5
+{Unrecognized function or variable 't'.
+} 
+.3<.5
+
+ans =
+
+  <a href="matlab:helpPopup('logical')" style="font-weight:bold">logical</a>
+
+   1
+
+.3>.5
+
+ans =
+
+  <a href="matlab:helpPopup('logical')" style="font-weight:bold">logical</a>
+
+   0
+
+myfn=@(t,x) [0 1;-wn(1+(t>.5))^2 -2*zeta(1+(t>.5))*wn(1+(t>.5))]*x+[0;wn(1+(t>.5))^2];
+wn=[1 2 3];zeta=[1 2 3];
+myfn=@(t,x) [0 1;-wn(1+(t>.5))^2 -2*zeta(1+(t>.5))*wn(1+(t>.5))]*x+[0;wn(1+(t>.5))^2];
+myfun(0,[1;1])
+{Unrecognized function or variable 'myfun'.
+} 
+myfn(0,[1;1])
+
+ans =
+
+     1
+    -2
+
+myfn(1,[1;1])
+
+ans =
+
+     1
+    -8
+
+myfn(.49,[1;1])
+
+ans =
+
+     1
+    -2
+
+myfn(.51,[1;1])
+
+ans =
+
+     1
+    -8
+
+wn=[1 1];zeta=[.55 .55];
+hold on
+[tt3,yy3]=ode45(myfn,[0 4],[0;-1]);
+plot(tt3,yy3)
+
+edit myfn2.m
+myfn=@(t,x) [0 1;-wn(1+(t<.5))^2 -2*zeta(1+(t<.5))*wn(1+(t<.5))]*x+[0;wn(1+(t<.5))^2];
+[tt3,yy3]=ode45(myfn,[0 4],[0;-1]);
+plot(tt3,yy3)
+wn=3;zeta=.6;
+myfn=@(t,x) [0 1;-wn(1+(t<.5))^2 -2*zeta(1+(t<.5))*wn(1+(t<.5))]*x+[0;wn(1+(t<.5))^2];
+[tt3,yy3]=ode45(myfn,[0 4],[0;-1]);
+{Index exceeds the number of array elements. Index must not exceed 1.
+
+Error in <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('@(t,x)[0,1;-wn(1+(t<.5))^2,-2*zeta(1+(t<.5))*wn(1+(t<.5))]*x+[0;wn(1+(t<.5))^2]')" style="font-weight:bold">@(t,x)[0,1;-wn(1+(t<.5))^2,-2*zeta(1+(t<.5))*wn(1+(t<.5))]*x+[0;wn(1+(t<.5))^2]</a>
+
+Error in <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('odearguments', 'C:\Program Files\MATLAB\R2024b\toolbox\matlab\funfun\private\odearguments.m', 93)" style="font-weight:bold">odearguments</a> (<a href="matlab: opentoline('C:\Program Files\MATLAB\R2024b\toolbox\matlab\funfun\private\odearguments.m',93,0)">line 93</a>)
+f0 = ode(t0,y0,args{:});
+     ^^^^^^^^^^^^^^^^^^
+Error in <a href="matlab:matlab.lang.internal.introspective.errorDocCallback('ode45', 'C:\Program Files\MATLAB\R2024b\toolbox\matlab\funfun\ode45.m', 104)" style="font-weight:bold">ode45</a> (<a href="matlab: opentoline('C:\Program Files\MATLAB\R2024b\toolbox\matlab\funfun\ode45.m',104,0)">line 104</a>)
+    odearguments(odeIsFuncHandle,odeTreatAsMFile, solver_name, ode, tspan, y0, options, varargin);
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+} 
+A=[0 1;-wn^2 -2*zeta*wn];
+[tt3,yy3]=ode45(@myfn2,[0 4],[0;-1]);
+figure
+plot(tt,yy)
+plot(tt3,yy3)
+
+hold on
+[tt3,yy3]=ode45(@myfn2,[0 4],[0;-1]);
+plot(tt3,yy3)
+[tt3,yy3]=ode45(@myfn2,[0 4],[0;-1]);
+plot(tt3,yy3)
+hold off
+plot(tt3,yy3)
+myfn=@(t,x) [0 1;-wn^2 -2*zeta*wn]*x+[0;wn^2];
+[tt3,yy3]=ode45(@myfn2,[0 4],[0;-1]);
+plot(tt3,yy3)
+[tt3,yy3]=ode45(@myfn2,[0 4],[0;-1]);
+plot(tt3,yy3)
+[tt3,yy3]=ode45(@myfn2,[0 4],[0;-1]);
+plot(tt3,yy3)
+[tt3,yy3]=ode45(@myfn2,[0 2],[0;-1]);
+plot(tt3,yy3)
+grid on
+plot(tt3,yy3,'.')
+wn=3;zeta=.6;myfn=@(t,x) [0 1;-wn^2 -2*zeta*wn]*x+[0;wn^2];
+hold off
+plot(tt3,yy3)
+[tt1,yy1]=ode45(myfn,[0 .5],[0;-1]);
+plot(tt1,yy1+.1,tt3,yy3)
+plot(tt1,yy1+.1,tt3,yy3,'.')
+plot(tt1,yy1+.1,'.',tt3,yy3)
+[tt2,yy2]=ode45(myfn,[.5 2],yy1(end,:));
+plot(tt1,yy1+.1,'.',tt2,yy2+.1,'.',tt3,yy3)
+wn=1;zeta=1.6;myfn=@(t,x) [0 1;-wn^2 -2*zeta*wn]*x+[0;wn^2];
+[tt2,yy2]=ode45(myfn,[.5 2],yy1(end,:));
+plot(tt1,yy1+.1,'.',tt2,yy2+.1,'.',tt3,yy3)
+plot(tt1,yy1+.1,'.',tt2,yy2+.1,'.',tt3,yy3,'.')
+plot(tt1,yy1,'.',tt2,yy2,'.',tt3,yy3,'.')
+plot(tt1,yy1,tt2,yy2,tt3,yy3)
+diary
