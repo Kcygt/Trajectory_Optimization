@@ -35,16 +35,15 @@ xMid(3,:) = [0, 0.035, 0.045];
 
 % Parameters
 tspan = [10 20];
-wn1 = [1 1 1];
-wn2 = [1 1 1];
+wn1 = [1 1 1 ];
+wn2 = [1 1 1 ];
 CtrlPnt = xMid(2,:);
 qCtrl = IK(CtrlPnt(1), CtrlPnt(2), CtrlPnt(3));
-
 
 qDes =[qCtrl;qDes];
 
 % Weights
-wt = [100, 1, 0.08, 0.0001];   % [Target, End, Time]
+wt = [200, 1, 0.08, 0.0001];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2, CtrlPnt];
 
@@ -124,52 +123,37 @@ disp(['CtrlPnt = [   ', num2str(Opt(9:11)), ' ];'])
 
 
 
-% 3D Plot
-figure; hold on; grid on; view(3); axis equal;
+figure; hold on; grid on;
+% plot(tt,yy(:,4:6))
+plot(tt,yy(:,10:12))
+legend('Actual Joint 1',   ' Actual Joint 2',   'Actual Joint 3')
+title('Velocity')
 
-% Plot trajectories
-plot3(xi, yi_plot, zi, '--', 'LineWidth', 1.5);      % Initial Trajectory
-plot3(x_opt, y_opt, z_opt, '.-', 'LineWidth', 2);    % Optimized Trajectory
 
-% Plot important points
-plot3(xMid(1,1), xMid(1,2), xMid(1,3), '*', 'MarkerSize', 8); % Mid point 1
-plot3(xMid(2,1), xMid(2,2), xMid(2,3), '*', 'MarkerSize', 8); % Mid point 2
-plot3(xMid(3,1), xMid(3,2), xMid(3,3), '*', 'MarkerSize', 8); % Mid point 3
-
-plot3(xDes(1), xDes(2), xDes(3), 'o', 'MarkerSize', 8, 'LineWidth', 2);  % Target point
-plot3(Opt(9), Opt(11), Opt(12), 'd', 'MarkerSize', 8);                  % Control point
-
-% Labels and legend
-legend('Initial Trajectory', 'Optimized Trajectory', ...
-       'Mid Point 1', 'Mid Point 2', 'Mid Point 3', ...
-       'Target Point', 'Control Point');
-
-xlabel('X axis (m)');
-ylabel('Y axis (m)');
-zlabel('Z axis (m)');
-title('3D Cartesian Space Trajectory Results');
-
-% 3D plot
-figure; hold on; grid on; view(3); axis equal;
-plot3(xi,yi_plot, zi,'--')
-show
-plot3(xi,y_opt,z_opt,'.-')
-plot3(xMid(1,1),xMid(1,2),xMid(1,3),'*')
-plot3(xMid(2,1),xMid(2,2),xMid(2,3),'*')
-plot3(xMid(3,1),xMid(3,2),xMid(3,3),'*')
-
-plot3(xDes(1),xDes(2),xDes(3),'o')
-plot3(Opt(9),Opt(10),Opt(11),'d')
-
-legend('Initial Trajectory','Optimized Trajectory','Target Point','End Point','Control Point')
-xlabel('X axis (m)')
-ylabel('Y axis (m)')
-title('Cartesian Space Trajectory Results')
-disp('Optimal Parameter:')
-disp(['tspan = [ ', num2str(Opt(1:2)), ' ];'])
-disp(['wn1 =  [ ', num2str(Opt(3:5)), ' ];'])
-disp(['wn2 =  [ ', num2str(Opt(6:8)), ' ];'])
-disp(['CtrlPnt = [   ', num2str(Opt(9:11)), ' ];'])
+% % 3D Plot
+% figure; hold on; grid on; view(3); axis equal;
+% 
+% % Plot trajectories
+% plot3(xi, yi_plot, zi, '--', 'LineWidth', 1.5);      % Initial Trajectory
+% plot3(x_opt, y_opt, z_opt, '.-', 'LineWidth', 2);    % Optimized Trajectory
+% 
+% % Plot important points
+% plot3(xMid(1,1), xMid(1,2), xMid(1,3), '*', 'MarkerSize', 8); % Target point 1
+% plot3(xMid(2,1), xMid(2,2), xMid(2,3), '*', 'MarkerSize', 8); % Target point 2
+% plot3(xMid(3,1), xMid(3,2), xMid(3,3), '*', 'MarkerSize', 8); % Target point 3
+% 
+% plot3(xDes(1), xDes(2), xDes(3), 'o', 'MarkerSize', 8, 'LineWidth', 2);  % Target point
+% plot3(Opt(9), Opt(10), Opt(11), 'd', 'MarkerSize', 8);                  % Control point
+% 
+% % Labels and legend
+% legend('Initial Trajectory', 'Optimized Trajectory', ...
+%        'Mid Point 1', 'Mid Point 2', 'Mid Point 3', ...
+%        'Target Point', 'Control Point');
+% 
+% xlabel('X axis (m)');
+% ylabel('Y axis (m)');
+% zlabel('Z axis (m)');
+% title('3D Cartesian Space Trajectory Results');
 
 
 % Objective Function
@@ -218,12 +202,9 @@ function [c, ceq] = trajConstraint(prms,qDes,xMid)
     distanceMid1  = sum((x - xMid(1,:)).^2,2);
     distanceMid2  = sum((x - xMid(2,:)).^2,2);
     distanceMid3  = sum((x - xMid(3,:)).^2,2);
-
     
     % End point error
     distEndErr = sum((x(end,:) - [0.0, 0.05,0.05]).^2,2);
-
- 
     
     % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
     c = [min(distanceMid1) - 0.0000001;
@@ -233,48 +214,206 @@ function [c, ceq] = trajConstraint(prms,qDes,xMid)
          prms(1) - prms(2)];
 
 end
-
+% 
 % Dynamics Function with Prefilter
 function dxdt= myTwolinkwithprefilter(t,x,qDes,t_st,wn1,wn2,ctrlPnt)
     zeta = [1 1 1];
 
     A1=[zeros(3), eye(3); -diag(wn1).^2,-2*diag(zeta)*diag(wn1)];
     B1=[zeros(3); diag(wn1).^2];
-    
+
     A2=[zeros(3), eye(3); -diag(wn2).^2,-2*diag(zeta)*diag(wn2)];
     B2=[zeros(3); diag(wn2).^2];
-    
+
     qCtrl = IK(ctrlPnt(1), ctrlPnt(2), ctrlPnt(3));
 
     q=x(7:9);
     qd=x(10:12);
-    
+
     Kp = diag([70 70 70]);  
-    Kd = diag([20 20 20]);  
+    Kd = diag([120 120 120]);  
 
     controller = Kp*(x(1:3)-q)+Kd*(x(4:6)-qd);
 
     [M,C,G]=compute_M_C_G(q(1),q(2),q(3),qd(1),qd(2),qd(3));
-    
+
     tau=M*(controller)+C*qd;
-    
+
     qdd=M\(tau-C*qd);
 
-    if t <= t_st(1)
-        dxdt = [A1*x(1:6) + B1*qCtrl'; qd; qdd];
-    else
-        dxdt = [A2*x(1:6) + B2*qDes(2,:)'; qd; qdd];
+    % Per-joint switching time
+    t_vmax = 1 ./ wn1;  % [t1 t2 t3]
+    
+    % Build u vector: for each joint, pick between qCtrl or qDes(2,:) based on time
+    u = zeros(3,1);
+    for i = 1:3
+        if t <= t_vmax(i)
+            u(i) = qCtrl(i);
+        else
+            u(i) = qDes(2,i);  % second row = final target
+        end
     end
+    dxdt = [A1*x(1:6) + B1*u; qd; qdd];
+
+    % if t <= t_st(1)
+    %     dxdt = [A1*x(1:6) + B1*u'; qd; qdd];
+    % else
+    %     dxdt = [A2*x(1:6) + B2*qDes(2,:)'; qd; qdd];
+    % end
 end
 
-% Forward Kinematics (FK)
-function [x,y,z]=FK(q1,q2,q3)
-    l1=0.208; 
-    l2=0.168;  
-    x=sin(q1).*(l1*cos(q2)+l2*sin(q3));
-    y=l2-l2*cos(q3)+l1*sin(q2);
-    z=-l1+cos(q1).*(l1*cos(q2)+l2*sin(q3));
-end
+% Dynamics Function with Prefilter
+% function dxdt= myTwolinkwithprefilter(t,x,qDes,t_st,wn1,wn2,ctrlPnt)
+%     zeta = [1 1 1];
+%     % Per-joint switching time
+%     t_vmax = 1 ./ wn1;  % [t1 t2 t3]
+%     wn = zeros(1,3);
+%     for jj = 1:3
+%         if t <= t_vmax(jj)
+%             wn(jj) = wn1(jj);
+%         else
+%             wn(jj) = wn2(jj);
+% 
+%         end
+%     end
+% 
+%     A = [zeros(3), eye(3); -diag(wn).^2,-2*diag(zeta)*diag(wn)];
+%     B = [zeros(3); diag(wn).^2];
+%     qCtrl = IK(ctrlPnt(1), ctrlPnt(2), ctrlPnt(3));
+% 
+%     q=x(7:9);
+%     qd=x(10:12);
+% 
+%     Kp = diag([70 70 70]);  
+%     Kd = diag([120 120 120]);  
+% 
+%     controller = Kp*(x(1:3)-q)+Kd*(x(4:6)-qd);
+% 
+%     [M,C,G]=compute_M_C_G(q(1),q(2),q(3),qd(1),qd(2),qd(3));
+% 
+%     tau=M*(controller)+C*qd;
+% 
+%     qdd=M\(tau-C*qd);
+% 
+% 
+% 
+%     % Build u vector: for each joint, pick between qCtrl or qDes(2,:) based on time
+%     u = zeros(3,1);
+%     for i = 1:3
+%         if t <= t_vmax(i)
+%             u(i) = qCtrl(i);
+%         else
+%             u(i) = qDes(2,i);  % second row = final target
+%         end
+%     end
+% 
+%     % State-space update
+%     dxdt = [A*x(1:6) + B*u; qd; qdd];
+% end
+% Damping (assumed constant)
+% function dxdt= myTwolinkwithprefilter(t,x,qDes,t_st,wn1,wn2,ctrlPnt)
+% 
+%     zeta = [1 1 1];
+%     qCtrl = IK(ctrlPnt(1), ctrlPnt(2), ctrlPnt(3));
+%     % Time-based switching thresholds
+%     t_vmax = 1 ./ wn1;
+% 
+%     % Initialize A and B matrices per joint
+%     A = zeros(6,6);
+%     B = zeros(6,3);
+%     u = zeros(3,1);
+% 
+%     for i = 1:3
+%         if t <= t_vmax(i)
+%             Ai = [0 1; -wn1(i)^2 -2*zeta(i)*wn1(i)];
+%             Bi = [0; wn1(i)^2];
+%             u(i) = qCtrl(i);
+%         else
+%             Ai = [0 1; -wn2(i)^2 -2*zeta(i)*wn2(i)];
+%             Bi = [0; wn2(i)^2];
+%             u(i) = qDes(2,i);
+%         end
+% 
+%         % Fill A and B matrices in block-diagonal style
+%         A(2*i-1:2*i, 2*i-1:2*i) = Ai;
+%         B(2*i-1:2*i, i) = Bi;
+%     end
+% 
+%     % Extract robot joint states
+%     q = x(7:9);
+%     qd = x(10:12);
+% 
+%     % Controller
+%     Kp = diag([70 70 70]);  
+%     Kd = diag([120 120 120]);  
+%     controller = Kp*(x(1:3)-q) + Kd*(x(4:6)-qd);
+% 
+%     % Dynamics
+%     [M,C,~] = compute_M_C_G(q(1),q(2),q(3),qd(1),qd(2),qd(3));
+%     tau = M*controller + C*qd;
+%     qdd = M \ (tau - C*qd);
+% 
+%     % Final state derivative
+%     dxdt = [A*x(1:6) + B*u; qd; qdd];
+% end
+% function dxdt = myTwolinkwithprefilter(t, x, qDes, ~, wn1, wn2, ctrlPnt)
+%     zeta = [1 1 1];
+% 
+%     % Compute switching time for each joint
+%     t_vmax = 1 ./ wn1;
+% 
+%     % Compute control point joint angles
+%     qCtrl = IK(ctrlPnt(1), ctrlPnt(2), ctrlPnt(3));
+% 
+%     % Initialize states
+%     x_filter = x(1:6);     % [q1_filt; q2_filt; q3_filt; dq1_filt; dq2_filt; dq3_filt]
+%     q        = x(7:9);     % actual joint positions
+%     qd       = x(10:12);   % actual joint velocities
+% 
+%     % Initialize filter dynamics
+%     dx_filter = zeros(6,1);
+%     u         = zeros(3,1);
+% 
+%     for i = 1:3
+%         if t <= t_vmax(i)
+%             wn = wn1(i);
+%             u(i) = qCtrl(i);
+%         else
+%             wn = wn2(i);
+%             u(i) = qDes(2,i);
+%         end
+% 
+%         % Filter dynamics for each joint (2nd-order system)
+%         xi     = x_filter(i);      % position part
+%         dxi    = x_filter(i+3);    % velocity part
+%         ddxi   = -2*zeta(i)*wn*dxi - wn^2*xi + wn^2*u(i);
+% 
+%         dx_filter(i)   = dxi;
+%         dx_filter(i+3) = ddxi;
+%     end
+% 
+%     % Controller
+%     Kp = diag([70 70 70]);
+%     Kd = diag([120 120 120]);
+%     controller = Kp * (x_filter(1:3) - q) + Kd * (x_filter(4:6) - qd);
+% 
+%     % Dynamics
+%     [M, C, G] = compute_M_C_G(q(1), q(2), q(3), qd(1), qd(2), qd(3));
+%     tau = M * controller + C * qd;
+%     qdd = M \ (tau - C * qd);  % alternative: qdd = controller
+% 
+%     % Final derivative
+%     dxdt = [dx_filter; qd; qdd];
+% end
+% 
+% % Forward Kinematics (FK)
+% function [x,y,z]=FK(q1,q2,q3)
+%     l1=0.208; 
+%     l2=0.168;  
+%     x=sin(q1).*(l1*cos(q2)+l2*sin(q3));
+%     y=l2-l2*cos(q3)+l1*sin(q2);
+%     z=-l1+cos(q1).*(l1*cos(q2)+l2*sin(q3));
+% end
 
 % Inverse Kinematics (IK)
 function Q=IK(x,y,z)
