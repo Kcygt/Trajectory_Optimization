@@ -3,18 +3,16 @@ close all;
 
 %%%%% Optimal Parameters %%%%%
 % Result 1:
-% tspan = [ 0.69531 ];
-% wn1 =  [ 14.4664      24.4143      19.0096 ];
-% wn2 =  [ 13.6612      6.22106      19.4153 ];
-% CtrlPnt = [   0    0.023574    0.010782 ];
+% tspan = [ 2 ];
+% wn1 =  [ 6.62997      20.1284      5.70866 ];
+% wn2 =  [ 22.1803      11.2432      32.1501 ];
+% CtrlPnt = [   0   0.0008976    0.040571 ];
 qDes = [ 0   0.198678167676855   0.327814256075948 ];
 
 [xDes, yDes, zDes] = FK(qDes(1), qDes(2), qDes(3));
 xDes = [xDes, yDes, zDes];
 
 xTarget = zeros(3,3);
-
-
 xTarget(1,:) = [0, 0.015, 0.01];
 xTarget(2,:) = [0, 0.025, 0.03];
 xTarget(3,:) = [0, 0.035, 0.045];
@@ -30,7 +28,7 @@ qCtrl = IK(CtrlPnt(1), CtrlPnt(2), CtrlPnt(3));
 qDes =[qCtrl;qDes];
 
 % Weights
-wt = [350, 5, 0.08];   % [Target, End, Time]
+wt = [400, 5, 0.01];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2, CtrlPnt];
 
@@ -41,7 +39,7 @@ t_uniform = 0:0.01:tspan;
 
 % Lower and Upper Limits
 lb = [0   0.5 0.5 0.5     0.5 0.5 0.5    0.0 0.0 0.0];     % Wn
-ub = [2   40 40 40        40 40 40    0.0 0.05 0.05];      % wn
+ub = [20   4 4 4    4 4 4   0.0 0.05 0.05];      % wn
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xDes);

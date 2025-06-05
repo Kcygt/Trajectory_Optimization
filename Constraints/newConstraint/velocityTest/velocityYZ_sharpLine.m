@@ -8,6 +8,14 @@ close all;
 % wn2 =  [ 7.25988      7.66683      19.6573 ];
 % CtrlPnt = [   0    0.025225    0.011692 ];
 
+
+% Optimal Parameter:
+% tspan = [ 6.1913 ];
+% wn1 =  [ 10.0656      15.2746       4.8664 ];
+% wn2 =  [ 7.39478      5.56004      18.1105 ];
+% CtrlPnt = [   0    0.022321    0.046158 ];
+
+
 qDes = [ 0   0.198678167676855   0.327814256075948 ];
 
 [xDes, yDes, zDes] = FK(qDes(1), qDes(2), qDes(3));
@@ -40,8 +48,8 @@ t_uniform = 0:0.01:tspan;
 [ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,CtrlPnt), t_uniform, zeros(12, 1));
 
 % Lower and Upper Limits
-lb = [0   0.5 0.5 0.5     0.5 0.5 0.5    0.0 0.01 0.01];     % Wn
-ub = [2   20  20  20      20  20  20    0.0 0.05 0.05];      % wn
+lb = [5   0.5 0.5 0.5     0.5 0.5 0.5    0.0 0.01 0.01];     % Wn
+ub = [10   20  20  20      20  20  20    0.0 0.05 0.05];      % wn
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xDes);
