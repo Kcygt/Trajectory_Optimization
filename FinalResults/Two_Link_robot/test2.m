@@ -1,0 +1,262 @@
+%%%%%
+% 
+% Optimal Parameter:
+% Time: 3.3134
+% zeta: 0.86265     0.55127     0.99884
+% Wn:   16.1593      3.08098      3.56322
+%%%%%
+
+clear; clc;
+close all;
+
+% Define desired trajectory and Middle Points
+qInitial = [ 0    0];
+qDes = [  0.5371    1.5108 ];
+qDes = [   0 pi/2];
+
+[xDes, yDes] = FK(qDes(1), qDes(2),1,1);
+xDes = [xDes, yDes];
+
+xMid = [0.4, 0.8];
+
+qMid = IK(xMid(1), xMid(2),1,1);
+
+% Parameters
+tspan = 10;
+zeta = [.5 1];
+wn = [1 1 ];
+
+% Weights
+wt = [50, 1, 0.08]; % [Target, End, Time]
+
+initPrms = [tspan,zeta, wn];
+InitialCondition = [qInitial ,0,0,qInitial,0,0];
+% Initial Condition
+[ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  zeta,wn), [0 tspan], InitialCondition);
+[xx,yy] = FK(yi(:,5),yi(:,6),1,1);
+figure; hold on; grid on;
+plot(xx,yy)
+% Lower and Upper Limits
+lb = [2 ... % time
+      0.5  0.5 ... % Zeta
+      0.1  0.1]; % Wn
+ub = [10 ... % time
+      1  1 ... % Zeta
+      20 20]; % Wn
+
+% Objective Function
+objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xMid, xDes);
+
+% Run optimization
+options = optimoptions('fmincon','PlotFcns', 'optimplot', 'Display', 'off', ... 
+                        'TolCon', 1e-10); % Added constraint tolerance
+
+% Create optimization problem
+problem = createOptimProblem('fmincon',...
+    'objective', objectiveFunc, ...
+    'x0', initPrms, ...
+    'lb', lb, ...
+    'ub', ub, ...
+    'options', options, ...
+    'nonlcon', @(prms) trajConstraint(prms, qDes, xMid));
+
+% MultiStart setup
+ms = MultiStart('UseParallel', true, 'Display', 'iter');
+numStarts = 5; % Number of random starting points
+
+% Run MultiStart optimization
+[Opt, fval] = run(ms, problem, numStarts);
+
+% Simulate with optimal parameters
+[tt, yy] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1),  Opt(2:4), Opt(5:7)), ...
+                  [0 Opt(1)], zeros(12, 1));
+
+%%% Plotting
+[xi, yi_plot, zi] = FK(yi(:,7), yi(:,8), yi(:,9)); % Initial Trajectory
+[x_opt, y_opt, z_opt] = FK(yy(:,7), yy(:,8), yy(:,9)); % Optimized Trajectory
+
+figure; hold on; grid on;
+plot(xi, zi,'--')
+plot(x_opt,z_opt,'.-')
+plot(xMid(1),xMid(3),'*')
+plot(xDes(1),xDes(3),'o')
+legend('Initial Trajectory','Optimized Trajectory','Target Point','End Point')
+xlabel('X axis (m)')
+ylabel('Y axis (m)')
+title('Cartesian Space Trajectory Results')
+disp('Optimal Parameter:')
+disp(['Time: ', num2str(Opt(1))])
+disp(['zeta: ', num2str(Opt(2:4))])
+disp(['Wn:   ', num2str(Opt(5:7))])
+
+% Objective Function
+function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
+    x0 = zeros(12, 1);
+    x0(1:3) = qDes;
+
+    % Simulate the system
+    [~, y] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1),prms(2:4),prms(5:7)), ...
+                    [0 prms(1)], x0);
+
+    [xOut,yOut,zOut] = FK(y(:,7),y(:,8),y(:,9));
+    xOut = [xOut,yOut,zOut];
+    % Calculate minimum distance to middle point
+    dx = sqrt(sum((xOut - xMid).^2,2));
+    distMid = sum(dx,1);
+    % distMid = min(dx);
+    
+
+    % End point error
+    dxEnd = sqrt(sum((xOut(end,:) - xDes).^2,2));
+    distEndErr = sum(dxEnd,1);
+    
+    % Time penalty
+    timePenalty = prms(1);
+
+    % Composite error (normalized)
+    error = wt(1)*distMid + wt(2)*distEndErr + wt(3)*timePenalty;
+end
+
+% Constraint Function for Midpoint Proximity
+function [c, ceq] = trajConstraint(prms,qDes,xMid)
+    ceq = []; % No equality constraints
+
+    % Simulate trajectory
+    [~, yy] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1),prms(2:4),prms(5:7)), ...
+                    [0 prms(1)], zeros(12, 1));
+    [x,y,z] = FK(yy(:,7),yy(:,8),yy(:,9));     % Optimized Trajectory
+    x = [x,y,z];
+    % Calculate distances to midpoint in 3D space
+    distance = sqrt(sum((x - xMid).^2,2));
+    
+    % End point error
+    distEndErr = sqrt(sum((x(end,:) - [0.05, 0.0,0.05]).^2,2));
+
+    % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
+    c = [min(distance) - 0.000001;
+         distEndErr    - 0.000001]; 
+end
+
+% Dynamics Function with Prefilter
+function dxdt= myTwolinkwithprefilter(t,x,qDes,t_st,zeta,wn)
+    A1=[zeros(2), eye(2); -diag(wn).^2,-2*diag(zeta)*diag(wn)];
+    B1=[zeros(2); diag(wn).^2];
+
+    q=x(5:6);
+    qd=x(7:8);
+
+    Kp=70;  
+    Kd=20;  
+    
+    % Robot Constant
+    L_1 = 1; L_2 = 1; m_1 = 1; m_2 = 1;
+    ka = L_2^2 * m_2;
+    kb = L_1 * L_2 * m_2;
+    kc = L_1^2 * (m_1 + m_2);
+    
+    M = [ka + 2*kb*cos(q(2)) + kc, ka + kb*cos(q(2));
+         ka + kb*cos(q(2)), ka];
+
+    V = ka*sin(q(2))*([0 -1; 1 0] * [qd(1)^2; qd(2)^2] + [-2*qd(1)*qd(2); 0]);
+
+    Numerator = V + [-Kd 0; 0 -Kd]*qd + [-Kp 0; 0 -Kp]*(q - x(1:2));
+    qdd = M\Numerator;
+    dotx = A1*x(1:4) + B1*qDes(1, :)';
+    dxdt = [dotx; qd; qdd];
+
+    
+end
+
+
+
+
+% Function Definitions
+function [x, y] = FK(q1, q2, l1, l2)
+    x = l1*cos(q1) + l2*cos(q1 + q2);
+    y = l1*sin(q1) + l2*sin(q1 + q2);
+    % P = [x, y];
+end
+
+% Inverse Kinematics
+function qDes = IK(x, y, l1, l2)
+    r = sqrt(x.^2 + y.^2);
+    % if r > (l1 + l2) || r < abs(l1 - l2)
+    %     error('Target point is out of reach');
+    % end
+    cos_q2 = (r.^2 - l1.^2 - l2.^2) / (2 * l1 * l2);
+    sin_q2 = sqrt(1 - cos_q2.^2); 
+    q2 = atan2(sin_q2, cos_q2);
+    phi = atan2(y, x);
+    psi = atan2(l2 * sin(q2), l1 + l2 * cos(q2));
+    q1 = phi - psi;
+    qDes = [q1; q2];
+end
+
+
+
+
+function [M, C, G] = compute_M_C_G(theta1, theta2,theta3, dtheta1, dtheta2,dtheta3)
+    % link lenghts
+    l1 = 0.208;   l2 = 0.168;   l3 = 0.0325;
+    l5 = -0.0368; l6 = 0.0527;
+    
+    % Gravity
+    g = -9.80665; % m/s^2
+       
+    % segment A
+    m_a = 0.0202;
+    Ia_xx = 0.4864*1e-4;  Ia_yy = 0.001843*1e-4;  Ia_zz = 0.4864*1e-4;
+    Ia = [Ia_xx 0 0;  0  Ia_yy 0;  0 0 Ia_zz];
+    
+    % segment C
+    m_c = 0.0249;
+    Ic_xx = 0.959*1e-4;  Ic_yy = 0.959*1e-4;  Ic_zz = 0.0051*1e-4;
+    Ic = [Ic_xx 0 0;  0  Ic_yy 0;  0 0 Ic_zz];
+    
+    % segment BE
+    m_be = 0.2359;
+    Ibe_xx = 11.09*1e-4;  Ibe_yy = 10.06*1e-4;  Ibe_zz = 0.591*1e-4;
+    Ibe = [Ibe_xx 0 0;  0  Ibe_yy 0;  0 0 Ibe_zz];
+    
+    % segment DF
+    m_df = 0.1906;
+    Idf_xx = 7.11*1e-4;  Idf_yy = 0.629*1e-4;  Idf_zz = 6.246*1e-4;
+    Idf = [Idf_xx 0 0;  0  Idf_yy 0;  0 0 Idf_zz];
+    
+    % BASE
+    Ibaseyy = 11.87e-4;
+    
+    % MASS 
+    M11 = ( 1/8*( 4*Ia_yy  + 4*Ia_zz  + 8*Ibaseyy + 4*Ibe_yy + 4*Ibe_zz + 4*Ic_yy + 4*Ic_zz + 4*Idf_zz + 4*l1^2*m_a + l2^2*m_a + l1^2*m_c + 4*l3^2*m_c  ) + ...
+            1/8*( 4*Ibe_yy - 4*Ibe_zz + 4*Ic_zz   + l1^2*(4*m_a + m_c)) * cos(2*theta2) + ...
+            1/8*( 4*Ia_yy  - 4*Ia_zz  + 4*Idf_yy  - 4*Idf_zz - l2^2*m_a - 4*l3^2*m_c) * cos(2*theta3) + l1*(l2*m_a + l3*m_c)*cos(theta2)*sin(theta3)  );
+    
+    M22 = 1/4*(4*(Ibe_xx + Ic_xx + l1^2*m_a) + l1^2*m_c);
+    M23 = -1/2*l1*(l2*m_a + l3*m_c) * sin(theta2-theta3);
+    M32 = M23;
+    M33 = 1/4 * (4*Ia_xx + 4*Idf_xx + l2^2*m_a + 4*l3^2*m_c);
+    
+    M = [M11 0 0; 0 M22 M23; 0 M32 M33];
+    
+    % CORIOLIS
+    C11 = 1/8*( -2*sin(theta2) * ((4*Ibe_yy - 4*Ibe_zz * 4*Ic_yy - 4*Ic_zz + 4*l1^2*m_a +l1^2*m_c )*cos(theta2) + 2*l1*(l2*m_a + l3*m_c)*sin(theta3) ) )*dtheta2 + ...
+           2*cos(theta3)*(2*l1*(l2*m_a + l3*m_c)*cos(theta2) + (-4*Ia_yy + 4*Ia_zz -4*Idf_yy + 4*Idf_zz + l2^2*m_a + 4*l3^2*m_c)*sin(theta3)) * dtheta3 ;
+    
+    C12 = -1/8 * ((4*Ibe_yy - 4*Ibe_zz + 4*Ic_yy - 4*Ic_zz + l1^2*(4*m_a + m_c))*sin(2*theta2) + 4*l1*(l2*m_a+l3*m_c)*sin(theta2)*sin(theta3))*dtheta1; 
+    C13 = -1/8*(-4*l1*(l2*m_a + l3*m_c)*cos(theta2)*cos(theta3) - (-4*Ia_yy + 4*Ia_zz - 4*Idf_yy + 4*Idf_zz + l2^2*m_a + 4*l3*m_c)*sin(2*theta3))*dtheta1;
+    C21 = -C12;
+    C23 = 1/2*l1*(l2*m_a + l3*m_c)*cos(theta2*theta3)*dtheta3;
+    C31 = -C13;
+    C32  = -1/2*l1*(l2*m_a + l3*m_c)*cos(theta2 - theta3)*dtheta2;
+    
+    C = [C11 C12 C13; C21 0 C23; C31 C32 0];
+    
+    % GRAVITY
+    
+    N2 = 1/2*g*(2*l1*m_a + 2*l5*m_be + l1*m_c)*cos(theta2);
+    N3 = 1/2*g*(l2*m_a + 2*l3*m_c - 2*l6*m_df)*sin(theta3);
+    
+    G = [0 N2 N3]';
+end
+
+
