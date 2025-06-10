@@ -16,7 +16,7 @@ close all;
 % CtrlPnt = [   0    0.035299    0.018472 ];
  
 
-qDes = [ 0   0.198678167676855   0.327814256075948 ];
+qDes = [ 0   0   0];
 
 [xDes, yDes, zDes] = FK(qDes(1), qDes(2), qDes(3));
 xDes = [xDes, yDes, zDes];
@@ -38,7 +38,7 @@ qCtrl = IK(CtrlPnt(1), CtrlPnt(2), CtrlPnt(3));
 qDes =[qCtrl;qDes];
 
 % Weights
-wt = [350, 5, 0.0001];   % [Target, End, Time]
+wt = [350, 25, 0.0001];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2, CtrlPnt];
 
@@ -191,7 +191,7 @@ function dxdt = myTwolinkwithprefilter(t, x,qDes,tspan , wn1, wn2, ctrlPnt)
     zeta = [1 1 1];  % Damping ratio
 
     % Compute per-joint switching times
-    t_Vmax = .7 ./ wn1;
+    t_Vmax = 1.5 ./ wn1;
 
     % Get initial control point joint angles via IK
     qCtrl = IK(ctrlPnt(1), ctrlPnt(2), ctrlPnt(3));
