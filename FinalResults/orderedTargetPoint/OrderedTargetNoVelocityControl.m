@@ -26,7 +26,7 @@ qCtrl(2,:) = IK(xCtrl(2,1), xCtrl(2,2), xCtrl(2,3));
 qDes =[qCtrl; qDes];
 
 % Weights
-wt = [350, 5, 0.0001];   % [Target, End, Time]
+wt = [650, 5, 0.0001];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2,wn3, xCtrl(1,:),xCtrl(2,:)];
 
@@ -178,7 +178,7 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     % Composite error (normalized)
     error = wt(1) * distMidF    + ...
             wt(2) * distEndErr + ...
-            difIdx * 0.001 + ...
+            difIdx * 0.01 + ...
             wt(3) * timePenalty;
 end
 
@@ -209,11 +209,9 @@ function [c, ceq] = trajConstraint(prms,qDes,xTarget)
     distEndErr = sum((x(end,:) - [0.0, 0.05, 0.05]).^2,2);
     
     % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
-    c = [min(distanceMid1) - 0.00000001;
-         min(distanceMid2) - 0.00000001;
+    c = [min(distanceMid1) - 0.0000001;
+         min(distanceMid2) - 0.0000001;
          tIdx1 - tIdx2;
-         prms(1) - prms(2);
-         prms(2) - prms(3);
          distEndErr    - 0.0000001];
 
 end
