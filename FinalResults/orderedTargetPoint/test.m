@@ -29,7 +29,7 @@ qCtrl(2,:) = IK(xCtrl(2,1), xCtrl(2,2), xCtrl(2,3));
 qDes =[qCtrl; qDes];
 
 % Weights
-wt = [650, 5, 0.0001];   % [Target, End, Time]
+wt = [650, 10, 0.0001];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2,wn3, xCtrl(1,:),xCtrl(2,:)];
 
@@ -37,29 +37,29 @@ t_uniform = 0:0.01:tspan;
 
 % Initial Condition
 [ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,wn3,xCtrl(1,:),xCtrl(2,:)), t_uniform, zeros(12, 1));
-
-[xInit, yInit, zInit] = FK(yi(:,7), yi(:,8), yi(:,9));     % Initial Trajectory
+% 
+% [xInit, yInit, zInit] = FK(yi(:,7), yi(:,8), yi(:,9));     % Initial Trajectory
 % %%% Plotting
-figure; hold on; grid on;
-plot(yInit, zInit,'--')
-plot(xTarget(1,2),xTarget(1,3),'*')
-plot(xTarget(2,2),xTarget(2,3),'*')
-plot(xDes(2),xDes(3),'o')
+% figure; hold on; grid on;
+% plot(yInit, zInit,'--')
+% plot(xTarget(1,2),xTarget(1,3),'*')
+% plot(xTarget(2,2),xTarget(2,3),'*')
+% plot(xDes(2),xDes(3),'o')
 
 
 % Lower and Upper Limits
 lb = [1 ...  % Time
-      0.5 0.5 0.5 ...  % wn1
-      0.5 0.5 0.5 ...  % Wn2
-      0.5 0.5 0.5 ...  % Wn3
-      0 -0.1 -0.1       ...  % Control Point1
+      0 0.5 0.5 ...  % wn1
+      0 0.5 0.5 ...  % Wn2
+      0 0.5 0.5 ...  % Wn3
+      0 0.03 0.03       ...  % Control Point1
       0 -0.1 -0.1];         % Control Point2
 ub = [5   ...   % Time
-      40 40 40 ...  % wn1
-      40 40 40 ...  % Wn2
-      40 40 40 ... % Wn3
+      0 5 5 ...  % wn1
+      0 5 5 ...  % Wn2
+      0 5 5 ... % Wn3
       0 0.12 0.12 ... % Control Point1
-      0 0.12 0.12 ];  % Control Point2
+      0 0.03 0.03 ];  % Control Point2
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xDes);
@@ -144,24 +144,19 @@ disp(['CtrlPnt 2= [   ', num2str(Opt(14:16)), ' ];'])
 % Objective Function
 function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     
-    x0 = zeros(12, 1);
-    % x0(1:3) = qDes(1,:);  & look at it to understand why you are using
-
     % time interpolation
     T_total = prms(1);
     t_uniform = 0:0.01:T_total;
 
     % Simulate the system
     [t, y] = ode23s(@(t,x) myTwolinkwithprefilter(t, x, qDes, prms(1),  prms(2:4), prms(5:7),prms(8:10),prms(11:13),prms(14:16)), ...
-                    t_uniform, x0);
-    % y_uniform = interp1(t,y,t_uniform);
+                    t_uniform, zeros(12, 1));
+
     [xOut,yOut,zOut] = FK(y(:,7),y(:,8),y(:,9));
     xOut = [xOut,yOut,zOut];
     
-
-    [tVal1,tIdx1] = min(  sum((xOut - xMid(2,:)).^2,2)  );
-    [tVal2,tIdx2] = min(  sum((xOut - xMid(1,:)).^2,2)  );
-    
+    [tVal1,tIdx1] = min( sum((xOut - xMid(2,:)).^2,2) );
+    [tVal2,tIdx2] = min( sum((xOut - xMid(1,:)).^2,2) );
     
     % Calculate minimum distance to middle point
     distMid1 = sum(min(sum((xOut(1:tIdx1,:) - permute(xMid(2,:), [3 2 1])).^2, 2), [], 1));
@@ -171,7 +166,6 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
 
     % End point error
     distEndErr = sum((xOut(end,:) - xDes).^2,2);
-
     
     difIdx = tIdx1 - tIdx2;
     % Time penalty
@@ -204,17 +198,15 @@ function [c, ceq] = trajConstraint(prms,qDes,xTarget)
     % Calculate distances to midpoint in 3D space
     distanceMid1  = sum((x(1:tIdx1,:) - xTarget(2,:)).^2,2);
     distanceMid2  = sum((x(tIdx1:end,:) - xTarget(1,:)).^2,2);
-    
-   
 
     % End point error
     distEndErr = sum((x(end,:) - [0.0, 0.05, 0.05]).^2,2);
     
     % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
-    c = [min(distanceMid1) - 0.0000001;
-         min(distanceMid2) - 0.0000001;
-         tIdx1 - tIdx2;
-         distEndErr    - 0.0000001];
+    c = [ min(distanceMid1) - 0.0000001 ;
+          min(distanceMid2) - 0.0000001 ;
+          (tIdx1 - tIdx2) * 0.01 ;
+          distEndErr    - 0.0000001 ];
 
 end
  
