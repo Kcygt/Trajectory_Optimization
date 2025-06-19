@@ -55,9 +55,9 @@ lb = [1 ...  % Time
       0 0.03 0.03       ...  % Control Point1
       0 -0.1 -0.1];         % Control Point2
 ub = [5   ...   % Time
-      0 5 5 ...  % wn1
-      0 5 5 ...  % Wn2
-      0 5 5 ... % Wn3
+      0 2 2 ...  % wn1
+      0 2 2 ...  % Wn2
+      0 2 2 ... % Wn3
       0 0.12 0.12 ... % Control Point1
       0 0.03 0.03 ];  % Control Point2
 
