@@ -14,9 +14,9 @@ xTarget(2,:) = [0, 0.015, 0.005];
 
 % Parameters
 tspan =  [10 20 30];
-wn1 = [1 1 1 ];
-wn2 = [1 1 1 ];
-wn3 = [1 1 1 ];
+wn1 = [3 3 3 ];
+wn2 = [3 3 3 ];
+wn3 = [3 3 3 ];
 xCtrl(1,:) = xTarget(1,:);
 xCtrl(2,:) = xTarget(2,:);
 
@@ -26,7 +26,7 @@ qCtrl(2,:) = IK(xCtrl(2,1), xCtrl(2,2), xCtrl(2,3));
 qDes =[qCtrl; qDes];
 
 % Weights
-wt = [350, 5, 0.0001];   % [Target, End, Time]
+wt = [650, 5, 0.0001];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2,wn3, xCtrl(1,:),xCtrl(2,:)];
 
@@ -45,16 +45,16 @@ plot(xDes(2),xDes(3),'o')
 
 
 % Lower and Upper Limits
-lb = [1 3 6        ...  % Time
-      0.5 0.5 0.5 ...  % wn1
-      0.5 0.5 0.5 ...  % Wn2
-      0.5 0.5 0.5 ...  % Wn3
+lb = [1 3 6       ...  % Time
+      0 0.5 0.5 ...  % wn1
+      0 0.5 0.5 ...  % Wn2
+      0 0.5 0.5 ...  % Wn3
       0 0 0       ...  % Control Point1
       0 0 0 ];         % Control Point2
 ub = [2 5 8  ...   % Time
-      40 40 40 ...  % wn1
-      40 40 40 ...  % Wn2
-      40 40 40 ... % Wn3
+      0 30 30 ...  % wn1
+      0 30 30 ...  % Wn2
+      0 30 30 ... % Wn3
       0 0.05 0.05 ... % Control Point1
       0 0.05 0.05 ];  % Control Point2
 
@@ -63,7 +63,7 @@ objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xDes);
 
 % Run optimization
 options = optimoptions('fmincon','PlotFcns', 'optimplot', 'Display', 'off', ... 
-                        'TolCon', 1e-10,'MaxIterations',10); % Added constraint tolerance
+                        'TolCon', 1e-10); % Added constraint tolerance
 
 % Create optimization problem
 problem = createOptimProblem('fmincon',...
@@ -153,61 +153,30 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
                     t_uniform, x0);
     % y_uniform = interp1(t,y,t_uniform);
     [xOut,yOut,zOut] = FK(y(:,7),y(:,8),y(:,9));
+    
     xOut = [xOut,yOut,zOut];
     
-    squaredDist1  =  sum((xOut - xMid(1,:)).^2,2)  ;
-    squaredDist2 =  sum((xOut - xMid(2,:)).^2,2)  ;
+    [~, idx_exact1] = min(abs(t - prms(1)));
+    [~, idx_exact2] = min(abs(t - prms(2)));
+
     
-    % Define threshold
-    threshold = 1e-6;
+    distMid1 =  min(sum((xOut(1:idx_exact1,:) - xMid(1,:)).^2,2) ) ;
+    distMid2 =  min(sum((xOut(idx_exact1:idx_exact2,:) - xMid(2,:)).^2,2))  ;
 
-    % Find indices where distance is below the threshold
-    validIdx1 = find(squaredDist1 < threshold);
-    validIdx2 = find(squaredDist2 < threshold);
-    
-    validTimes1 = t(validIdx1);
-    [minTime1, minIdxInValid1] = min(validTimes1);
-    minIdx1 = validIdx1(minIdxInValid1);
-    distMid1 = xOut(minIdx1, :);
-
-    validTimes2 = t(validIdx2);
-    [minTime2, minIdxInValid2] = min(validTimes2);
-    minIdx2 = validIdx2(minIdxInValid2);
-    distMid2 = xOut(minIdx2, :);
-    
-    % Calculate minimum distance to middle point
-    if isempty(distMid1)
-        distMid1 = [0 0 0];
-    end
-
-    if isempty(distMid2) 
-        distMid2 = [0 0 0];
-    end
-
-    if isempty(minTime1)
-        minTime1 = 10;
-    end
-
-    if isempty(minTime2)
-        minTime2 = 10;
-    end
-    d1 = sum((distMid1 - xMid(1,:)).^2);
-    d2 = sum((distMid2 - xMid(2,:)).^2);
-    
-    distMidF = d1 + d2;
+    distMidF = distMid1 + distMid2;
 
     % End point error
     distEndErr = sum((xOut(end,:) - xDes).^2,2);
 
     
-    difIdx = minTime1 - minTime2;
+    difIdx = idx_exact1 - idx_exact2;
     % Time penalty
     timePenalty = prms(3);
 
     % Composite error (normalized)
     error = wt(1) * distMidF    + ...
             wt(2) * distEndErr + ...
-            difIdx * 0.01 + ...
+            difIdx * 0.1 + ...
             wt(3) * timePenalty;
 end
 
@@ -222,58 +191,21 @@ function [c, ceq] = trajConstraint(prms,qDes,xTarget)
     [x,y,z] = FK(yy(:,7),yy(:,8),yy(:,9));     % Optimized Trajectory
     x = [x,y,z];
     
-    % tt1  = find(tt < prms(1));
+    [~, idx_exact1] = min(abs(tt - prms(1)));
+    [~, idx_exact2] = min(abs(tt - prms(2)));
 
-    squaredDist1  =  sum((x - xTarget(1,:)).^2,2)  ;
-    squaredDist2 =  sum((x - xTarget(2,:)).^2,2)  ;
     
-    % Define threshold
-    threshold = 1e-6;
-
-    % Find indices where distance is below the threshold
-    validIdx1 = find(squaredDist1 < threshold);
-    validIdx2 = find(squaredDist2 < threshold);
-    
-    validTimes1 = tt(validIdx1);
-    [minTime1, minIdxInValid1] = min(validTimes1);
-    minIdx1 = validIdx1(minIdxInValid1);
-    distMid1 = x(minIdx1, :);
-
-    validTimes2 = tt(validIdx2);
-    [minTime2, minIdxInValid2] = min(validTimes2);
-    minIdx2 = validIdx2(minIdxInValid2);
-    distMid2 = x(minIdx2, :);
-    
-    if isempty(distMid1)
-        distMid1 = [0 0 0];
-    end
-
-    if isempty(distMid2)
-        distMid2 = [0 0 0];
-    end
-
-    if isempty(minTime1)
-        minTime1 = 9.9999999;
-    end
-
-    if isempty(minTime2)
-        minTime2 = 10;
-    end
-    % Calculate minimum distance to middle point
-    d1 = sum((distMid1 - xTarget(1,:)).^2);
-    d2 = sum((distMid2 - xTarget(2,:)).^2);
-
+    [distMid1,Idx1] =  min(sum((x(1:idx_exact1,:) - xTarget(1,:)).^2,2) ) ;
+    [distMid2,Idx2] =  min(sum((x(idx_exact1:idx_exact2,:) - xTarget(2,:)).^2,2))  ;
 
     % End point error
     distEndErr = sum((x(end,:) - [0.0, 0.05, 0.05]).^2,2);
     
     % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
-    c = [d1 - 1e-7;
-         d2 - 1e-7;
-         minTime1 - minTime2;
-         prms(1) - prms(2);
-         prms(2) - prms(3);
-         distEndErr    - 1e-7];
+    c = [distMid1 - 1e-7;
+         distMid2 - 1e-7;
+         Idx1 - Idx2;
+         distEndErr - 1e-7];
 
 end
  
