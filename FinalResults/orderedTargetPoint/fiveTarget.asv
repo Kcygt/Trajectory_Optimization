@@ -30,7 +30,7 @@ qCtrl(2,:) = IK(xCtrl(2,1), xCtrl(2,2), xCtrl(2,3));
 qDes =[qCtrl; qDes];
 
 % Weights
-wt = [650, 5, 0.0001];   % [Target, End, Time]
+wt = [1000, 5, 0.0001];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2,wn3, xCtrl(1,:),xCtrl(2,:)];
 
@@ -58,10 +58,10 @@ lb = [1 3 6       ...  % Time
       0 0.5 0.5 ...  % Wn3
       0 0 0       ...  % Control Point1
       0 0 0 ];         % Control Point2
-ub = [2 5 8  ...   % Time
-      0 30 30 ...  % wn1
-      0 30 30 ...  % Wn2
-      0 30 30 ... % Wn3
+ub = [5 5 8  ...   % Time
+      0 20 20 ...  % wn1
+      0 20 20 ...  % Wn2
+      0 20 20 ... % Wn3
       0 0.05 0.05 ... % Control Point1
       0 0.05 0.05 ];  % Control Point2
 
@@ -170,12 +170,14 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
 
     
     distMid1 =  min(sum((xOut(1:idx_exact1,:) - xMid(1,:)).^2,2) ) ;
-    distMid1 =  min(sum((xOut(1:idx_exact1,:) - xMid(1,:)).^2,2) ) ;
+    distMid2 =  min(sum((xOut(1:idx_exact1,:) - xMid(2,:)).^2,2) ) ;
+    distMid3 =  min(sum((xOut(idx_exact1:idx_exact2,:) - xMid(3,:)).^2,2))  ;    
+    distMid4 =  min(sum((xOut(idx_exact1:idx_exact2,:) - xMid(4,:)).^2,2))  ;
+    distMid5 =  min(sum((xOut(idx_exact2:end,:) - xMid(5,:)).^2,2))  ;
 
-    
-    distMid2 =  min(sum((xOut(idx_exact1:idx_exact2,:) - xMid(2,:)).^2,2))  ;
-
-    distMidF = distMid1 + distMid2;
+    distMidF = distMid1 + distMid2 + ... 
+               distMid3 + distMid4 + ...
+               distMid5 ;
 
     % End point error
     distEndErr = sum((xOut(end,:) - xDes).^2,2);
@@ -188,7 +190,6 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     % Composite error (normalized)
     error = wt(1) * distMidF    + ...
             wt(2) * distEndErr + ...
-            difIdx * 0.1 + ...
             wt(3) * timePenalty;
 end
 
@@ -208,15 +209,20 @@ function [c, ceq] = trajConstraint(prms,qDes,xTarget)
 
     
     [distMid1,Idx1] =  min(sum((x(1:idx_exact1,:) - xTarget(1,:)).^2,2) ) ;
-    [distMid2,Idx2] =  min(sum((x(idx_exact1:idx_exact2,:) - xTarget(2,:)).^2,2))  ;
+    [distMid2,Idx2] =  min(sum((x(1:idx_exact1,:) - xTarget(2,:)).^2,2))  ;
+    [distMid3,Idx3] =  min(sum((x(idx_exact1:idx_exact2,:) - xTarget(3,:)).^2,2) ) ;
+    [distMid4,Idx4] =  min(sum((x(idx_exact1:idx_exact2,:) - xTarget(4,:)).^2,2))  ;
+    [distMid5,Idx5] =  min(sum((x(idx_exact2:end,:) - xTarget(5,:)).^2,2) ) ;
 
     % End point error
     distEndErr = sum((x(end,:) - [0.0, 0.05, 0.05]).^2,2);
     
     % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
-    c = [distMid1 - 1e-7;
-         distMid2 - 1e-7;
-         Idx1 - Idx2;
+    c = [distMid1 - 1e-8;
+         distMid2 - 1e-8;
+         distMid3 - 1e-8;
+         distMid4 - 1e-8;
+         distMid5 - 1e-8;
          distEndErr - 1e-7];
 
 end

@@ -30,7 +30,7 @@ qCtrl(2,:) = IK(xCtrl(2,1), xCtrl(2,2), xCtrl(2,3));
 qDes =[qCtrl; qDes];
 
 % Weights
-wt = [650, 5, 0.0001];   % [Target, End, Time]
+wt = [1000, 5, 0.0001];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2,wn3, xCtrl(1,:),xCtrl(2,:)];
 
@@ -52,16 +52,16 @@ plot(xDes(2),xDes(3),'o')
 
 
 % Lower and Upper Limits
-lb = [1 3 6       ...  % Time
+lb = [1 6 11       ...  % Time
       0 0.5 0.5 ...  % wn1
       0 0.5 0.5 ...  % Wn2
       0 0.5 0.5 ...  % Wn3
       0 0 0       ...  % Control Point1
       0 0 0 ];         % Control Point2
-ub = [2 5 8  ...   % Time
-      0 30 30 ...  % wn1
-      0 30 30 ...  % Wn2
-      0 30 30 ... % Wn3
+ub = [5 10 16  ...   % Time
+      0 10 10 ...  % wn1
+      0 10 10 ...  % Wn2
+      0 10 10 ... % Wn3
       0 0.05 0.05 ... % Control Point1
       0 0.05 0.05 ];  % Control Point2
 
@@ -183,14 +183,13 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     distEndErr = sum((xOut(end,:) - xDes).^2,2);
 
     
-    difIdx = idx_exact1 - idx_exact2;
+    % difIdx = idx_exact1 - idx_exact2;
     % Time penalty
     timePenalty = prms(3);
 
     % Composite error (normalized)
     error = wt(1) * distMidF    + ...
             wt(2) * distEndErr + ...
-            difIdx * 0.1 + ...
             wt(3) * timePenalty;
 end
 
@@ -219,12 +218,11 @@ function [c, ceq] = trajConstraint(prms,qDes,xTarget)
     distEndErr = sum((x(end,:) - [0.0, 0.05, 0.05]).^2,2);
     
     % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
-    c = [distMid1 - 1e-7;
-         distMid2 - 1e-7;
-         distMid3 - 1e-7;
-         distMid4 - 1e-7;
-         distMid5 - 1e-7;
-         Idx2 - Idx4;
+    c = [distMid1 - 1e-10;
+         distMid2 - 1e-10;
+         distMid3 - 1e-10;
+         distMid4 - 1e-10;
+         distMid5 - 1e-10;
          distEndErr - 1e-7];
 
 end
