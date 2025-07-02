@@ -97,7 +97,7 @@ disp(['tspan = [ ', num2str(Opt(1)), ' ];'])
 disp(['wn1 =  [ ', num2str(Opt(2:4)), ' ];'])
 disp(['CtrlPnt 1= [ ', num2str(Opt(5:7)), ' ];'])
 
-
+save('Opt1.mat','ttF','yyF','OptF','xTargetF','xOptF')
 % Objective Function
 function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     

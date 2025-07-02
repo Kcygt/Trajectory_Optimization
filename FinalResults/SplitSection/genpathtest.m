@@ -1,20 +1,28 @@
 %% generalised path
-startpoint=[0 0];
-cp=[.05 .05; .01 .05; 0 0]; % control points
-ts=[.5 .9 1.1]; % switch times
+% Note 'genpath.m' is a matlab function
+startpoint=[.01  0.02];
+cp=[.01  0.02; .05 .06; .01 .05; 0.01 0.02]; % control points
+cpall=[startpoint;cp];
+ts=[0 1 2 8  ]; % switch times
 hsr=[]; %hyper sphere radius
-k=20;b=.1;m=1;
-maxtimespan=10;
+k=20;b=.50;m=1; % b values of 3 5 7 19
+maxtimespan=20;
 %%
 vsoptions = odeset('Events',@(t,y)hypersphereboundaryeventfn(t,y,ts(1)),'OutputSel',1,'Refine',4);
 
-[t,x,te,ye,ie] = ode45(@(t,y)testfn(t,y,[cp(1,:) -k/m -b/m]) ,[0 maxtimespan],[0 0 startpoint],vsoptions); % upper
-% tcross=te;
+[t,x,te,ye,ie] = ode45(@(t,y)testfn(t,y,[cp(1,:) k/m b/m]) ,[0 maxtimespan],[startpoint 0 0],vsoptions); % 
+% tt=t;xx=x; % record path so far
 for jj=2:length(cp)
-%    if ye(1)<-fc/k; %upper (positive velocity)
-%    end
+    vsoptions = odeset('Events',@(t,y)hypersphereboundaryeventfn(t,y,ts(jj)),'OutputSel',1,'Refine',4);
+    tnewstart=te+eps; % go slightly over the line
+    ynewstart=ye+eps;
+    [t1,x1,te,ye,ie] = ode45(@(t,y)testfn(t,y,[cp(jj,:) k/m b/m]) ,[tnewstart maxtimespan],ynewstart,vsoptions); % 
+    t=[t; t1];x=[x;x1];
+    if isempty(te);warning('time fail. Perhaps you ran out of time?');break;end
 end
 
+figure(1);plot(t,x);hold on
+figure(2);plot(cpall(:,1),cpall(:,2),'d',x(:,1),x(:,2))
 
 function dotx=testfn(t,x,params)
 % Generalised trajectory generation
@@ -30,8 +38,7 @@ end
 
 function [pos,isterminal,direction] = hypersphereboundaryeventfn(t,y,tend)
 %pos = y(2); % The value that we want to be zero (i.e. velocity)
-pos=t-tend;
-isterminal = 1;  % Halt integration 
-direction = 0;   % The zero can be approached from either direction
-
+  pos=t-tend;
+  isterminal = 1;  % Halt integration 
+  direction = 0;   % The zero can be approached from either direction
 end

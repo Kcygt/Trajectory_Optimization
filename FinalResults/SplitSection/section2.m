@@ -1,24 +1,21 @@
 % Load the first parameters
 load('Opt1.mat')
 % Get the minimum of the target and trajectory
-[val,idx] = min(sum((xOpt - xTarget).^2,2));
+[val,idx] = min(sum((xOptF - xTargetF).^2,2));
 
-qInit = yy(idx,7:9);
-qDotInit = yy(idx,10:12); 
-
-
-
-
-
+qInit = yyF(idx,7:9);
+qDotInit = yyF(idx,10:12); 
+InitCon = [zeros(6,1);qInit'; qDotInit'];
+[xF,yF,zF] = FK(qInit(1),qInit(2),qInit(3));
 
 xCtrl = zeros(1,3);
 qCtrl = zeros(1,3);
-xTarget = [0, 0.035, 0.025];
+xTarget = [0, 0.015, 0.005];
 
 % Parameters
 tspan =  10;
 wn1 = [1 1 1 ];
-xCtrl(1,:) = xTarget + [0 0.01 0.01];
+xCtrl(1,:) = xTarget - [0 0.015 0.01];
 
 qCtrl(1,:) = IK(xCtrl(1,1), xCtrl(1,2), xCtrl(1,3));
 
@@ -39,7 +36,7 @@ t_uniform = 0:0.01:tspan(end);
 
 
 % Initial Condition
-[ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1, xCtrl), t_uniform, zeros(12, 1));
+[ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1, xCtrl), t_uniform, InitCon);
 
 [xInit, yInit, zInit] = FK(yi(:,7), yi(:,8), yi(:,9));     % Initial Trajectory
 % %%% Plotting
@@ -50,16 +47,16 @@ plot(xDes(2),xDes(3),'o')
 
 
 % Lower and Upper Limits
-lb = [1  ...  % Time
+lb = [4  ...  % Time
       0.5 0.5 0.5 ...  % wn1
-      0 0 0 ];         % Control Point2
+      0 -0.01 -0.01 ];         % Control Point2
 
-ub = [2  ...   % Time
+ub = [6  ...   % Time
       40 40 40 ...  % wn1
       0 0.05 0.05 ];  % Control Point2
 
 % Objective Function
-objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xDes);
+objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xDes,InitCon);
 
 % Run optimization
 options = optimoptions('fmincon','PlotFcns', 'optimplot', 'Display', 'off', ... 
@@ -84,7 +81,7 @@ tOpt = 0:0.01:Opt(1);
 
 % Simulate with optimal parameters
 [tt, yy] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1),  Opt(2:4), Opt(5:7)), ...
-                  tOpt, zeros(12, 1));
+                  tOpt, InitCon);
 
 % Forward Kinematics
 [xInit, yInit, zInit] = FK(yi(:,7), yi(:,8), yi(:,9));     % Initial Trajectory
@@ -95,9 +92,10 @@ xOpt =[xOpt, yOpt, zOpt];
 figure; hold on; grid on;
 % plot(yInit, zInit,'--')
 plot(yOpt,zOpt,'.-')
+
 plot(xTarget(1,2),xTarget(1,3),'*')
 plot(Opt(6),Opt(7),'d')
-
+plot(yF,zF,'+')
 legend('Optimized Trajectory','Target Point 1','Control Point 1')
 xlabel('X axis (m)')
 ylabel('Y axis (m)')
@@ -109,9 +107,9 @@ disp(['CtrlPnt 1= [ ', num2str(Opt(5:7)), ' ];'])
 
 
 % Objective Function
-function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
+function error = objectiveFunction(prms, qDes, wt, xMid, xDes,InitCon)
     
-    x0 = zeros(12, 1);
+    x0 = InitCon;
     % x0(1:3) = qDes(1,:);  & look at it to understand why you are using
 
     % time interpolation
