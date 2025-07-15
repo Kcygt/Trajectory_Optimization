@@ -51,7 +51,7 @@ plot(xCtrl(2,2),xCtrl(2,3),'d')
 
 plot(xDes(2),xDes(3),'o')
 
-tolRad = 0.025;
+tolRad = 0.035;
 
 % Lower and Upper Limits
 lb = [1 3 6       ...  % Time
