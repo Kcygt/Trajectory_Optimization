@@ -39,16 +39,15 @@ t_uniform = 0:0.01:tspan;
 [xInit, yInit, zInit] = FK(yi(:,7), yi(:,8), yi(:,9));     % Initial Trajectory
 
 % %%% Plotting
-figure; hold on; grid on;
-plot(yInit, zInit,'--')
-plot(xTarget(1,2),xTarget(1,3),'*')
-plot(xTarget(2,2),xTarget(2,3),'*')
-plot(xCtrl(1,2),xCtrl(1,3),'d')
-plot(xCtrl(2,2),xCtrl(2,3),'d')
+% figure; hold on; grid on;
+% plot(yInit, zInit,'--')
+% plot(xTarget(1,2),xTarget(1,3),'*')
+% plot(xTarget(2,2),xTarget(2,3),'*')
+% plot(xCtrl(1,2),xCtrl(1,3),'d')
+% plot(xCtrl(2,2),xCtrl(2,3),'d')
+% plot(xDes(2),xDes(3),'o')
 
-plot(xDes(2),xDes(3),'o')
-
-tolRad = 0.035;
+tolRad = 0.03;
 
 % Lower and Upper Limits
 lb = [0      ...  % Time
@@ -116,7 +115,7 @@ idx_phase2 = find(dist1 <= tol, 1, 'first');
 t_phase2 = tt(idx_phase2);
 
 % Find the first time after phase 2 where distance to control point 2 is less than threshold (phase 3 start)
-idx_phase3 = find(dist2 <= tol & tt >= t_phase2, 1, 'first');
+idx_phase3 = find(dist2 <= tol & tt <= t_phase2, 1, 'first');
 t_phase3 = tt(idx_phase3);
 
 % Plot vertical lines at phase change times
@@ -141,8 +140,8 @@ disp(['wn2 =  [ ', num2str(Opt(4:5)), ' ];'])
 disp(['wn3 =  [ ', num2str(Opt(6:7)), ' ];'])
 disp(['CtrlPnt 1= [   ', num2str(Opt(8:9)), ' ];'])
 disp(['CtrlPnt 2= [   ', num2str(Opt(10:11)), ' ];'])
-disp(['Phase1 time= [   ', num2str(t_phase2), ' ];'])
-disp(['Phase2 time= [   ', num2str(t_phase3), ' ];'])
+% disp(['Phase1 time= [   ', num2str(t_phase2), ' ];'])
+% disp(['Phase2 time= [   ', num2str(t_phase3), ' ];'])
 
 
 
@@ -152,21 +151,19 @@ plot(tt, yy(:,10:12))
 xlabel('Time (s)')
 ylabel('Velocity (rad/s)')
 title('Velocity')
-
-% Add vertical dashed lines at t_Vmax times (excluding index 1)
-xline(t_phase2, '--k');
-xline(t_phase3, '--k');
-
-
-% Create legend with numeric time values
-legend( ...
-    'Actual Joint 1', ...
-    'Actual Joint 2', ...
-    'Actual Joint 3', ...
-    sprintf('Time switching joint 2 = %.4f s', t_phase2), ...
-    sprintf('Time switching joint 3 = %.4f s', t_phase3) ...
-);
+% % 
+% % % Add vertical dashed lines at t_Vmax times (excluding index 1)
+% % xline(t_phase2, '--k');
+% % xline(t_phase3, '--k');
+% % 
+% % 
+% % Create legend with numeric time values
+% legend( ...
+%     'Actual Joint 1', ...
+%     'Actual Joint 2', ...
+%     'Actual Joint 3' );
 % %%%%%%%%%%%% FUNCTION %%%%%%%%%%%%%
+% save('data2Target4.mat',"Opt","tt","yy","xCtrl","xTarget")
 
 % Objective Function
 function error = objectiveFunction(prms, qDes, wt, xTarget, xDes)
@@ -222,7 +219,7 @@ function [c, ceq] = trajConstraint(prms,qDes,xTarget)
     distanceMid1  = sum((x(1:tIdx1,:) -  xTarget(1,:)).^2,2);
     distanceMid2  = sum((x(tIdx1:end,:) -  xTarget(2,:)).^2,2);
     
-   
+  
 
     % End point error
     distEndErr = sum((x(end,:) - [0.0, 0.05, 0.05]).^2,2);
