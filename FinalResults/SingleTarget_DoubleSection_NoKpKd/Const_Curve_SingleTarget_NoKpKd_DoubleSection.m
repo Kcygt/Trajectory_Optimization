@@ -13,9 +13,9 @@ qDes = [ 0   0.198678167676855   0.327814256075948 ];
 xDes = [Px, Py, Pz];
 
 
-% xTarget = [0.015, 0, 0.04];
-xTarget = [0.04, 0, 0.005];
-% xTarget = [0.03, 0, 0.03];
+% xTarget = [0, 0.015, 0.04];
+xTarget = [0, 0.04, 0.005];
+% xTarget = [0, 0.03, 0.03];
 
 qMid = IK(xTarget(1), xTarget(2), xTarget(3));
 
@@ -27,12 +27,12 @@ wn1 = [1 1 1];
 wn2 = [1 1 1];
 
 % Weights
-wt = [50, 1, 0.08]; % [Target, End, Time]
+wt = [100, 1, 0.08]; % [Target, End, Time]
 
 initPrms = [tspan,zeta1,zeta2,wn1, wn2];
 
 % Initial Condition
-[ti, yInit] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  zeta1,zeta2, wn1,wn2), [0 tspan(2)], zeros(12, 1));
+[tInit, yInit] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  zeta1,zeta2, wn1,wn2), [0 tspan(2)], zeros(12, 1));
 
 % Lower and Upper Limits
 lb = [ 1 1  ... % time
