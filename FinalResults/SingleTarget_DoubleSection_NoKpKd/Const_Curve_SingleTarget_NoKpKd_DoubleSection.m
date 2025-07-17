@@ -8,15 +8,16 @@ clear; clc;
 close all;
 
 % Define desired trajectory and Middle Points
-qDes = [0.1914, -0.0445, 0.3336];
-[xDes, yDes, zDes] = FK(qDes(1), qDes(2), qDes(3));
-xDes = [xDes, yDes, zDes];
+qDes = [ 0   0.198678167676855   0.327814256075948 ];
+[Px, Py, Pz] = FK(qDes(1), qDes(2), qDes(3));
+xDes = [Px, Py, Pz];
 
-xMid = [0.015, 0, 0.04];
-xMid = [0.04, 0, 0.005];
-% xMid = [0.03, 0, 0.03];
 
-qMid = IK(xMid(1), xMid(2), xMid(3));
+% xTarget = [0.015, 0, 0.04];
+xTarget = [0.04, 0, 0.005];
+% xTarget = [0.03, 0, 0.03];
+
+qMid = IK(xTarget(1), xTarget(2), xTarget(3));
 
 % Parameters
 tspan = [10 20];
@@ -31,7 +32,7 @@ wt = [50, 1, 0.08]; % [Target, End, Time]
 initPrms = [tspan,zeta1,zeta2,wn1, wn2];
 
 % Initial Condition
-[ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  zeta1,zeta2, wn1,wn2), [0 tspan(2)], zeros(12, 1));
+[ti, yInit] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  zeta1,zeta2, wn1,wn2), [0 tspan(2)], zeros(12, 1));
 
 % Lower and Upper Limits
 lb = [ 1 1  ... % time
@@ -42,11 +43,11 @@ ub = [4 4 ... % time
       20 20 20 20 20 20]; % Wn
 
 % Objective Function
-objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xMid, xDes);
+objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xDes);
 
 % Run optimization
 options = optimoptions('fmincon','PlotFcns', 'optimplot', 'Display', 'off', ... 
-                        'TolCon', 1e-10); % Added constraint tolerance
+                        'TolCon', 1e-10,'MaxIterations',50); % Added constraint tolerance
 
 % Create optimization problem
 problem = createOptimProblem('fmincon',...
@@ -55,7 +56,7 @@ problem = createOptimProblem('fmincon',...
     'lb', lb, ...
     'ub', ub, ...
     'options', options, ...
-    'nonlcon', @(prms) trajConstraint(prms, qDes, xMid));
+    'nonlcon', @(prms) trajConstraint(prms, qDes, xTarget));
 
 % MultiStart setup
 ms = MultiStart('UseParallel', true, 'Display', 'iter');
@@ -69,23 +70,14 @@ numStarts = 5; % Number of random starting points
                   [0 Opt(2)], zeros(12, 1));
 
 %%% Plotting
-[xi, yi_plot, zi] = FK(yi(:,7), yi(:,8), yi(:,9)); % Initial Trajectory
+[xi, yi, zi] = FK(yInit(:,7), yInit(:,8), yInit(:,9)); % Initial Trajectory
 [x_opt, y_opt, z_opt] = FK(yy(:,7), yy(:,8), yy(:,9)); % Optimized Trajectory
 
-figure; hold on; grid on;
-plot(xi, zi,'--')
-plot(x_opt,z_opt,'.-')
-plot(xMid(1),xMid(3),'*')
-plot(xDes(1),xDes(3),'o')
-legend('Initial Trajectory','Optimized Trajectory','Midpoint','Endpoint')
+plotting
 
-disp('Optimal Parameter:')
-disp(['Time: ', num2str(Opt(1:2))])
-disp(['zeta: ', num2str(Opt(3:8))])
-disp(['Wn:   ', num2str(Opt(9:14))])
 
 % Objective Function
-function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
+function error = objectiveFunction(prms, qDes, wt, xTarget, xDes)
     x0 = zeros(12, 1);
     x0(1:3) = qDes;
 
@@ -96,7 +88,7 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     [xOut,yOut,zOut] = FK(y(:,7),y(:,8),y(:,9));
     xOut = [xOut,yOut,zOut];
     % Calculate minimum distance to middle point
-    dx = sqrt(sum((xOut - xMid).^2,2));
+    dx = sqrt(sum((xOut - xTarget).^2,2));
     distMid = sum(dx,1);
     
 
@@ -112,7 +104,7 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
 end
 
 % Constraint Function for Midpoint Proximity
-function [c, ceq] = trajConstraint(prms,qDes,xMid)
+function [c, ceq] = trajConstraint(prms,qDes,xTarget)
     ceq = []; % No equality constraints
 
     % Simulate trajectory
@@ -121,7 +113,7 @@ function [c, ceq] = trajConstraint(prms,qDes,xMid)
     [x,y,z] = FK(yy(:,7),yy(:,8),yy(:,9));     % Optimized Trajectory
     x = [x,y,z];
     % Calculate distances to midpoint in 3D space
-    distance = sqrt(sum((x - xMid).^2,2));
+    distance = sqrt(sum((x - xTarget).^2,2));
     
     % End point error
     distEndErr = sqrt(sum((x(end,:) - [0.05, 0.0,0.05]).^2,2));

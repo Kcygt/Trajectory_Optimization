@@ -14,11 +14,11 @@ qDes = [ 0   0.198678167676855   0.327814256075948 ];
 [Px, Py, Pz] = FK(qDes(1), qDes(2), qDes(3));
 xDes = [Px, Py, Pz];
 
-% xMid = [0, 0.015, 0.04];
-xMid = [0, 0.04, 0.005];
-% xMid = [0,0.03 , 0.03];
+% xTarget = [0, 0.04, 0.005];
+% xTarget = [0, 0.015, 0.04];
+xTarget = [0,0.03 , 0.03];
 
-qMid = IK(xMid(1), xMid(2), xMid(3));
+qMid = IK(xTarget(1), xTarget(2), xTarget(3));
 
 % Parameters
 tspan = 10;
@@ -27,7 +27,7 @@ wn = [1 1 1];
 Kp = [70 70 70];
 Kd = [20 20 20];
 % Weights
-wt = [50, 1, 0.08, 1, 1]; % [Target, End, Time]
+wt = [100, 1, 0.08, 1, 1]; % [Target, End, Time]
 
 initPrms = [tspan,zeta, wn,Kp,Kd];
 
@@ -48,7 +48,7 @@ ub = [10 ... % time
       140 140 140 ];  % Kd
 
 % Objective Function
-objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xMid, xDes);
+objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xDes);
 
 % Run optimization
 options = optimoptions('fmincon','PlotFcns', 'optimplot', 'Display', 'off', ... 
@@ -61,7 +61,7 @@ problem = createOptimProblem('fmincon',...
     'lb', lb, ...
     'ub', ub, ...
     'options', options, ...
-    'nonlcon', @(prms) trajConstraint(prms, qDes, xMid));
+    'nonlcon', @(prms) trajConstraint(prms, qDes, xTarget));
 
 % MultiStart setup
 ms = MultiStart('UseParallel', true, 'Display', 'iter');
@@ -82,7 +82,7 @@ plotting
 
 
 % Objective Function
-function error = objectiveFunction(Opt, qDes, wt, xMid, xDes)
+function error = objectiveFunction(Opt, qDes, wt, xTarget, xDes)
     x0 = zeros(12, 1);
     x0(1:3) = qDes;
 
@@ -94,7 +94,7 @@ function error = objectiveFunction(Opt, qDes, wt, xMid, xDes)
     xOut = [xO,yO,zO];
    
     % Calculate minimum distance to middle point
-    distMid = min(sqrt(sum((xOut - xMid).^2,2)));
+    distMid = min(sqrt(sum((xOut - xTarget).^2,2)));
     
     % End point error
     distEndErr = min(sqrt(sum((xOut - xDes).^2,2)));
@@ -116,7 +116,7 @@ function error = objectiveFunction(Opt, qDes, wt, xMid, xDes)
 end
 
 % Constraint Function for Midpoint Proximity
-function [c, ceq] = trajConstraint(Opt,qDes,xMid)
+function [c, ceq] = trajConstraint(Opt,qDes,xTarget)
     ceq = []; % No equality constraints
 
     % Simulate trajectory
@@ -126,7 +126,7 @@ function [c, ceq] = trajConstraint(Opt,qDes,xMid)
     xOut = [xO,yO,zO];
    
     % Calculate minimum distance to middle point
-    distMid = min(sqrt(sum((xOut - xMid).^2,2)));
+    distMid = min(sqrt(sum((xOut - xTarget).^2,2)));
     
     % End point error
     distEndErr = min(sqrt(sum((xOut - [0 0.05 0.05]).^2,2)));
