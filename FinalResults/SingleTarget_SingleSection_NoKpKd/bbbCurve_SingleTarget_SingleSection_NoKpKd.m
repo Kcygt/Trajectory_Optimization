@@ -1,10 +1,3 @@
-%%%%%
-% 
-% Optimal Parameter:
-% Time: 3.3134
-% zeta: 0.86265     0.55127     0.99884
-% Wn:   16.1593      3.08098      3.56322
-%%%%%
 
 clear; clc;
 close all;
@@ -15,8 +8,8 @@ qDes = [ 0   0.198678167676855   0.327814256075948 ];
 xDes = [Px, Py, Pz];
 
 % xTarget = [0, 0.04, 0.005];
-% xTarget = [0, 0.015, 0.04];
-xTarget = [0,0.03 , 0.03];
+xTarget = [0, 0.015, 0.04];
+% xTarget = [0,0.03 , 0.03];
 
 qMid = IK(xTarget(1), xTarget(2), xTarget(3));
 
@@ -38,9 +31,9 @@ initPrms = [tspan,zeta, wn];
 lb = [0 ... % time
       0.5 0.5 0.5 ... % zeta
       0.1 0.1 0.1]; % Wn
-ub = [5 ... % time
+ub = [2 ... % time
       1 1 1 ... % Zeta
-      20 20 20]; % Wn
+      8 8 8]; % Wn
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xDes);
@@ -72,6 +65,7 @@ numStarts = 5; % Number of random starting points
 %%% Plotting
 [xi, yi, zi] = FK(yInit(:,7), yInit(:,8), yInit(:,9)); % Initial Trajectory
 [x_opt, y_opt, z_opt] = FK(yy(:,7), yy(:,8), yy(:,9)); % Optimized Trajectory
+[x_Des, y_Des, z_Des] = FK(yy(:,1), yy(:,2), yy(:,3)); % Optimized Trajectory
 
 plotting
 
@@ -131,7 +125,7 @@ function dxdt= myTwolinkwithprefilter(t,x,qDes,t_st,zeta,wn)
     qd=x(10:12);
 
     Kp=diag([70 70 70]);  
-    Kd=diag([20 20 20]);  
+    Kd=diag([120 120 120]);  
 
     controller=Kp*(x(1:3)-q)+Kd*(x(4:6)-qd);
 

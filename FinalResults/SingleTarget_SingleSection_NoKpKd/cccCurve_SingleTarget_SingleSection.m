@@ -77,6 +77,7 @@ numStarts = 5; % Number of random starting points
 %%% Plotting
 [xi, yi, zi] = FK(yInit(:,7), yInit(:,8), yInit(:,9)); % Initial Trajectory
 [x_opt, y_opt, z_opt] = FK(yy(:,7), yy(:,8), yy(:,9)); % Optimized Trajectory
+[x_Des, y_Des, z_Des] = FK(yy(:,1), yy(:,2), yy(:,3)); % Optimized Trajectory
 
 plotting
 

@@ -1,17 +1,18 @@
-dataNum = 10;  % Change this to 2, 3, etc. for other runs
+dataNum = 5;  % Change this to 2, 3, etc. for other runs
 
 % Cartesian Space Trajectory 
 figure; hold on; grid on;
 plot(yi, zi,'--')
-plot(y_opt,z_opt,'.-')
+plot(y_Des,z_Des,'o')
+plot(y_opt,z_opt,'.')
 plot(xTarget(2),xTarget(3),'*')
 plot(xDes(2),xDes(3),'o')
-legend('Initial Trajectory','Optimized Trajectory','Target Point','End Point')
+legend('Initial Trajectory','Desired Trajectory','Optimized Trajectory','Target Point','End Point')
 xlabel('X axis (m)')
 ylabel('Y axis (m)')
 title('Cartesian Space Trajectory Results')
 disp(['Optimal Parameter:', num2str(Opt)])
-saveas(gcf, sprintf('data%dCartesianPosition.fig', dataNum))  % Dynamic name
+% saveas(gcf, sprintf('data%dCartesianPosition.fig', dataNum))  % Dynamic name
 
 
 % Joint position 
@@ -26,7 +27,7 @@ for i = 1:3
     end
     legend('Desired', 'Actual')
 end
-saveas(gcf, sprintf('data%dJointPosition.fig', dataNum))  % Dynamic name
+% saveas(gcf, sprintf('data%dJointPosition.fig', dataNum))  % Dynamic name
 
 
 
@@ -42,7 +43,7 @@ for i = 4:6
     end
     legend('Desired', 'Actual')
 end
-saveas(gcf, sprintf('data%dJointVelocity.fig', dataNum))  % Dynamic name
+% saveas(gcf, sprintf('data%dJointVelocity.fig', dataNum))  % Dynamic name
 
 % Calculate Position error
 PosErr = yy(:,7:9) - yy(:,1:3); % assuming yy(:,6:9) = actual, yy(:,1:3) = desired
