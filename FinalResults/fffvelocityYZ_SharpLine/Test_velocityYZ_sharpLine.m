@@ -9,44 +9,54 @@ close all;
 % CtrlPnt = [   0   0.0008976    0.040571 ];
 qDes = [ 0   0.198678167676855   0.327814256075948 ];
 
-[xDes, yDes, zDes] = FK(qDes(1), qDes(2), qDes(3));
-xDes = [xDes, yDes, zDes];
+[x, y, z] = FK(qDes(1), qDes(2), qDes(3));
+xDes = [x, y, z];
 
 xTarget = zeros(3,3);
-xTarget(1,:) = [0, 0.015, 0.01];
-xTarget(2,:) = [0, 0.025, 0.03];
-xTarget(3,:) = [0, 0.035, 0.045];
+% xTarget(1,:) = [0, 0.015, 0.01];
+% xTarget(2,:) = [0, 0.025, 0.03];
+% xTarget(3,:) = [0, 0.035, 0.045];
 
+xTarget(1,:) = [0, 0.015, 0.005];
+xTarget(2,:) = [0, 0.025, 0.025];
+xTarget(3,:) = [0, 0.045, 0.04];
 
 % Parameters
 tspan =  20;
-wn1 = [1 1 1 ];
-wn2 = [1 1 1 ];
+wn1 = [1 1.2 1 ];
+wn2 = [1 1 10 ];
 CtrlPnt = xTarget(2,:);
 qCtrl = IK(CtrlPnt(1), CtrlPnt(2), CtrlPnt(3));
 
 qDes =[qCtrl;qDes];
 
 % Weights
-wt = [400, 5, 0.01];   % [Target, End, Time]
+wt = [400, 1, 0.01];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2, CtrlPnt];
 
 t_uniform = 0:0.01:tspan;
 
 % Initial Condition
-[ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,CtrlPnt), t_uniform, zeros(12, 1));
+[tInit, yInit] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,CtrlPnt), t_uniform, zeros(12, 1));
 
+[xi, yi, zi] = FK(yInit(:,7), yInit(:,8), yInit(:,9));     % Initial Trajectory
+figure; hold on; grid on;
+plot(yi,zi)
+plot(0.025, 0.07,'d')
+
+
+tb = [0 0.015 0.015];
 % Lower and Upper Limits
-lb = [0   0.5 0.5 0.5     0.5 0.5 0.5    0.0 0.0 0.0];     % Wn
-ub = [20   4 4 4    4 4 4   0.0 0.05 0.05];      % wn
+lb = [0   0.5 0.5 0.5     0.5 0.5 0.5     0 0.025 0.07];     % Wn
+ub = [4   40 40 40 40 40 40            0 0.025 0.07];      % wn
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xDes);
 
 % Run optimization
 options = optimoptions('fmincon','PlotFcns', 'optimplot', 'Display', 'off', ... 
-                        'TolCon', 1e-10); % Added constraint tolerance
+                        'TolCon', 1e-10,'Maxiterations',50); % Added constraint tolerance
 
 % Create optimization problem
 problem = createOptimProblem('fmincon',...
@@ -72,30 +82,11 @@ tOpt = 0:0.01:Opt(1);
 t_Vmax = 1./[Opt(2:4)];
 
 % Forward Kinematics
-[xInit, yInit, zInit] = FK(yi(:,7), yi(:,8), yi(:,9));     % Initial Trajectory
-[xOpt, yOpt, zOpt] = FK(yy(:,7), yy(:,8), yy(:,9));        % Optimized Trajectory
+[xi, yi, zi] = FK(yInit(:,7), yInit(:,8), yInit(:,9));     % Initial Trajectory
+[x_opt, y_opt, z_opt] = FK(yy(:,7), yy(:,8), yy(:,9)); % Optimized Trajectory
+[x_Des, y_Des, z_Des] = FK(yy(:,1), yy(:,2), yy(:,3)); % Optimized Trajectory
 
-
-%%% Plotting
-figure; hold on; grid on;
-plot(yInit, zInit,'--')
-plot(yOpt,zOpt,'.-')
-plot(xTarget(1,2),xTarget(1,3),'*')
-plot(xTarget(2,2),xTarget(2,3),'*')
-plot(xTarget(3,2),xTarget(3,3),'*')
-
-plot(xDes(2),xDes(3),'o')
-plot(Opt(9),Opt(10),'d')
-
-legend('Initial Trajectory','Optimized Trajectory','Target Point 1','Target Point 2','Target Point 3','End Point','Control Point')
-xlabel('X axis (m)')
-ylabel('Y axis (m)')
-title('Cartesian Space Trajectory Results')
-disp('Optimal Parameter:')
-disp(['tspan = [ ', num2str(Opt(1)), ' ];'])
-disp(['wn1 =  [ ', num2str(Opt(2:4)), ' ];'])
-disp(['wn2 =  [ ', num2str(Opt(5:7)), ' ];'])
-disp(['CtrlPnt = [   ', num2str(Opt(8:10)), ' ];'])
+plotting
 
 % Velocity Plot
 figure; hold on; grid on;
@@ -120,7 +111,7 @@ legend( ...
 %%%%%%%%%%%% FUNCTION %%%%%%%%%%%%%
 
 % Objective Function
-function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
+function error = objectiveFunction(prms, qDes, wt, xTarget, xDes)
     
     x0 = zeros(12, 1);
     % x0(1:3) = qDes(1,:);  & look at it to understand why you are using
@@ -130,23 +121,27 @@ function error = objectiveFunction(prms, qDes, wt, xMid, xDes)
     t_uniform = 0:0.01:T_total;
 
     % Simulate the system
-    [t, y] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1), prms(2:4), prms(5:7), prms(8:10)), ...
+    [tt, yy] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1), prms(2:4), prms(5:7), prms(8:10)), ...
                     t_uniform, x0);
     % y_uniform = interp1(t,y,t_uniform);
-    [xOut,yOut,zOut] = FK(y(:,7),y(:,8),y(:,9));
-    xOut = [xOut,yOut,zOut];
+    [x,y,z] = FK(yy(:,7),yy(:,8),yy(:,9));
+    xOut = [x,y,z];
     
     % Calculate minimum distance to middle point
-    distMidF = sum(min(sum((xOut - permute(xMid, [3 2 1])).^2, 2), [], 1));
+    distMid1 = min(sqrt(sum((xOut - xTarget(1,:)).^2,2)));
+    distMid2 = min(sqrt(sum((xOut - xTarget(2,:)).^2,2)));
+    distMid3 = min(sqrt(sum((xOut - xTarget(3,:)).^2,2)));
 
+    distMid = distMid1 + distMid2 + distMid3;
+    
     % End point error
-    distEndErr = sum((xOut(end,:) - xDes).^2,2);
+    distEndErr = min(sqrt(sum((xOut - xDes).^2,2)));
     
     % Time penalty
     timePenalty = prms(1);
 
     % Composite error (normalized)
-    error = wt(1) * distMidF    + ...
+    error = wt(1) * distMid    + ...
             wt(2) * distEndErr + ...
             wt(3) * timePenalty;
 end
@@ -160,20 +155,21 @@ function [c, ceq] = trajConstraint(prms,qDes,xTarget)
     [~, yy] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1),prms(2:4),prms(5:7),prms(8:10)), ...
                     t_uniform, zeros(12, 1));
     [x,y,z] = FK(yy(:,7),yy(:,8),yy(:,9));     % Optimized Trajectory
-    x = [x,y,z];
+    xOut = [x,y,z];
+    
     % Calculate distances to midpoint in 3D space
-    distanceMid1  = sum((x - xTarget(1,:)).^2,2);
-    distanceMid2  = sum((x - xTarget(2,:)).^2,2);
-    distanceMid3  = sum((x - xTarget(3,:)).^2,2);
+    distMid1 = min(sqrt(sum((xOut - xTarget(1,:)).^2,2)));
+    distMid2 = min(sqrt(sum((xOut - xTarget(1,:)).^2,2)));
+    distMid3 = min(sqrt(sum((xOut - xTarget(1,:)).^2,2)));
     
     % End point error
-    distEndErr = sum((x(end,:) - [0.0, 0.05,0.05]).^2,2);
+    distEndErr = min(sqrt(sum((xOut - [0, 0.05 0.05]).^2,2)));
     
     % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
-    c = [min(distanceMid1) - 0.00000001;
-         min(distanceMid2) - 0.00000001;
-         min(distanceMid3) - 0.00000001;
-         distEndErr    - 0.0000001];
+    c = [distMid1 - 1e-10;
+         distMid2 - 1e-10;
+         distMid3 - 1e-10;
+         distEndErr    - 1e-10];
 
 end
 % 
