@@ -13,42 +13,50 @@ qDes = [ 0   0.198678167676855   0.327814256075948 ];
 xDes = [x, y, z];
 
 xTarget = zeros(3,3);
-% xTarget(1,:) = [0, 0.015, 0.01];
-% xTarget(2,:) = [0, 0.025, 0.03];
-% xTarget(3,:) = [0, 0.035, 0.045];
+xTarget(1,:) = [0, 0.02, 0.01];
+xTarget(2,:) = [0, 0.03, 0.02];
+xTarget(3,:) = [0, 0.04, 0.03];
 
-xTarget(1,:) = [0, 0.015, 0.005];
-xTarget(2,:) = [0, 0.025, 0.025];
-xTarget(3,:) = [0, 0.045, 0.04];
+% xTarget(1,:) = [0, 0.015, 0.005];
+% xTarget(2,:) = [0, 0.025, 0.025];
+% xTarget(3,:) = [0, 0.045, 0.04];
 
 % Parameters
 tspan =  20;
 wn1 = [1 1 1 ];
 wn2 = [1 1 1 ];
-CtrlPnt = xTarget(2,:);
-qCtrl = IK(CtrlPnt(1), CtrlPnt(2), CtrlPnt(3));
+wn3 = [1 1 1 ];
 
-qDes =[qCtrl;qDes];
+qCtrl = zeros(2,3);
+
+CtrlPnt1 = xTarget(1,:);
+CtrlPnt2 = xTarget(3,:);
+
+qCtrl1= IK(CtrlPnt1(1), CtrlPnt1(2), CtrlPnt1(3));
+qCtrl2= IK(CtrlPnt2(1), CtrlPnt2(2), CtrlPnt2(3));
+
+qDes =[qCtrl1;qCtrl2;qDes];
 
 % Weights
-wt = [400, 1, 0.01];   % [Target, End, Time]
+wt = [400, 10, 0.01];   % [Target, End, Time]
 
-initPrms = [tspan, wn1, wn2, CtrlPnt];
+initPrms = [tspan, wn1, wn2, wn3, CtrlPnt1,CtrlPnt2];
 
 t_uniform = 0:0.01:tspan;
 
 % Initial Condition
-[tInit, yInit] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,CtrlPnt), t_uniform, zeros(12, 1));
+[tInit, yInit] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,wn3,CtrlPnt1,CtrlPnt2), t_uniform, zeros(12, 1));
 
 [xi, yi, zi] = FK(yInit(:,7), yInit(:,8), yInit(:,9));     % Initial Trajectory
+figure; hold on; grid on;
 plot(yi,zi)
-plot
+% plot(0.025, 0.07,'d')
 
 
-tb = [0 0.015 0.015];
+tb = [0 0.02 0.02];
 % Lower and Upper Limits
-lb = [0   0.5 0.5 0.5     0.5 0.5 0.5     0 0.025 0.07];     % Wn
-ub = [4   40 40 40 40 40 40            0 0.025 0.07];      % wn
+lb = [0   1 1 1   1 1 1   1 1 1  CtrlPnt1 - tb CtrlPnt2 - tb];     % Wn
+ub = [4   4 4 4   4 4 4   4 4 4  CtrlPnt1 + tb CtrlPnt2 + tb];      % wn
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xDes);
@@ -75,7 +83,7 @@ numStarts = 5; % Number of random starting points
 tOpt = 0:0.01:Opt(1);
 
 % Simulate with optimal parameters
-[tt, yy] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1),  Opt(2:4), Opt(5:7),Opt(8:10)), ...
+[tt, yy] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1),  Opt(2:4), Opt(5:7),Opt(8:10),Opt(11:13),Opt(14:16)), ...
                   tOpt, zeros(12, 1));
 
 t_Vmax = 1./[Opt(2:4)];
@@ -120,7 +128,7 @@ function error = objectiveFunction(prms, qDes, wt, xTarget, xDes)
     t_uniform = 0:0.01:T_total;
 
     % Simulate the system
-    [tt, yy] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1), prms(2:4), prms(5:7), prms(8:10)), ...
+    [tt, yy] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1), prms(2:4), prms(5:7), prms(8:10),prms(11:13),prms(14:16)), ...
                     t_uniform, x0);
     % y_uniform = interp1(t,y,t_uniform);
     [x,y,z] = FK(yy(:,7),yy(:,8),yy(:,9));
@@ -151,7 +159,7 @@ function [c, ceq] = trajConstraint(prms,qDes,xTarget)
     T_total = prms(1);
     t_uniform = 0:0.01:T_total;
     % Simulate trajectory
-    [~, yy] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1),prms(2:4),prms(5:7),prms(8:10)), ...
+    [~, yy] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1),prms(2:4),prms(5:7),prms(8:10),prms(11:13),prms(14:16)), ...
                     t_uniform, zeros(12, 1));
     [x,y,z] = FK(yy(:,7),yy(:,8),yy(:,9));     % Optimized Trajectory
     xOut = [x,y,z];
@@ -165,21 +173,22 @@ function [c, ceq] = trajConstraint(prms,qDes,xTarget)
     distEndErr = min(sqrt(sum((xOut - [0, 0.05 0.05]).^2,2)));
     
     % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
-    c = [distMid1 - 1e-10;
-         distMid2 - 1e-10;
-         distMid3 - 1e-10;
-         distEndErr    - 1e-10];
+    c = [distMid1   - 1e-10;
+         distMid2   - 1e-10;
+         distMid3   - 1e-10;
+         distEndErr - 1e-10];
 
 end
 % 
-function dxdt = myTwolinkwithprefilter(t, x,qDes,tspan , wn1, wn2, ctrlPnt)
+function dxdt = myTwolinkwithprefilter(t, x,qDes,tspan , wn1, wn2, wn3,ctrlPnt1,ctrlPnt2)
     zeta = [1 1 1];  % Damping ratio
 
     % Compute per-joint switching times
-    t_Vmax = 1 ./ wn1;
-
+    t_Vmax1 = 1 ./ wn1;
+    t_Vmax2 = 1 ./ wn2 + t_Vmax1 ;
     % Get initial control point joint angles via IK
-    qCtrl = IK(ctrlPnt(1), ctrlPnt(2), ctrlPnt(3));
+    qCtrl1 = IK(ctrlPnt1(1), ctrlPnt1(2), ctrlPnt1(3));
+    qCtrl2 = IK(ctrlPnt2(1), ctrlPnt2(2), ctrlPnt2(3));
 
     % Initialize natural frequency and control target for each joint
     wn = zeros(1, 3);
@@ -187,12 +196,15 @@ function dxdt = myTwolinkwithprefilter(t, x,qDes,tspan , wn1, wn2, ctrlPnt)
 
     % Per-joint switching logic based on t_Vmax
     for i = 1:3
-        if t <= t_Vmax(i)
+        if t <= t_Vmax1(i)
             wn(i) = wn1(i);
-            qControl(i) = qCtrl(i);
-        else
+            qControl(i) = qCtrl1(i);
+        elseif t >= t_Vmax1(i) && t <= t_Vmax2(i)
             wn(i) = wn2(i);
-            qControl(i) = qDes(2, i);  % Desired joint angle after switch
+            qControl(i) = qCtrl2(i);
+        else
+            wn(i) = wn3(i);
+            qControl(i) = qDes(3, i);  % Desired joint angle after switch
         end
     end
 

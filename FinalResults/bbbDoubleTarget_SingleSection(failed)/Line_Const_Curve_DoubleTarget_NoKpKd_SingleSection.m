@@ -10,17 +10,17 @@ xDes = [xDes, yDes, zDes];
 xTarget = zeros(2,3);
 qMid = zeros(2,3);
 
-% xTarget(1,:) = [0, 0.02, 0.01];
-% xTarget(2,:) = [0, 0.04, 0.03];
+xTarget(1,:) = [0, 0.02, 0.01];
+xTarget(2,:) = [0, 0.04, 0.03];
 
 xTarget(1,:) = [0, 0.01, 0.02];
 xTarget(2,:) = [0, 0.03, 0.04];
-
-xTarget(1,:) = [0, 0.02, 0.02];
-xTarget(2,:) = [0, 0.04, 0.04];
-
-xTarget(1,:) = [0, 0.02, 0.005];
-xTarget(2,:) = [0, 0.03, 0.045];
+% LLine
+% xTarget(1,:) = [0, 0.02, 0.02];
+% xTarget(2,:) = [0, 0.04, 0.04];
+% Failed
+% xTarget(1,:) = [0, 0.02, 0.005];
+% xTarget(2,:) = [0, 0.03, 0.045];
 
 
 qMid(1,:) = IK(xTarget(1,1), xTarget(1,2), xTarget(1,3));

@@ -1,4 +1,4 @@
-dataNum = 5;  % Change this to 2, 3, etc. for other runs
+dataNum = 1;  % Change this to 2, 3, etc. for other runs
 
 % Cartesian Space Trajectory 
 figure; hold on; grid on;

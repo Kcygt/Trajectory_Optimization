@@ -14,9 +14,9 @@ qDes = [ 0   0.198678167676855   0.327814256075948 ];
 [Px, Py, Pz] = FK(qDes(1), qDes(2), qDes(3));
 xDes = [Px, Py, Pz];
 
-% xTarget = [0, 0.04, 0.005];
+xTarget = [0, 0.04, 0.005];
 % xTarget = [0, 0.015, 0.04];
-xTarget = [0,0.03 , 0.03];
+% xTarget = [0,0.03 , 0.03];
 
 qMid = IK(xTarget(1), xTarget(2), xTarget(3));
 

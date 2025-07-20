@@ -14,9 +14,9 @@ qDes = [ 0   0.198678167676855   0.327814256075948 ];
 [Px, Py, Pz] = FK(qDes(1), qDes(2), qDes(3));
 xDes = [Px, Py, Pz];
 
-% xTarget = [0, 0.04, 0.005];
+xTarget = [0, 0.04, 0.005];
 % xTarget = [0, 0.015, 0.04];
-xTarget = [0,0.03 , 0.03];
+% xTarget = [0,0.03 , 0.03];
 
 qMid = IK(xTarget(1), xTarget(2), xTarget(3));
 
@@ -25,7 +25,7 @@ tspan = 10;
 wn = [1 1 1];
 
 % Weights
-wt = [100, 1, 0.1]; % [Target, End, Time]
+wt = [200, 5, 0.1]; % [Target, End, Time]
 
 initPrms = [tspan, wn];
 
@@ -37,7 +37,7 @@ initPrms = [tspan, wn];
 lb = [0 ... % time
       0.5 0.5 0.5 ]; % Wn
 ub = [2 ... % time
-      8 8 8]; % Wn
+      15 15 15]; % Wn
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xDes);

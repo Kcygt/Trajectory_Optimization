@@ -4,7 +4,7 @@ close all;
 qDes = [ 0   0.198678167676855   0.327814256075948 ];
 
 [x, y, z] = FK(qDes(1), qDes(2), qDes(3));
-xDes = [x, y, z];
+xEnd = [x, y, z];
 
 xTarget = zeros(5,3);
 xCtrl = zeros(2,3);
@@ -23,12 +23,7 @@ wn3 = [ 2 5 ];
 xCtrl(1,:) = xTarget(2,:) ;
 xCtrl(2,:) = xTarget(4,:) ;
 
-tspan = 3.14 ;
-wn1 =  [ 2.1676      6.9214 ];
-wn2 =  [ 6.9089      1.8477 ];
-wn3 =  [ 5.5221      6.8933 ];
-xCtrl(1,:)= [  0 0.047538     0.02262 ];
-xCtrl(2,:)= [  0 0.0019282    0.015155 ];
+
 
 qCtrl(1,:) = IK(xCtrl(1,1), xCtrl(1,2), xCtrl(1,3));
 qCtrl(2,:) = IK(xCtrl(2,1), xCtrl(2,2), xCtrl(2,3));
@@ -36,7 +31,7 @@ qCtrl(2,:) = IK(xCtrl(2,1), xCtrl(2,2), xCtrl(2,3));
 qDes =[qCtrl; qDes];
 
 % Weights
-wt = [1000, .5, 0.000001];   % [Target, End, Time]
+wt = [600, 2, 0.0001];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2,wn3, xCtrl(1,2:3),xCtrl(2,2:3)];
 
@@ -44,21 +39,8 @@ t_uniform = 0:0.01:tspan;
 
 
 % Initial Condition
-[ti, yi] = ode45(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,wn3,xCtrl(1,2:3),xCtrl(2,2:3)), t_uniform, zeros(12, 1));
+[tInit, yInit] = ode45(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,wn3,xCtrl(1,2:3),xCtrl(2,2:3)), t_uniform, zeros(12, 1));
 
-[xInit, yInit, zInit] = FK(yi(:,7), yi(:,8), yi(:,9));     % Initial Trajectory
-
-% %%% Plotting
-figure; hold on; grid on;
-plot(yInit, zInit,'--')
-plot(xTarget(1,2),xTarget(1,3),'*')
-plot(xTarget(2,2),xTarget(2,3),'*')
-plot(xTarget(3,2),xTarget(3,3),'*')
-plot(xTarget(4,2),xTarget(4,3),'*')
-plot(xTarget(5,2),xTarget(5,3),'*')
-plot(xCtrl(1,2),xCtrl(1,3),'d')
-plot(xCtrl(2,2),xCtrl(2,3),'d')
-plot(xDes(2),xDes(3),'o')
 
 tolRad = 0.015;
 
@@ -77,7 +59,7 @@ ub = [ 5   ...   % Time
       xTarget(4,2)+tolRad xTarget(4,3)+tolRad ];  % Control Point2
 
 % Objective Function
-objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xDes);
+objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xEnd);
 
 % Run optimization
 options = optimoptions('fmincon','PlotFcns', 'optimplot', 'Display', 'off', ... 
@@ -105,90 +87,91 @@ tOpt = 0:0.01:Opt(1);
                   tOpt, zeros(12, 1));
 
 % Forward Kinematics
-[xInit, yInit, zInit] = FK(yi(:,7), yi(:,8), yi(:,9));     % Initial Trajectory
-[xOpt, yOpt, zOpt] = FK(yy(:,7), yy(:,8), yy(:,9));        % Optimized Trajectory
-
-
-r = 0.01; % Radius
-theta = linspace(0, 2*pi, 100); % Angle for circle
-
-x_circle1 = Opt(8) + r*cos(theta); 
-y_circle1 = Opt(9) + r*sin(theta); 
-x_circle2 = Opt(10) + r*cos(theta); 
-y_circle2 = Opt(11) + r*sin(theta); 
-
-% Recompute distances to control points
-ctrl1 = [0 Opt(8:9)];
-ctrl2 = [0 Opt(10:11)];
-dist1 = sqrt((xOpt - ctrl1(1)).^2 + (yOpt - ctrl1(2)).^2 + (zOpt - ctrl1(3)).^2);
-dist2 = sqrt((xOpt - ctrl2(1)).^2 + (yOpt - ctrl2(2)).^2 + (zOpt - ctrl2(3)).^2);
-
-% Find the first time where distance to control point 1 is less than threshold (phase 2 start)
-tol = 0.01; % same as in your phase logic
-
-
-% Plot vertical lines at phase change times
-figure; hold on; grid on;
-plot(yOpt, zOpt, '.-')
-plot(xTarget(1,2), xTarget(1,3), '*')
-plot(xTarget(2,2), xTarget(2,3), '*')
-plot(xTarget(3,2), xTarget(3,3), '*')
-plot(xTarget(4,2), xTarget(4,3), '*')
-plot(xTarget(5,2), xTarget(5,3), '*')
-
-plot(xDes(2), xDes(3), 'o')
-plot(Opt(8), Opt(9), 'd')
-plot(Opt(10), Opt(11), 'd')
-plot(x_circle1, y_circle1, 'b--', 'LineWidth', 1.5);
-plot(x_circle2, y_circle2, 'b--', 'LineWidth', 1.5);
-
-
-text(xTarget(1,2), xTarget(1,3), 'T1', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right')
-text(xTarget(2,2), xTarget(2,3), 'T2', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right')
-text(xTarget(3,2), xTarget(3,3), 'T3', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right')
-text(xTarget(4,2), xTarget(4,3), 'T4', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right')
-text(xTarget(5,2), xTarget(5,3), 'T5', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right')
-
-text(Opt(8), Opt(9), 'C1', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right')
-text(Opt(10), Opt(11), 'C2', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right')
-
-legend('Optimized Trajectory','Target Point 1','Target Point 2','End Point','Control Point 1','Control Point 2')
-xlabel('Y axis (m)')
-ylabel('Z axis (m)')
-title('Cartesian Space Trajectory Results with Phase Changes')
-disp('Optimal Parameter:')
-disp(['tspan = [ ', num2str(Opt(1)), ' ];'])
-disp(['wn1 =  [ ', num2str(Opt(2:3)), ' ];'])
-disp(['wn2 =  [ ', num2str(Opt(4:5)), ' ];'])
-disp(['wn3 =  [ ', num2str(Opt(6:7)), ' ];'])
-disp(['CtrlPnt 1= [   ', num2str(Opt(8:9)), ' ];'])
-disp(['CtrlPnt 2= [   ', num2str(Opt(10:11)), ' ];'])
-% disp(['Phase1 time= [   ', num2str(t_phase2), ' ];'])
-% disp(['Phase2 time= [   ', num2str(t_phase3), ' ];'])
-
-
-
-% Velocity Plot
-figure; hold on; grid on;
-plot(tt, yy(:,10:12))
-xlabel('Time (s)')
-ylabel('Velocity (rad/s)')
-title('Velocity')
-% % 
-% % % Add vertical dashed lines at t_Vmax times (excluding index 1)
-% % xline(t_phase2, '--k');
-% % xline(t_phase3, '--k');
-% % 
-% % 
-% % Create legend with numeric time values
-% legend( ...
-%     'Actual Joint 1', ...
-%     'Actual Joint 2', ...
-%     'Actual Joint 3' );
-% %%%%%%%%%%%% FUNCTION %%%%%%%%%%%%%
-% save('data5Target2.mat.mat',"Opt","tt","yy","xCtrl","xTarget")
+[xi, yi, zi] = FK(yInit(:,7), yInit(:,8), yInit(:,9)); % Optimized Trajectory
+[x_opt, y_opt, z_opt] = FK(yy(:,7), yy(:,8), yy(:,9)); % Optimized Trajectory
+[x_Des, y_Des, z_Des] = FK(yy(:,1), yy(:,2), yy(:,3)); % Optimized Trajectory
+plottingFiveTarget 
+% 
+% r = 0.01; % Radius
+% theta = linspace(0, 2*pi, 100); % Angle for circle
+% 
+% x_circle1 = Opt(8) + r*cos(theta); 
+% y_circle1 = Opt(9) + r*sin(theta); 
+% x_circle2 = Opt(10) + r*cos(theta); 
+% y_circle2 = Opt(11) + r*sin(theta); 
+% 
+% % Recompute distances to control points
+% ctrl1 = [0 Opt(8:9)];
+% ctrl2 = [0 Opt(10:11)];
+% dist1 = sqrt((xOpt - ctrl1(1)).^2 + (yOpt - ctrl1(2)).^2 + (zOpt - ctrl1(3)).^2);
+% dist2 = sqrt((xOpt - ctrl2(1)).^2 + (yOpt - ctrl2(2)).^2 + (zOpt - ctrl2(3)).^2);
+% 
+% % Find the first time where distance to control point 1 is less than threshold (phase 2 start)
+% tol = 0.02; % same as in your phase logic
+% 
+% 
+% % Plot vertical lines at phase change times
+% figure; hold on; grid on;
+% plot(yOpt, zOpt, '.-')
+% plot(xTarget(1,2), xTarget(1,3), '*')
+% plot(xTarget(2,2), xTarget(2,3), '*')
+% plot(xTarget(3,2), xTarget(3,3), '*')
+% plot(xTarget(4,2), xTarget(4,3), '*')
+% plot(xTarget(5,2), xTarget(5,3), '*')
+% 
+% plot(xDes(2), xDes(3), 'o')
+% plot(Opt(8), Opt(9), 'd')
+% plot(Opt(10), Opt(11), 'd')
+% plot(x_circle1, y_circle1, 'b--', 'LineWidth', 1.5);
+% plot(x_circle2, y_circle2, 'b--', 'LineWidth', 1.5);
+% 
+% 
+% text(xTarget(1,2), xTarget(1,3), 'T1', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right')
+% text(xTarget(2,2), xTarget(2,3), 'T2', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right')
+% text(xTarget(3,2), xTarget(3,3), 'T3', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right')
+% text(xTarget(4,2), xTarget(4,3), 'T4', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right')
+% text(xTarget(5,2), xTarget(5,3), 'T5', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right')
+% 
+% text(Opt(8), Opt(9), 'C1', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right')
+% text(Opt(10), Opt(11), 'C2', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right')
+% 
+% legend('Optimized Trajectory','Target Point 1','Target Point 2','End Point','Control Point 1','Control Point 2')
+% xlabel('Y axis (m)')
+% ylabel('Z axis (m)')
+% title('Cartesian Space Trajectory Results with Phase Changes')
+% disp('Optimal Parameter:')
+% disp(['tspan = [ ', num2str(Opt(1)), ' ];'])
+% disp(['wn1 =  [ ', num2str(Opt(2:3)), ' ];'])
+% disp(['wn2 =  [ ', num2str(Opt(4:5)), ' ];'])
+% disp(['wn3 =  [ ', num2str(Opt(6:7)), ' ];'])
+% disp(['CtrlPnt 1= [   ', num2str(Opt(8:9)), ' ];'])
+% disp(['CtrlPnt 2= [   ', num2str(Opt(10:11)), ' ];'])
+% % disp(['Phase1 time= [   ', num2str(t_phase2), ' ];'])
+% % disp(['Phase2 time= [   ', num2str(t_phase3), ' ];'])
+% 
+% 
+% 
+% % Velocity Plot
+% figure; hold on; grid on;
+% plot(tt, yy(:,10:12))
+% xlabel('Time (s)')
+% ylabel('Velocity (rad/s)')
+% title('Velocity')
+% % % 
+% % % % Add vertical dashed lines at t_Vmax times (excluding index 1)
+% % % xline(t_phase2, '--k');
+% % % xline(t_phase3, '--k');
+% % % 
+% % % 
+% % % Create legend with numeric time values
+% % legend( ...
+% %     'Actual Joint 1', ...
+% %     'Actual Joint 2', ...
+% %     'Actual Joint 3' );
+% % %%%%%%%%%%%% FUNCTION %%%%%%%%%%%%%
+% % save('data5Target2.mat.mat',"Opt","tt","yy","xCtrl","xTarget")
 % Objective Function
-function error = objectiveFunction(prms, qDes, wt, xTarget, xDes)
+function error = objectiveFunction(prms, qDes, wt, xTarget, xEnd)
 
     % Simulate the system
     [t, y] = ode45(@(t,x) myTwolinkwithprefilter(t, x, qDes, prms(1),  prms(2:3), prms(4:5),prms(6:7),prms(8:9),prms(10:11)), ...
@@ -216,7 +199,7 @@ function error = objectiveFunction(prms, qDes, wt, xTarget, xDes)
     distMidF = distMid1 + distMid2 + distMid3 + distMid4 + distMid5 ;
 
     % End point error
-    distEndErr = sum((xOut(end,:) - xDes).^2,2);
+    distEndErr = sum((xOut(end,:) - xEnd).^2,2);
 
     % Time penalty
     timePenalty = prms(1);

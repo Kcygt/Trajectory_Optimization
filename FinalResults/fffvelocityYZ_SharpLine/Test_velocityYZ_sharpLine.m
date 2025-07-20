@@ -13,13 +13,13 @@ qDes = [ 0   0.198678167676855   0.327814256075948 ];
 xDes = [x, y, z];
 
 xTarget = zeros(3,3);
-% xTarget(1,:) = [0, 0.015, 0.01];
-% xTarget(2,:) = [0, 0.025, 0.03];
-% xTarget(3,:) = [0, 0.035, 0.045];
+xTarget(1,:) = [0, 0.02, 0.01];
+xTarget(2,:) = [0, 0.03, 0.02];
+xTarget(3,:) = [0, 0.04, 0.03];
 
-xTarget(1,:) = [0, 0.015, 0.005];
-xTarget(2,:) = [0, 0.025, 0.025];
-xTarget(3,:) = [0, 0.045, 0.04];
+% xTarget(1,:) = [0, 0.015, 0.005];
+% xTarget(2,:) = [0, 0.025, 0.025];
+% xTarget(3,:) = [0, 0.045, 0.04];
 
 % Parameters
 tspan =  20;
@@ -41,15 +41,15 @@ t_uniform = 0:0.01:tspan;
 [tInit, yInit] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,CtrlPnt), t_uniform, zeros(12, 1));
 
 [xi, yi, zi] = FK(yInit(:,7), yInit(:,8), yInit(:,9));     % Initial Trajectory
-figure; hold on; grid on;
-plot(yi,zi)
-plot(0.025, 0.07,'d')
+% figure; hold on; grid on;
+% plot(yi,zi)
+% plot(0.025, 0.07,'d')
 
 
-tb = [0 0.015 0.015];
+tb = [0 0.01 0.01];
 % Lower and Upper Limits
-lb = [0   0.5 0.5 0.5     0.5 0.5 0.5     0 0.025 0.07];     % Wn
-ub = [4   40 40 40 40 40 40            0 0.025 0.07];      % wn
+lb = [0   0.5 0.5 0.5     0.5 0.5 0.5     CtrlPnt - tb];     % Wn
+ub = [4   4 4 4 4 4 4           CtrlPnt + tb];      % wn
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xDes);

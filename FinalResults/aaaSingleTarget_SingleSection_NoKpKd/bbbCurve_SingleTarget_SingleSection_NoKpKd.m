@@ -19,7 +19,7 @@ zeta = [1 1 1];
 wn = [1 1 1];
 
 % Weights
-wt = [100, 1, 0.08]; % [Target, End, Time]
+wt = [200, 5, 0.08]; % [Target, End, Time]
 
 initPrms = [tspan,zeta, wn];
 
