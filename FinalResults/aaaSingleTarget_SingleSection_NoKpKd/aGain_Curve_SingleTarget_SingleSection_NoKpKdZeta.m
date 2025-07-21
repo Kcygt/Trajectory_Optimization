@@ -1,0 +1,237 @@
+clear; clc;
+close all;
+dataNum = 1;
+
+% Define desired trajectory and Middle Points
+qDes = [ 0   0.198678167676855   0.327814256075948 ];
+[Px, Py, Pz] = FK(qDes(1), qDes(2), qDes(3));
+xDes = [Px, Py, Pz];
+
+xTarget = [0, 0.04, 0.005];
+qMid = IK(xTarget(1), xTarget(2), xTarget(3));
+
+% Parameters
+tOpt = 5;
+wnOpt = [5.06209, 13.6765, 1.89744];
+
+Gain1 = 10;
+tOpt1 = tOpt / Gain1;
+wnOpt1 = Gain1 * wnOpt;
+
+% Initial Condition
+[tOut, yOut] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tOpt, wnOpt), [0 tOpt], zeros(12, 1));
+[tOut1, yOut1] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tOpt1, wnOpt1), [0 tOpt1], zeros(12, 1));
+
+% Compute Cartesian Trajectories
+[xOpt, yOpt, zOpt] = FK(yOut(:,7), yOut(:,8), yOut(:,9));
+[x_Des, y_Des, z_Des] = FK(yOut(:,1), yOut(:,2), yOut(:,3));
+
+[xOpt1, yOpt1, zOpt1] = FK(yOut1(:,7), yOut1(:,8), yOut1(:,9));
+[x_Des1, y_Des1, z_Des1] = FK(yOut1(:,1), yOut1(:,2), yOut1(:,3));
+
+% Cartesian Space Trajectory Plot
+figure; hold on; grid on;
+plot(yOpt, zOpt,'-b','LineWidth',1.5)
+plot(yOpt1, zOpt1,'--r','LineWidth',1.5)
+plot(y_Des,z_Des,':k','LineWidth',2)
+plot(xTarget(2),xTarget(3),'kp','MarkerSize',10,'MarkerFaceColor','y')
+plot(xDes(2),xDes(3),'ko','MarkerSize',8,'MarkerFaceColor','g')
+legend('Initial Trajectory','Gain1 Trajectory','Desired Trajectory','Target Point','End Point','Location','Best')
+xlabel('Y axis (m)')
+ylabel('Z axis (m)')
+title('Cartesian Space Trajectory Results')
+
+% Joint Position Plot
+figure;
+tiledlayout(3,1)
+for i = 1:3
+    nexttile; grid on; hold on;
+    plot(tOut, yOut(:,i), '--b', 'LineWidth', 1.5, 'DisplayName', 'Desired')
+    plot(tOut, yOut(:,i+6), '-b', 'LineWidth', 1.5, 'DisplayName', 'Actual')
+    plot(tOut1, yOut1(:,i), '--r', 'LineWidth', 1.5, 'DisplayName', 'Desired Gain')
+    plot(tOut1, yOut1(:,i+6), '-r', 'LineWidth', 1.5, 'DisplayName', 'Actual Gain')
+    ylabel(sprintf('q_%d (rad)', i))
+    if i == 3, xlabel('Time (s)'); end
+    legend show
+end
+sgtitle('Joint Positions Over Time')
+
+% Joint Velocity Plot
+figure;
+tiledlayout(3,1)
+for i = 4:6
+    nexttile; grid on; hold on;
+    plot(tOut, yOut(:,i), '--b', 'LineWidth', 1.5, 'DisplayName', 'Desired')
+    plot(tOut, yOut(:,i+6), '-b', 'LineWidth', 1.5, 'DisplayName', 'Actual')
+    plot(tOut1, yOut1(:,i), '--r', 'LineWidth', 1.5, 'DisplayName', 'Desired Gain')
+    plot(tOut1, yOut1(:,i+6), '-r', 'LineWidth', 1.5, 'DisplayName', 'Actual Gain')
+    ylabel(sprintf('q_%d velocity (rad/s)', i-3))
+    if i == 6, xlabel('Time (s)'); end
+    legend show
+end
+sgtitle('Joint Velocities Over Time')
+
+% Calculate Errors
+PosErr  = yOut(:,7:9)  - yOut(:,1:3);
+PosErr1 = yOut1(:,7:9) - yOut1(:,1:3);
+VelErr  = yOut(:,10:12)  - yOut(:,4:6);
+VelErr1 = yOut1(:,10:12) - yOut1(:,4:6);
+
+% Compute RMSE
+PosRMSE  = sum(rmse(yOut(:,7:9),  yOut(:,1:3)), 2);
+VelRMSE  = sum(rmse(yOut(:,10:12), yOut(:,4:6)), 2);
+PosRMSE1 = sum(rmse(yOut1(:,7:9),  yOut1(:,1:3)), 2);
+VelRMSE1 = sum(rmse(yOut1(:,10:12), yOut1(:,4:6)), 2);
+
+% Compute Min Distance to Target
+TargetMin  = min(sqrt(sum(([xOpt, yOpt, zOpt]   - xTarget).^2, 2)));
+TargetMin1 = min(sqrt(sum(([xOpt1, yOpt1, zOpt1] - xTarget).^2, 2)));
+
+% Display Results
+fprintf('Minimum Target Error:    %.6f\n', TargetMin);
+fprintf('Position RMSE (rad):      %.6f\n', PosRMSE);
+fprintf('Velocity RMSE (rad/s):    %.6f\n', VelRMSE);
+
+fprintf('Minimum Target Error 1:    %.6f\n', TargetMin1);
+fprintf('Position RMSE (rad) 1:      %.6f\n', PosRMSE1);
+fprintf('Velocity RMSE (rad/s) 1:    %.6f\n', VelRMSE1);
+
+TargetPer = ((TargetMin - TargetMin1) / TargetMin1) * 100;
+PosPer    = ((PosRMSE - PosRMSE1) / PosRMSE1) * 100;
+VelPer    = ((VelRMSE - VelRMSE1) / VelRMSE1) * 100;
+
+fprintf('Target change = %.2f%%\n', TargetPer);
+fprintf('Position change = %.2f%%\n', PosPer);
+fprintf('Velocity change = %.2f%%\n', VelPer);
+
+% Save Results
+save(sprintf('data%d.mat', dataNum), 'PosRMSE','VelRMSE','TargetMin','tOut','yOut','xTarget');
+
+% ----------- Helper Functions -----------
+
+function e = rmse(a, b)
+    e = sqrt(mean((a - b).^2, 1));
+end
+
+% Paste your FK, IK, myTwolinkwithprefilter, and compute_M_C_G functions here...
+% Keep them as-is unless you'd like me to revise them too.
+
+
+% Dynamics Function with Prefilter
+function dxdt= myTwolinkwithprefilter(t,x,qDes,t_st,wn)
+    zeta = [1 1 1];
+    A1=[zeros(3), eye(3); -diag(wn).^2,-2*diag(zeta)*diag(wn)];
+    B1=[zeros(3); diag(wn).^2];
+
+    q=x(7:9);
+    qd=x(10:12);
+
+    Kp=diag([70 70 70]);  
+    Kd=diag([120 120 120]);  
+
+    controller=Kp*(x(1:3)-q)+Kd*(x(4:6)-qd);
+
+    [M,C,G]=compute_M_C_G(q(1),q(2),q(3),qd(1),qd(2),qd(3));
+    
+    tau=M*(controller)+C*qd;
+    
+    qdd=M\(tau-C*qd);
+
+    dxdt=[A1*x(1:6)+B1*qDes(:); qd; qdd];
+end
+
+% Forward Kinematics (FK)
+function [x,y,z]=FK(q1,q2,q3)
+    l1=0.208; 
+    l2=0.168;  
+    x=sin(q1).*(l1*cos(q2)+l2*sin(q3));
+    y=l2-l2*cos(q3)+l1*sin(q2);
+    z=-l1+cos(q1).*(l1*cos(q2)+l2*sin(q3));
+end
+
+% Inverse Kinematics (IK)
+function Q=IK(x,y,z)
+    l1=0.208; 
+    l2=0.168;  
+    q1=atan2(x,z+l1);
+
+    R=sqrt(x^2+(z+l1)^2);
+    r=sqrt(x^2+(y-l2)^2+(z+l1)^2);
+    
+    Beta=atan2(y-l2,R);
+    Gamma=acos((l1^2+r^2-l2^2)/(2*l1*r));
+    
+    q2=Gamma+Beta;
+
+    Alpha=acos((l1^2+l2^2-r^2)/(2*l1*l2));
+    
+    q3=q2+Alpha-pi/2;
+    
+    Q=[q1,q2,q3];
+end
+
+function [M, C, G] = compute_M_C_G(theta1, theta2,theta3, dtheta1, dtheta2,dtheta3)
+    % link lenghts
+    l1 = 0.208;   l2 = 0.168;   l3 = 0.0325;
+    l5 = -0.0368; l6 = 0.0527;
+    
+    % Gravity
+    g = -9.80665; % m/s^2
+       
+    % segment A
+    m_a = 0.0202;
+    Ia_xx = 0.4864*1e-4;  Ia_yy = 0.001843*1e-4;  Ia_zz = 0.4864*1e-4;
+    Ia = [Ia_xx 0 0;  0  Ia_yy 0;  0 0 Ia_zz];
+    
+    % segment C
+    m_c = 0.0249;
+    Ic_xx = 0.959*1e-4;  Ic_yy = 0.959*1e-4;  Ic_zz = 0.0051*1e-4;
+    Ic = [Ic_xx 0 0;  0  Ic_yy 0;  0 0 Ic_zz];
+    
+    % segment BE
+    m_be = 0.2359;
+    Ibe_xx = 11.09*1e-4;  Ibe_yy = 10.06*1e-4;  Ibe_zz = 0.591*1e-4;
+    Ibe = [Ibe_xx 0 0;  0  Ibe_yy 0;  0 0 Ibe_zz];
+    
+    % segment DF
+    m_df = 0.1906;
+    Idf_xx = 7.11*1e-4;  Idf_yy = 0.629*1e-4;  Idf_zz = 6.246*1e-4;
+    Idf = [Idf_xx 0 0;  0  Idf_yy 0;  0 0 Idf_zz];
+    
+    % BASE
+    Ibaseyy = 11.87e-4;
+    
+    % MASS 
+    M11 = ( 1/8*( 4*Ia_yy  + 4*Ia_zz  + 8*Ibaseyy + 4*Ibe_yy + 4*Ibe_zz + 4*Ic_yy + 4*Ic_zz + 4*Idf_zz + 4*l1^2*m_a + l2^2*m_a + l1^2*m_c + 4*l3^2*m_c  ) + ...
+            1/8*( 4*Ibe_yy - 4*Ibe_zz + 4*Ic_zz   + l1^2*(4*m_a + m_c)) * cos(2*theta2) + ...
+            1/8*( 4*Ia_yy  - 4*Ia_zz  + 4*Idf_yy  - 4*Idf_zz - l2^2*m_a - 4*l3^2*m_c) * cos(2*theta3) + l1*(l2*m_a + l3*m_c)*cos(theta2)*sin(theta3)  );
+    
+    M22 = 1/4*(4*(Ibe_xx + Ic_xx + l1^2*m_a) + l1^2*m_c);
+    M23 = -1/2*l1*(l2*m_a + l3*m_c) * sin(theta2-theta3);
+    M32 = M23;
+    M33 = 1/4 * (4*Ia_xx + 4*Idf_xx + l2^2*m_a + 4*l3^2*m_c);
+    
+    M = [M11 0 0; 0 M22 M23; 0 M32 M33];
+    
+    % CORIOLIS
+    C11 = 1/8*( -2*sin(theta2) * ((4*Ibe_yy - 4*Ibe_zz * 4*Ic_yy - 4*Ic_zz + 4*l1^2*m_a +l1^2*m_c )*cos(theta2) + 2*l1*(l2*m_a + l3*m_c)*sin(theta3) ) )*dtheta2 + ...
+           2*cos(theta3)*(2*l1*(l2*m_a + l3*m_c)*cos(theta2) + (-4*Ia_yy + 4*Ia_zz -4*Idf_yy + 4*Idf_zz + l2^2*m_a + 4*l3^2*m_c)*sin(theta3)) * dtheta3 ;
+    
+    C12 = -1/8 * ((4*Ibe_yy - 4*Ibe_zz + 4*Ic_yy - 4*Ic_zz + l1^2*(4*m_a + m_c))*sin(2*theta2) + 4*l1*(l2*m_a+l3*m_c)*sin(theta2)*sin(theta3))*dtheta1; 
+    C13 = -1/8*(-4*l1*(l2*m_a + l3*m_c)*cos(theta2)*cos(theta3) - (-4*Ia_yy + 4*Ia_zz - 4*Idf_yy + 4*Idf_zz + l2^2*m_a + 4*l3*m_c)*sin(2*theta3))*dtheta1;
+    C21 = -C12;
+    C23 = 1/2*l1*(l2*m_a + l3*m_c)*cos(theta2*theta3)*dtheta3;
+    C31 = -C13;
+    C32  = -1/2*l1*(l2*m_a + l3*m_c)*cos(theta2 - theta3)*dtheta2;
+    
+    C = [C11 C12 C13; C21 0 C23; C31 C32 0];
+    
+    % GRAVITY
+    
+    N2 = 1/2*g*(2*l1*m_a + 2*l5*m_be + l1*m_c)*cos(theta2);
+    N3 = 1/2*g*(l2*m_a + 2*l3*m_c - 2*l6*m_df)*sin(theta3);
+    
+    G = [0 N2 N3]';
+end
+
+
