@@ -1,14 +1,13 @@
-dataNum = 19;  % Change this to 2, 3, etc. for other runs
+dataNum = 20;  % Change this to 2, 3, etc. for other runs
 
 % Cartesian Space Trajectory 
 figure; hold on; grid on;
 plot(yi, zi,'--')
-plot(y_opt,z_opt,'.-')
+plot(yOpt,zOpt,'.-')
 plot(xTarget(1,2),xTarget(1,3),'*')
 plot(xTarget(2,2),xTarget(2,3),'*')
 plot(xTarget(3,2),xTarget(3,3),'*')
-plot(Opt(12),Opt(13),'d')
-plot(Opt(15),Opt(16),'d')
+plot(Opt(9),Opt(10),'d')
 
 plot(xDes(2),xDes(3),'o')
 legend('Initial Trjectory','Optimized Trajectory','Target Point 1','Target Point 2','Target Point 3','Control Point 1','Control Point 2','End Point')
@@ -62,9 +61,9 @@ VelRMSE= sum(rmse(yy(:,10:12), yy(:,4:6)),2);
 % Compute max absolute error
 PosMaxErr = max(abs(PosErr));
 VelMaxErr = max(abs(VelErr));
-TargetMin1 = min(sqrt(sum(([x_opt, y_opt, z_opt] - xTarget(1,:)).^2,2)));
-TargetMin2 = min(sqrt(sum(([x_opt, y_opt, z_opt] - xTarget(2,:)).^2,2)));
-TargetMin3 = min(sqrt(sum(([x_opt, y_opt, z_opt] - xTarget(3,:)).^2,2)));
+TargetMin1 = min(sqrt(sum(([xOpt, yOpt, zOpt] - xTarget(1,:)).^2,2)));
+TargetMin2 = min(sqrt(sum(([xOpt, yOpt, zOpt] - xTarget(2,:)).^2,2)));
+TargetMin3 = min(sqrt(sum(([xOpt, yOpt, zOpt] - xTarget(3,:)).^2,2)));
 
 
 % Print results
