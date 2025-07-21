@@ -8,9 +8,9 @@ close all;
 % wn2 =  [ 22.1803      11.2432      32.1501 ];
 % CtrlPnt = [   0   0.0008976    0.040571 ];
 qDes = [ 0   0.198678167676855   0.327814256075948 ];
+[Px, Py, Pz] = FK(qDes(1), qDes(2), qDes(3));
+xFinal = [Px, Py, Pz];
 
-[xDes, yDes, zDes] = FK(qDes(1), qDes(2), qDes(3));
-xDes = [xDes, yDes, zDes];
 
 xTarget = zeros(3,3);
 
@@ -30,7 +30,7 @@ CtrlPnt = xTarget(2,:);
 qCtrl = IK(CtrlPnt(1), CtrlPnt(2), CtrlPnt(3));
 
 qDes =[qCtrl;qDes];
-
+dataNum = 18;
 % Weights
 wt = [400, 5, 0.01];   % [Target, End, Time]
 
@@ -39,7 +39,7 @@ initPrms = [tspan, wn1, wn2, CtrlPnt];
 t_uniform = 0:0.01:tspan;
 
 % Initial Condition
-[ti, yi] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,CtrlPnt), t_uniform, zeros(12, 1));
+[tInit, yInit] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,CtrlPnt), t_uniform, zeros(12, 1));
 
 tb = [0 0.02 0.02];
 % Lower and Upper Limits
@@ -47,7 +47,7 @@ lb = [0   0.5 0.5 0.5     0.5 0.5 0.5    CtrlPnt - tb];     % Wn
 ub = [6   4 4 4    4 4 4             CtrlPnt + tb];      % wn
 
 % Objective Function
-objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xDes);
+objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xFinal);
 
 % Run optimization
 options = optimoptions('fmincon','PlotFcns', 'optimplot', 'Display', 'off', ... 
@@ -71,62 +71,67 @@ numStarts = 5; % Number of random starting points
 tOpt = 0:0.01:Opt(1);
 
 % Simulate with optimal parameters
-[tt, yy] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1),  Opt(2:4), Opt(5:7),Opt(8:10)), ...
+[tOpt, yOpt] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1),  Opt(2:4), Opt(5:7),Opt(8:10)), ...
                   tOpt, zeros(12, 1));
 
 t_Vmax = 1./[Opt(2:4)];
 
 % Forward Kinematics
-[xInit, yInit, zInit] = FK(yi(:,7), yi(:,8), yi(:,9));     % Initial Trajectory
-[xOpt, yOpt, zOpt] = FK(yy(:,7), yy(:,8), yy(:,9));        % Optimized Trajectory
+[CxInit, CyInit, CzInit] = FK(yInit(:,7), yInit(:,8), yInit(:,9)); % Initial Trajectory
+[CxOpt, CyOpt, CzOpt] = FK(yOpt(:,7), yOpt(:,8), yOpt(:,9)); % Optimized Trajectory
+[CxDes, CyDes, CzDes] = FK(yOpt(:,1), yOpt(:,2), yOpt(:,3)); % Optimized Trajectory
 
-
-
-%%% Plotting
+% Cartesian Space Trajectory 
 figure; hold on; grid on;
-plot(yInit, zInit,'--')
-plot(yOpt,zOpt,'.-')
-plot(xTarget(1,2),xTarget(1,3),'*')
-plot(xTarget(2,2),xTarget(2,3),'*')
-plot(xTarget(3,2),xTarget(3,3),'*')
+plot(CyInit, CzInit,'--')
+plot(CyDes,CzDes,'o',  'LineWidth',1., 'Color', [0.1725, 0.6275, 0.1725],'MarkerSize',7)
+plot(CyOpt,CzOpt,'-.', 'LineWidth',1.2, 'Color',[ 0.7969 0  0.7969])
+plot(xTarget(1,2),xTarget(1,3),'*','LineWidth',1.2,'MarkerSize',8,'Color',[0, 0.3984, 0.8])
+plot(xTarget(2,2),xTarget(2,3),'*','LineWidth',1.2,'MarkerSize',8, 'Color',[0, 0.3984, 0.8])
+plot(xTarget(3,2),xTarget(3,3),'*','LineWidth',1.2,'MarkerSize',8, 'Color',[0, 0.3984, 0.8])
 
-plot(xDes(2),xDes(3),'o')
-plot(Opt(9),Opt(10),'d')
-
-legend('Initial Trajectory','Optimized Trajectory','Target Point 1','Target Point 2','Target Point 3','End Point','Control Point')
+plot(xFinal(2),xFinal(3),'p','LineWidth',1.5,'MarkerSize',14,'Color',[1.0000, 0.4980, 0.0549])
+legend('Initial Trajectory','Desired Trajectory','Optimized Trajectory','Target Point 1','Target Point 2','Target Point 3','End Point')
 xlabel('X axis (m)')
 ylabel('Y axis (m)')
 title('Cartesian Space Trajectory Results')
-disp('Optimal Parameter:')
-disp(['tspan = [ ', num2str(Opt(1)), ' ];'])
-disp(['wn1 =  [ ', num2str(Opt(2:4)), ' ];'])
-disp(['wn2 =  [ ', num2str(Opt(5:7)), ' ];'])
-disp(['CtrlPnt = [   ', num2str(Opt(8:10)), ' ];'])
+disp(['Optimal Parameter:', num2str(Opt)])
+% saveas(gcf, sprintf('data%dCartesianPosition.fig', dataNum))  % Dynamic name
 
-% Velocity Plot
-figure; hold on; grid on;
-plot(tt, yy(:,10:12))
-xlabel('Time (s)')
-ylabel('Velocity (rad/s)')
-title('Velocity')
 
-% Add vertical dashed lines at t_Vmax times (excluding index 1)
-for k = 2:length(t_Vmax)
-    xline(t_Vmax(k), '--k');
+% Joint position 
+figure;
+for i = 1:3
+    subplot(3,1,i); hold on; grid on;
+    plot(tOpt, yOpt(:,i), '--') % desired
+    plot(tOpt, yOpt(:,i+6))     % actual
+    ylabel(['Joint ', num2str(i), ' Position (rad)'])
+    if i == 3
+        xlabel('Time (s)')
+    end
+    legend('Desired', 'Actual')
 end
 
-% Create legend with numeric time values
-legend( ...
-    'Actual Joint 1', ...
-    'Actual Joint 2', ...
-    'Actual Joint 3', ...
-    sprintf('Time switching joint 2 = %.4f s', t_Vmax(2)), ...
-    sprintf('Time switching joint 3 = %.4f s', t_Vmax(3)) ...
-);
-%%%%%%%%%%%% FUNCTION %%%%%%%%%%%%%
+
+
+% Joint Velocity 
+figure;
+for i = 4:6
+    subplot(3,1,i-3); hold on; grid on;
+    plot(tOpt, yOpt(:,i), '--') % desired
+    plot(tOpt, yOpt(:,i+6))     % actual
+    ylabel(['Joint ', num2str(i), ' Position (rad)'])
+    if i == 3
+        xlabel('Time (s)')
+    end
+    legend('Desired', 'Actual')
+end
+
+save(sprintf('data%d.mat', dataNum), ...
+    'Opt','tOpt','yOpt','tInit','yInit','xTarget');
 
 % Objective Function
-function error = objectiveFunction(prms, qDes, wt, xTarget, xDes)
+function error = objectiveFunction(prms, qDes, wt, xTarget, xFinal)
     
     x0 = zeros(12, 1);
     % x0(1:3) = qDes(1,:);  & look at it to understand why you are using
@@ -146,7 +151,7 @@ function error = objectiveFunction(prms, qDes, wt, xTarget, xDes)
     distMidF = sum(min(sum((xOut - permute(xTarget, [3 2 1])).^2, 2), [], 1));
 
     % End point error
-    distEndErr = sum((xOut(end,:) - xDes).^2,2);
+    distEndErr = sum((xOut(end,:) - xFinal).^2,2);
     
     % Time penalty
     timePenalty = prms(1);

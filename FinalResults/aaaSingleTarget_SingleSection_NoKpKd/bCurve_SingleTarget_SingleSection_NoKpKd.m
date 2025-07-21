@@ -1,22 +1,33 @@
-
 clear; clc;
 close all;
 
 % Define desired trajectory and Middle Points
 qDes = [ 0   0.198678167676855   0.327814256075948 ];
 [Px, Py, Pz] = FK(qDes(1), qDes(2), qDes(3));
-xDes = [Px, Py, Pz];
+xFinal = [Px, Py, Pz];
 
-% xTarget = [0, 0.04, 0.005];
-xTarget = [0, 0.015, 0.04];
-% xTarget = [0,0.03 , 0.03];
+xTarget1 = [0, 0.04, 0.005];
+xTarget2 = [0, 0.015, 0.04];
+xTarget3 = [0, 0.03, 0.03];
 
-qMid = IK(xTarget(1), xTarget(2), xTarget(3));
+% Select one of the xTargets
+xTarget = xTarget3;  % Change this to xTarget2 or xTarget3 as needed
+
+% Determine which xTarget was selected
+if isequal(xTarget, xTarget1)
+    dataNum = 4;
+elseif isequal(xTarget, xTarget2)
+    dataNum = 5;
+elseif isequal(xTarget, xTarget3)
+    dataNum = 6;
+else
+    error('xTarget does not match any predefined targets.');
+end
 
 % Parameters
 tspan = 10;
 zeta = [1 1 1];
-wn = [1 1 1];
+wn = [1 3 1];
 
 % Weights
 wt = [200, 5, 0.08]; % [Target, End, Time]
@@ -33,10 +44,10 @@ lb = [0 ... % time
       0.1 0.1 0.1]; % Wn
 ub = [2 ... % time
       1 1 1 ... % Zeta
-      8 8 8]; % Wn
+      15 15 15]; % Wn
 
 % Objective Function
-objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xDes);
+objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xFinal);
 
 % Run optimization
 options = optimoptions('fmincon','PlotFcns', 'optimplot', 'Display', 'off', ... 
@@ -59,15 +70,62 @@ numStarts = 5; % Number of random starting points
 [Opt, fval] = run(ms, problem, numStarts);
 
 % Simulate with optimal parameters
-[tt, yy] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1),  Opt(2:4), Opt(5:7)), ...
+[tOpt, yOpt] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1),  Opt(2:4), Opt(5:7)), ...
                   [0 Opt(1)], zeros(12, 1));
 
 %%% Plotting
-[xi, yi, zi] = FK(yInit(:,7), yInit(:,8), yInit(:,9)); % Initial Trajectory
-[x_opt, y_opt, z_opt] = FK(yy(:,7), yy(:,8), yy(:,9)); % Optimized Trajectory
-[x_Des, y_Des, z_Des] = FK(yy(:,1), yy(:,2), yy(:,3)); % Optimized Trajectory
+[CxInit, CyInit, CzInit] = FK(yInit(:,7), yInit(:,8), yInit(:,9)); % Initial Trajectory
+[CxOpt, CyOpt, CzOpt] = FK(yOpt(:,7), yOpt(:,8), yOpt(:,9)); % Optimized Trajectory
+[CxDes, CyDes, CzDes] = FK(yOpt(:,1), yOpt(:,2), yOpt(:,3)); % Optimized Trajectory
 
-plotting
+
+
+% Cartesian Space Trajectory 
+figure; hold on; grid on;
+plot(CyInit, CzInit,'--')
+plot(CyDes,CzDes,'o')
+plot(CyOpt,CzOpt,'.')
+plot(xTarget(2),xTarget(3),'*')
+plot(xFinal(2),xFinal(3),'o')
+legend('Initial Trajectory','Desired Trajectory','Optimized Trajectory','Target Point','End Point')
+xlabel('X axis (m)')
+ylabel('Y axis (m)')
+title('Cartesian Space Trajectory Results')
+disp(['Optimal Parameter:', num2str(Opt)])
+
+
+% Joint position 
+figure;
+for i = 1:3
+    subplot(3,1,i); hold on; grid on;
+    plot(tOpt, yOpt(:,i), '--') % desired
+    plot(tOpt, yOpt(:,i+6))     % actual
+    ylabel(['Joint ', num2str(i), ' Position (rad)'])
+    if i == 3
+        xlabel('Time (s)')
+    end
+    legend('Desired', 'Actual')
+end
+
+
+
+% Joint Velocity 
+figure;
+for i = 4:6
+    subplot(3,1,i-3); hold on; grid on;
+    plot(tOpt, yOpt(:,i), '--') % desired
+    plot(tOpt, yOpt(:,i+6))     % actual
+    ylabel(['Joint ', num2str(i), ' Position (rad)'])
+    if i == 3
+        xlabel('Time (s)')
+    end
+    legend('Desired', 'Actual')
+end
+
+
+save(sprintf('data%d.mat', dataNum), ...
+    'Opt','tOpt','yOpt','tInit','yInit','xTarget');
+
 
 
 % Objective Function

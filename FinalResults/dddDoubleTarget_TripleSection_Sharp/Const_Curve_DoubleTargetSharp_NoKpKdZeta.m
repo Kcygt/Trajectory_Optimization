@@ -3,11 +3,11 @@ close all;
 
 % Define desired trajectory and Middle Points
 qDes = [ 0   0.198678167676855   0.327814256075948 ];
-[xDes, yDes, zDes] = FK(qDes(1), qDes(2), qDes(3));
-xDes = [xDes, yDes, zDes];
+[Px, Py, Pz] = FK(qDes(1), qDes(2), qDes(3));
+xFinal = [Px, Py, Pz];
+
 
 xTarget = zeros(2,3);
-qMid = zeros(2,3);
 xTarget(1,:) = [0, 0.02, 0.01];
 xTarget(2,:) = [0, 0.03, 0.04];
 
@@ -16,14 +16,11 @@ xTarget(2,:) = [0, 0.04, 0.03];
 % 
 % xTarget(1,:) = [0, 0.02, 0.02];
 % xTarget(2,:) = [0, 0.04, 0.04];
-
-xTarget(1,:) = [0, 0.02, 0.01];
-xTarget(2,:) = [0, 0.04, 0.03];
-
-
-qMid(1,:) = IK(xTarget(1,1), xTarget(1,2), xTarget(1,3));
-qMid(2,:) = IK(xTarget(2,1), xTarget(2,2), xTarget(2,3));
-
+% 
+% xTarget(1,:) = [0, 0.02, 0.01];
+% xTarget(2,:) = [0, 0.04, 0.03];
+% 
+% 
 
 tspan = [3 6 9];
 wn = [1 2 3  1 2 5  1 1 2];
@@ -37,13 +34,6 @@ initPrms = [tspan, wn];
 % Initial Condition
 [tInit, yInit] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan, wn), [0 tspan], zeros(12, 1));
 
-% [xOut,yOut,zOut] = FK(yInit(:,7),yInit(:,8),yInit(:,9));
-% figure; hold on; grid on;
-% plot(xOut,zOut)
-% plot(xTarget(1,1),xTarget(1,3),'*')
-% plot(xTarget(2,1),xTarget(2,3),'*')
-% plot(xDes(1),xDes(3),'o')
-
 % Lower and Upper Limits
 lb = [0 0 0  ... % time
       0.5 0.5 0.5  0.5 0.5 0.5  0.5 0.5 0.5 ]; % Wn
@@ -51,7 +41,7 @@ ub = [6 6 6 ... % time
      10 10 10  10 10 10  10 10 10]; % Wn
 
 % Objective Function
-objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xDes);
+objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xFinal);
 
 % Run optimization
 options = optimoptions('fmincon','PlotFcns', 'optimplot', 'Display', 'off', ... 
@@ -74,18 +64,71 @@ numStarts = 5; % Number of random starting points
 [Opt, fval] = run(ms, problem, numStarts);
 
 % Simulate with optimal parameters
-[tt, yy] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1:3),  Opt(4:12)), ...
+[tOpt, yOpt] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1:3),  Opt(4:12)), ...
                   [0 Opt(3)], zeros(12, 1));
 
 %%% Plotting
-[xi, yi, zi] = FK(yInit(:,7), yInit(:,8), yInit(:,9)); % Initial Trajectory
-[x_opt, y_opt, z_opt] = FK(yy(:,7), yy(:,8), yy(:,9)); % Optimized Trajectory
-[x_Des, y_Des, z_Des] = FK(yy(:,1), yy(:,2), yy(:,3)); % Optimized Trajectory
+[CxInit, CyInit, CzInit] = FK(yInit(:,7), yInit(:,8), yInit(:,9)); % Initial Trajectory
+[CxOpt, CyOpt, CzOpt] = FK(yOpt(:,7), yOpt(:,8), yOpt(:,9)); % Optimized Trajectory
+[CxDes, CyDes, CzDes] = FK(yOpt(:,1), yOpt(:,2), yOpt(:,3)); % Optimized Trajectory
 
-plotting
+
+dataNum = 15;  % Change this to 2, 3, etc. for other runs
+
+% Cartesian Space Trajectory 
+figure; hold on; grid on;
+plot(CyInit, CzInit,'--')
+plot(CyDes,CzDes,'o',  'LineWidth',1., 'Color', [0.1725, 0.6275, 0.1725],'MarkerSize',7)
+plot(CyOpt,CzOpt,'-.', 'LineWidth',1.2, 'Color',[ 0.7969 0  0.7969])
+plot(xTarget(1,2),xTarget(1,3),'*','LineWidth',1.2,'MarkerSize',8,'Color',[0, 0.3984, 0.8])
+plot(xTarget(2,2),xTarget(2,3),'*','LineWidth',1.2,'MarkerSize',8, 'Color',[0, 0.3984, 0.8])
+
+plot(xFinal(2),xFinal(3),'p','LineWidth',1.5,'MarkerSize',14,'Color',[1.0000, 0.4980, 0.0549])
+legend('Initial Trajectory','Desired Trajectory','Optimized Trajectory','Target Point 1','Target Point 2','End Point')
+xlabel('X axis (m)')
+ylabel('Y axis (m)')
+title('Cartesian Space Trajectory Results')
+disp(['Optimal Parameter:', num2str(Opt)])
+% saveas(gcf, sprintf('data%dCartesianPosition.fig', dataNum))  % Dynamic name
+
+
+% Joint position 
+figure;
+for i = 1:3
+    subplot(3,1,i); hold on; grid on;
+    plot(tOpt, yOpt(:,i), '--') % desired
+    plot(tOpt, yOpt(:,i+6))     % actual
+    ylabel(['Joint ', num2str(i), ' Position (rad)'])
+    if i == 3
+        xlabel('Time (s)')
+    end
+    legend('Desired', 'Actual')
+end
+
+
+
+% Joint Velocity 
+figure;
+for i = 4:6
+    subplot(3,1,i-3); hold on; grid on;
+    plot(tOpt, yOpt(:,i), '--') % desired
+    plot(tOpt, yOpt(:,i+6))     % actual
+    ylabel(['Joint ', num2str(i), ' Position (rad)'])
+    if i == 3
+        xlabel('Time (s)')
+    end
+    legend('Desired', 'Actual')
+end
+
+save(sprintf('data%d.mat', dataNum), ...
+    'Opt','tOpt','yOpt','tInit','yInit','xTarget');
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 
 % Objective Function
-function error = objectiveFunction(prms, qDes, wt, xTarget, xDes)
+function error = objectiveFunction(prms, qDes, wt, xTarget, xFinal)
     x0 = zeros(12, 1);
     x0(1:3) = qDes;
 
@@ -102,7 +145,7 @@ function error = objectiveFunction(prms, qDes, wt, xTarget, xDes)
     distMid = distMid1 + distMid2; 
 
     % End point error
-    distEndErr = min(sqrt(sum((xOut - xDes).^2,2)));
+    distEndErr = min(sqrt(sum((xOut - xFinal).^2,2)));
 
     d1 = prms(1) - prms(2);
     d2 = prms(2) - prms(3);
