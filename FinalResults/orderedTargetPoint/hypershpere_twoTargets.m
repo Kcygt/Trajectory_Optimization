@@ -16,8 +16,8 @@ tspan =  5;
 wn1 = [ 2 2 ];
 wn2 = [ 2 2 ];
 wn3 = [ 2 2 ];
-xCtrl(1,:) = xTarget(1,:) + [0 0.03 0.015];
-xCtrl(2,:) = xTarget(2,:) - [0 0.03 0.015];
+xCtrl(1,:) = xTarget(1,:) ;
+xCtrl(2,:) = xTarget(2,:) ;
 
 qCtrl(1,:) = IK(xCtrl(1,1), xCtrl(1,2), xCtrl(1,3));
 qCtrl(2,:) = IK(xCtrl(2,1), xCtrl(2,2), xCtrl(2,3));
@@ -25,7 +25,7 @@ qCtrl(2,:) = IK(xCtrl(2,1), xCtrl(2,2), xCtrl(2,3));
 qDes =[qCtrl; qDes];
 
 % Weights
-wt = [650, 10, 0.001];   % [Target, End, Time]
+wt = [1000, 10, 0.0001];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2,wn3, xCtrl(1,2:3),xCtrl(2,2:3)];
 

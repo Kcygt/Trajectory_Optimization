@@ -1,0 +1,281 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      -->
+<title>plottingData</title>
+<meta name="generator" content="MATLAB 24.2">
+<link rel="schema.DC" href="http://purl.org/dc/elements/1.1/">
+<meta name="DC.date" content="2025-07-22">
+<meta name="DC.source" content="plottingData.m">
+<style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; }
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+span.typesection { color:#A0522D }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style>
+</head>
+<body>
+<div class="content">
+<pre class="codeinput">close <span class="string">all</span>
+
+<span class="keyword">for</span> i = 1:13
+    <span class="comment">% Construct filenames</span>
+    PdataFile = sprintf(<span class="string">'Pdata%d.mat'</span>, i);
+    SdataFile = sprintf(<span class="string">'data%d.mat'</span>, i);
+
+    <span class="comment">% Load data</span>
+    Pdata = load(PdataFile);
+    Sdata = load(SdataFile);
+
+    <span class="comment">% Call plotting function with dataset label</span>
+    plotPhantomSimulation(Pdata, Sdata, sprintf(<span class="string">'DataSet%d'</span>, i));
+<span class="keyword">end</span>
+
+<span class="keyword">function</span> plotPhantomSimulation(Pdata, Sdata, figPrefix)
+
+    <span class="comment">% Phantom Desired and Actual</span>
+    PqDes = Pdata.Pdata(:,1:3);
+    PqdDes = Pdata.Pdata(:,4:6);
+    PqAct = Pdata.Pdata(:,7:9);
+    PqdAct = Pdata.Pdata(:,10:12);
+
+    <span class="comment">% Extract data</span>
+    Stime = Sdata.tOpt;
+    Ptime = linspace(0, Stime(end), length(PqAct));
+
+    <span class="comment">% Simulation Desired and Actual</span>
+    SqDes = Sdata.yOpt(:,1:3);
+    SqdDes = Sdata.yOpt(:,4:6);
+    SqAct = Sdata.yOpt(:,7:9);
+    SqdAct = Sdata.yOpt(:,10:12);
+
+    xTarget = Sdata.xTarget;
+    [SxDes,SyDes,SzDes] = FK(SqDes(:,1),SqDes(:,2),SqDes(:,3));
+    [SxAct,SyAct,SzAct] = FK(SqAct(:,1),SqAct(:,2),SqAct(:,3));
+    [PxAct,PyAct,PzAct] = FK(PqAct(:,1),PqAct(:,2),PqAct(:,3));
+
+    <span class="comment">% Cartesian Space Position Figure</span>
+    fig1 = figure; hold <span class="string">on</span>; grid <span class="string">on</span>;
+    plot(0, 0, <span class="string">'o'</span>, <span class="string">'LineWidth'</span>, 2, <span class="string">'MarkerSize'</span>, 5)       <span class="comment">% Start Point</span>
+    plot(0.05, 0.05, <span class="string">'o'</span>, <span class="string">'LineWidth'</span>, 2, <span class="string">'MarkerSize'</span>, 5) <span class="comment">% End Point</span>
+    plot(SyDes, SzDes, <span class="string">'b'</span>, <span class="string">'LineWidth'</span>, 2)               <span class="comment">% Desired Position</span>
+    plot(SyAct, SzAct, <span class="string">'r'</span>, <span class="string">'LineWidth'</span>, 2)               <span class="comment">% Simulation Trajectory</span>
+    plot(PyAct, PzAct, <span class="string">'g'</span>, <span class="string">'LineWidth'</span>, 2)               <span class="comment">% Phantom Trajectory</span>
+
+    targetHandles = gobjects(size(xTarget,1),1);
+    <span class="keyword">for</span> k = 1:size(xTarget,1)
+        targetHandles(k) = plot(xTarget(k,2), xTarget(k,3), <span class="string">'ko'</span>, <span class="string">'MarkerSize'</span>, 8, <span class="string">'MarkerFaceColor'</span>, <span class="string">'k'</span>);
+    <span class="keyword">end</span>
+    targetLabels = arrayfun(@(i) sprintf(<span class="string">'Target Point %d'</span>, i), 1:size(xTarget,1), <span class="string">'UniformOutput'</span>, false);
+    legendLabels = [{<span class="string">'Start Point'</span>, <span class="string">'End Point'</span>, <span class="string">'Desired Position'</span>, <span class="string">'Simulation Trajectory'</span>, <span class="string">'Phantom Trajectory'</span>}, targetLabels];
+    legend(legendLabels, <span class="string">'Location'</span>, <span class="string">'eastoutside'</span>)
+    title(<span class="string">'Cartesian Space Position'</span>)
+    xlabel(<span class="string">'Y axis'</span>)
+    ylabel(<span class="string">'Z axis'</span>)
+
+    <span class="comment">% Save Cartesian figure as PDF</span>
+    <span class="comment">% saveas(fig1, sprintf('%s_Cartesian_Position.pdf', figPrefix));</span>
+
+    <span class="comment">% Joint Position Figure</span>
+    fig2 = figure;
+    <span class="keyword">for</span> i = 1:3
+        subplot(3,1,i); grid <span class="string">on</span>; hold <span class="string">on</span>;
+        plot(Ptime, PqAct(:,i), <span class="string">'r-'</span>, <span class="string">'LineWidth'</span>, 1.2);    <span class="comment">% Phantom Actual</span>
+        plot(Stime, SqDes(:,i), <span class="string">'g-'</span>, <span class="string">'LineWidth'</span>, 1.2);    <span class="comment">% Simulation Desired</span>
+        plot(Stime, SqAct(:,i), <span class="string">'b-'</span>, <span class="string">'LineWidth'</span>, 1.2);    <span class="comment">% Simulation Actual</span>
+
+        title(sprintf(<span class="string">'Joint %d Position'</span>, i));
+        <span class="keyword">if</span> i == 3, xlabel(<span class="string">'Time'</span>); <span class="keyword">end</span>
+        ylabel(<span class="string">'Position(rad)'</span>);
+    <span class="keyword">end</span>
+    legend(<span class="string">'Phantom Actual'</span>, <span class="string">'Simulation Desired'</span>, <span class="string">'Simulation Actual'</span>);
+
+    <span class="comment">% Save Joint Position figure as PDF</span>
+    <span class="comment">% saveas(fig2, sprintf('%s_Joint_Position.pdf', figPrefix));</span>
+
+    <span class="comment">% Joint Velocity Figure</span>
+    fig3 = figure;
+    <span class="keyword">for</span> i = 1:3
+        subplot(3,1,i); grid <span class="string">on</span>; hold <span class="string">on</span>;
+        plot(Ptime, PqdAct(:,i), <span class="string">'r-'</span>, <span class="string">'LineWidth'</span>, 1.2);    <span class="comment">% Phantom Actual</span>
+        plot(Stime, SqdDes(:,i), <span class="string">'g-'</span>, <span class="string">'LineWidth'</span>, 1.2);    <span class="comment">% Simulation Desired</span>
+        plot(Stime, SqdAct(:,i), <span class="string">'b-'</span>, <span class="string">'LineWidth'</span>, 1.2);    <span class="comment">% Simulation Actual</span>
+
+        title(sprintf(<span class="string">'Joint %d Velocity'</span>, i));
+        <span class="keyword">if</span> i == 3, xlabel(<span class="string">'Time'</span>); <span class="keyword">end</span>
+        ylabel(<span class="string">'Velocity rad/s'</span>);
+    <span class="keyword">end</span>
+    legend(<span class="string">'Phantom Actual'</span>, <span class="string">'Simulation Desired'</span>, <span class="string">'Simulation Actual'</span>);
+
+    <span class="comment">% Save Joint Velocity figure as PDF</span>
+    <span class="comment">% saveas(fig3, sprintf('%s_Joint_Velocity.pdf', figPrefix));</span>
+<span class="keyword">end</span>
+</pre>
+<img vspace="5" hspace="5" src="plottingData_01.png" alt=""> <img vspace="5" hspace="5" src="plottingData_02.png" alt=""> <img vspace="5" hspace="5" src="plottingData_03.png" alt=""> <img vspace="5" hspace="5" src="plottingData_04.png" alt=""> <img vspace="5" hspace="5" src="plottingData_05.png" alt=""> <img vspace="5" hspace="5" src="plottingData_06.png" alt=""> <img vspace="5" hspace="5" src="plottingData_07.png" alt=""> <img vspace="5" hspace="5" src="plottingData_08.png" alt=""> <img vspace="5" hspace="5" src="plottingData_09.png" alt=""> <img vspace="5" hspace="5" src="plottingData_10.png" alt=""> <img vspace="5" hspace="5" src="plottingData_11.png" alt=""> <img vspace="5" hspace="5" src="plottingData_12.png" alt=""> <img vspace="5" hspace="5" src="plottingData_13.png" alt=""> <img vspace="5" hspace="5" src="plottingData_14.png" alt=""> <img vspace="5" hspace="5" src="plottingData_15.png" alt=""> <img vspace="5" hspace="5" src="plottingData_16.png" alt=""> <img vspace="5" hspace="5" src="plottingData_17.png" alt=""> <img vspace="5" hspace="5" src="plottingData_18.png" alt=""> <img vspace="5" hspace="5" src="plottingData_19.png" alt=""> <img vspace="5" hspace="5" src="plottingData_20.png" alt=""> <img vspace="5" hspace="5" src="plottingData_21.png" alt=""> <img vspace="5" hspace="5" src="plottingData_22.png" alt=""> <img vspace="5" hspace="5" src="plottingData_23.png" alt=""> <img vspace="5" hspace="5" src="plottingData_24.png" alt=""> <img vspace="5" hspace="5" src="plottingData_25.png" alt=""> <img vspace="5" hspace="5" src="plottingData_26.png" alt=""> <img vspace="5" hspace="5" src="plottingData_27.png" alt=""> <img vspace="5" hspace="5" src="plottingData_28.png" alt=""> <img vspace="5" hspace="5" src="plottingData_29.png" alt=""> <img vspace="5" hspace="5" src="plottingData_30.png" alt=""> <img vspace="5" hspace="5" src="plottingData_31.png" alt=""> <img vspace="5" hspace="5" src="plottingData_32.png" alt=""> <img vspace="5" hspace="5" src="plottingData_33.png" alt=""> <img vspace="5" hspace="5" src="plottingData_34.png" alt=""> <img vspace="5" hspace="5" src="plottingData_35.png" alt=""> <img vspace="5" hspace="5" src="plottingData_36.png" alt=""> <img vspace="5" hspace="5" src="plottingData_37.png" alt=""> <img vspace="5" hspace="5" src="plottingData_38.png" alt=""> <img vspace="5" hspace="5" src="plottingData_39.png" alt=""> <p class="footer">
+<br>
+<a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2024b</a>
+<br>
+</p>
+</div>
+<!--
+##### SOURCE BEGIN #####
+close all
+
+for i = 1:13
+    % Construct filenames
+    PdataFile = sprintf('Pdata%d.mat', i);
+    SdataFile = sprintf('data%d.mat', i);
+    
+    % Load data
+    Pdata = load(PdataFile);
+    Sdata = load(SdataFile);
+    
+    % Call plotting function with dataset label
+    plotPhantomSimulation(Pdata, Sdata, sprintf('DataSet%d', i));
+end
+
+function plotPhantomSimulation(Pdata, Sdata, figPrefix)
+    
+    % Phantom Desired and Actual 
+    PqDes = Pdata.Pdata(:,1:3);
+    PqdDes = Pdata.Pdata(:,4:6);
+    PqAct = Pdata.Pdata(:,7:9);
+    PqdAct = Pdata.Pdata(:,10:12);
+
+    % Extract data
+    Stime = Sdata.tOpt;
+    Ptime = linspace(0, Stime(end), length(PqAct));
+
+    % Simulation Desired and Actual 
+    SqDes = Sdata.yOpt(:,1:3);
+    SqdDes = Sdata.yOpt(:,4:6);
+    SqAct = Sdata.yOpt(:,7:9);
+    SqdAct = Sdata.yOpt(:,10:12);
+
+    xTarget = Sdata.xTarget;
+    [SxDes,SyDes,SzDes] = FK(SqDes(:,1),SqDes(:,2),SqDes(:,3));
+    [SxAct,SyAct,SzAct] = FK(SqAct(:,1),SqAct(:,2),SqAct(:,3));
+    [PxAct,PyAct,PzAct] = FK(PqAct(:,1),PqAct(:,2),PqAct(:,3));
+
+    % Cartesian Space Position Figure
+    fig1 = figure; hold on; grid on;
+    plot(0, 0, 'o', 'LineWidth', 2, 'MarkerSize', 5)       % Start Point
+    plot(0.05, 0.05, 'o', 'LineWidth', 2, 'MarkerSize', 5) % End Point
+    plot(SyDes, SzDes, 'b', 'LineWidth', 2)               % Desired Position
+    plot(SyAct, SzAct, 'r', 'LineWidth', 2)               % Simulation Trajectory
+    plot(PyAct, PzAct, 'g', 'LineWidth', 2)               % Phantom Trajectory
+
+    targetHandles = gobjects(size(xTarget,1),1);
+    for k = 1:size(xTarget,1)
+        targetHandles(k) = plot(xTarget(k,2), xTarget(k,3), 'ko', 'MarkerSize', 8, 'MarkerFaceColor', 'k');
+    end
+    targetLabels = arrayfun(@(i) sprintf('Target Point %d', i), 1:size(xTarget,1), 'UniformOutput', false);
+    legendLabels = [{'Start Point', 'End Point', 'Desired Position', 'Simulation Trajectory', 'Phantom Trajectory'}, targetLabels];
+    legend(legendLabels, 'Location', 'eastoutside')
+    title('Cartesian Space Position')
+    xlabel('Y axis')
+    ylabel('Z axis')
+    
+    % Save Cartesian figure as PDF
+    % saveas(fig1, sprintf('%s_Cartesian_Position.pdf', figPrefix));
+
+    % Joint Position Figure
+    fig2 = figure;
+    for i = 1:3
+        subplot(3,1,i); grid on; hold on;
+        plot(Ptime, PqAct(:,i), 'r-', 'LineWidth', 1.2);    % Phantom Actual
+        plot(Stime, SqDes(:,i), 'g-', 'LineWidth', 1.2);    % Simulation Desired
+        plot(Stime, SqAct(:,i), 'b-', 'LineWidth', 1.2);    % Simulation Actual
+
+        title(sprintf('Joint %d Position', i));
+        if i == 3, xlabel('Time'); end
+        ylabel('Position(rad)');
+    end
+    legend('Phantom Actual', 'Simulation Desired', 'Simulation Actual');
+    
+    % Save Joint Position figure as PDF
+    % saveas(fig2, sprintf('%s_Joint_Position.pdf', figPrefix));
+
+    % Joint Velocity Figure
+    fig3 = figure;
+    for i = 1:3
+        subplot(3,1,i); grid on; hold on;
+        plot(Ptime, PqdAct(:,i), 'r-', 'LineWidth', 1.2);    % Phantom Actual
+        plot(Stime, SqdDes(:,i), 'g-', 'LineWidth', 1.2);    % Simulation Desired
+        plot(Stime, SqdAct(:,i), 'b-', 'LineWidth', 1.2);    % Simulation Actual
+
+        title(sprintf('Joint %d Velocity', i));
+        if i == 3, xlabel('Time'); end
+        ylabel('Velocity rad/s');
+    end
+    legend('Phantom Actual', 'Simulation Desired', 'Simulation Actual');
+
+    % Save Joint Velocity figure as PDF
+    % saveas(fig3, sprintf('%s_Joint_Velocity.pdf', figPrefix));
+end
+
+
+##### SOURCE END #####
+-->
+</body>
+</html>

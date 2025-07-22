@@ -1,6 +1,6 @@
 close all
 % publish('plottingData.m', 'html');
-for i = 16:16
+for i = 18:20
     % Construct filenames
     PdataFile = sprintf('Pdata%d.mat', i);
     SdataFile = sprintf('data%d.mat', i);
@@ -35,28 +35,91 @@ function plotPhantomSimulation(Pdata, Sdata, figPrefix)
     [SxDes,SyDes,SzDes] = FK(SqDes(:,1),SqDes(:,2),SqDes(:,3));
     [SxAct,SyAct,SzAct] = FK(SqAct(:,1),SqAct(:,2),SqAct(:,3));
     [PxAct,PyAct,PzAct] = FK(PqAct(:,1),PqAct(:,2),PqAct(:,3));
-
-    % Cartesian Space Position Figure
-    fig1 = figure; hold on; grid on;
-    plot(0, 0, 'o', 'LineWidth', 2, 'MarkerSize', 5)       % Start Point
-    plot(0.05, 0.05, 'o', 'LineWidth', 2, 'MarkerSize', 5) % End Point
-    plot(SyDes, SzDes, 'b', 'LineWidth', 2)               % Desired Position
-    plot(SyAct, SzAct, 'r', 'LineWidth', 2)               % Simulation Trajectory
-    plot(PyAct, PzAct, 'g', 'LineWidth', 2)               % Phantom Trajectory
-
-    targetHandles = gobjects(size(xTarget,1),1);
-    for k = 1:size(xTarget,1)
-        targetHandles(k) = plot(xTarget(k,2), xTarget(k,3), 'ko', 'MarkerSize', 8, 'MarkerFaceColor', 'k');
-    end
-    targetLabels = arrayfun(@(i) sprintf('Target Point %d', i), 1:size(xTarget,1), 'UniformOutput', false);
-    legendLabels = [{'Start Point', 'End Point', 'Desired Position', 'Simulation Trajectory', 'Phantom Trajectory'}, targetLabels];
-    legend(legendLabels, 'Location', 'eastoutside')
-    title('Cartesian Space Position')
-    xlabel('Y axis')
-    ylabel('Z axis')
     
-    % Save Cartesian figure as PDF
-    % saveas(fig1, sprintf('%s_Cartesian_Position.pdf', figPrefix));
+
+
+    % --- Calculate number of target points ---
+    nTargets = size(xTarget, 1);  % Number of target points
+    
+    % --- Initialize distance arrays ---
+    TargetMinSim = zeros(nTargets, 1);
+    TargetMinPthm = zeros(nTargets, 1);
+    
+    % --- Compute minimum distances to each target point ---
+    for i = 1:nTargets
+        % Simulation trajectory vs target
+        diffsSim = [SxAct, SyAct, SzAct] - xTarget(i, :);
+        TargetMinSim(i) = min(sqrt(sum(diffsSim.^2, 2)));
+    
+        % Phantom trajectory vs target
+        diffsPthm = [PxAct, PyAct, PzAct] - xTarget(i, :);
+        TargetMinPthm(i) = min(sqrt(sum(diffsPthm.^2, 2)));
+    end
+    
+    % --- Begin Plotting ---
+    fig1 = figure; hold on; grid on;
+    
+    % Start and End Points
+    hStart = plot(0, 0, 'o', 'LineWidth', 2, 'MarkerSize', 5, 'DisplayName', 'Start Point');
+    hEnd   = plot(0.05, 0.05, 'o', 'LineWidth', 2, 'MarkerSize', 5, 'DisplayName', 'End Point');
+    
+    % Desired Position and Trajectories
+    hDesired = plot(SyDes, SzDes, 'b', 'LineWidth', 2, 'DisplayName', 'Desired Position');
+    hSim     = plot(SyAct, SzAct, 'r', 'LineWidth', 2, 'DisplayName', 'Simulation Trajectory');
+    hPhantom = plot(PyAct, PzAct, 'g', 'LineWidth', 2, 'DisplayName', 'Phantom Trajectory');
+    
+    % Target Points
+    targetHandles = gobjects(nTargets,1);
+    targetLabels = cell(nTargets,1);
+    for k = 1:nTargets
+        % Plot target point
+        targetHandles(k) = plot(xTarget(k,2), xTarget(k,3), 'p', ...
+            'MarkerSize', 12, 'MarkerFaceColor', 'k', ...
+            'DisplayName', sprintf('Target Point %d', k));
+        
+        % Create target labels
+        targetLabels{k} = sprintf('Target Point %d', k);
+    end
+    
+    % Optional: Plot Control Points if they exist
+    if isfield(Sdata, 'xCtrl')
+        xCtrl = Sdata.xCtrl;
+        hCtrl = plot(xCtrl(:,1), xCtrl(:,2), 'd', 'LineWidth', 1.5, ...
+            'MarkerSize', 6, 'DisplayName', 'Control Points');
+        ctrlLabel = {'Control Points'};
+        ctrlHandles = hCtrl;
+    else
+        ctrlLabel = {};
+        ctrlHandles = [];
+    end
+    
+    % --- Create Dummy Handles for Error Info (for legend) ---
+    errorHandles = gobjects(nTargets*2, 1); % Two per target
+    errorLabels = cell(nTargets*2, 1);
+    
+    for k = 1:nTargets
+        errorHandles(2*k-1) = plot(nan, nan, 'w');  % Invisible handle for Sim error
+        errorLabels{2*k-1} = sprintf('Target %d Sim Err: %.6f', k, TargetMinSim(k));
+    
+        errorHandles(2*k) = plot(nan, nan, 'w');    % Invisible handle for Pthm error
+        errorLabels{2*k} = sprintf('Target %d Pthm Err: %.6f', k, TargetMinPthm(k));
+    end
+    
+    % --- Build Full Legend ---
+    legendHandles = [hStart, hEnd, hDesired, hSim, hPhantom, ...
+                     targetHandles(:)', ctrlHandles(:)', errorHandles(:)'];
+    
+    legendLabels = [{'Start Point', 'End Point', 'Desired Position', ...
+                     'Simulation Trajectory', 'Phantom Trajectory'}, ...
+                     targetLabels(:)', ctrlLabel(:)', errorLabels(:)'];
+    
+    legend(legendHandles, legendLabels, 'Location', 'eastoutside');
+    
+    % --- Axis Labels and Title ---
+    xlabel('Y axis');
+    ylabel('Z axis');
+    title('Cartesian Space Position');
+
 
     % Joint Position Figure
     fig2 = figure;
