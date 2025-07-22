@@ -13,32 +13,33 @@ xTarget(2,:) = [0, 0.03, 0.04];
 
 xTarget(1,:) = [0, 0.01, 0.02];
 xTarget(2,:) = [0, 0.04, 0.03];
+
+xTarget(1,:) = [0, 0.02, 0.02];
+xTarget(2,:) = [0, 0.04, 0.04];
 % 
-% xTarget(1,:) = [0, 0.02, 0.02];
-% xTarget(2,:) = [0, 0.04, 0.04];
-% 
-% xTarget(1,:) = [0, 0.02, 0.01];
-% xTarget(2,:) = [0, 0.04, 0.03];
+xTarget(1,:) = [0, 0.02, 0.01];
+xTarget(2,:) = [0, 0.04, 0.03];
 % 
 % 
 
-tspan = [3 6 9];
-wn = [1 2 3  1 2 5  1 1 2];
+tspan = [.3 .6 .9];
+wn = [1 1 1   1 1 1    1 3 3];
 % wn = [2.6269    0.9641    0.9804  1.4005    2.9646    5.9315  1.0418    0.7773    2.9987];
 % tspan = [0.4579    1.4884    7.4918];
 % Weights
-wt = [200, 1, 0.1]; % [Target, End, Time]
+wt = [400, 1, 0.1]; % [Target, End, Time]
 
 initPrms = [tspan, wn];
 
+tUni = 0:0.001: tspan(end);
 % Initial Condition
-[tInit, yInit] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan, wn), [0 tspan], zeros(12, 1));
+[tInit, yInit] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan, wn),tUni, zeros(12, 1));
 
 % Lower and Upper Limits
 lb = [0 0 0  ... % time
       0.5 0.5 0.5  0.5 0.5 0.5  0.5 0.5 0.5 ]; % Wn
-ub = [6 6 6 ... % time
-     10 10 10  10 10 10  10 10 10]; % Wn
+ub = [2 2 2 ... % time
+     5 5 5   5 5 5   5 5 5]; % Wn
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xFinal);
@@ -62,10 +63,11 @@ numStarts = 5; % Number of random starting points
 
 % Run MultiStart optimization
 [Opt, fval] = run(ms, problem, numStarts);
+tUni = 0:0.001: Opt(3);
 
 % Simulate with optimal parameters
 [tOpt, yOpt] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1:3),  Opt(4:12)), ...
-                  [0 Opt(3)], zeros(12, 1));
+                 tUni, zeros(12, 1));
 
 %%% Plotting
 [CxInit, CyInit, CzInit] = FK(yInit(:,7), yInit(:,8), yInit(:,9)); % Initial Trajectory
@@ -73,7 +75,7 @@ numStarts = 5; % Number of random starting points
 [CxDes, CyDes, CzDes] = FK(yOpt(:,1), yOpt(:,2), yOpt(:,3)); % Optimized Trajectory
 
 
-dataNum = 15;  % Change this to 2, 3, etc. for other runs
+dataNum = 17;  % Change this to 2, 3, etc. for other runs
 
 % Cartesian Space Trajectory 
 figure; hold on; grid on;
@@ -131,10 +133,10 @@ save(sprintf('data%d.mat', dataNum), ...
 function error = objectiveFunction(prms, qDes, wt, xTarget, xFinal)
     x0 = zeros(12, 1);
     x0(1:3) = qDes;
-
+    tUni = 0:0.001:prms(3);
     % Simulate the system
     [~, y] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1:3),prms(4:12)), ...
-                    [0 prms(3)], x0);
+                    tUni, x0);
 
     [x,y,z] = FK(y(:,7),y(:,8),y(:,9));
     xOut = [x,y,z];
@@ -160,10 +162,11 @@ end
 % Constraint Function for Midpoint Proximity
 function [c, ceq] = trajConstraint(prms,qDes,xTarget)
     ceq = []; % No equality constraints
+    tUni = 0:0.001: prms(3);
 
     % Simulate trajectory
     [~, yy] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1:3),prms(4:12)), ...
-                    [0 prms(3)], zeros(12, 1));
+                    tUni, zeros(12, 1));
     [x,y,z] = FK(yy(:,7),yy(:,8),yy(:,9));     % Optimized Trajectory
     xOut = [x,y,z];
     % Calculate distances to midpoint in 3D space
@@ -199,7 +202,8 @@ function dxdt= myTwolinkwithprefilter(t,x,qDes,t_st,wn)
 
     Kp=diag([70 70 70]);  
     Kd=diag([120 120 120]);  
-
+    
+    
     controller=Kp*(x(1:3)-q)+Kd*(x(4:6)-qd);
 
     [M,C,G]=compute_M_C_G(q(1),q(2),q(3),qd(1),qd(2),qd(3));

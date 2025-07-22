@@ -2,9 +2,8 @@ clear; clc;
 close all;
 
 qDes = [ 0   0.198678167676855   0.327814256075948 ];
-
-[x, y, z] = FK(qDes(1), qDes(2), qDes(3));
-xEnd = [x, y, z];
+[Px, Py, Pz] = FK(qDes(1), qDes(2), qDes(3));
+xFinal = [Px, Py, Pz];
 
 xTarget = zeros(2,3);
 xCtrl = zeros(2,3);
@@ -26,11 +25,11 @@ qCtrl(2,:) = IK(xCtrl(2,1), xCtrl(2,2), xCtrl(2,3));
 qDes =[qCtrl; qDes];
 
 % Weights
-wt = [650, 1, 0.0001];   % [Target, End, Time]
+wt = [650, 10, 0.001];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2,wn3, xCtrl(1,2:3),xCtrl(2,2:3)];
 
-t_uniform = 0:0.01:tspan;
+t_uniform = 0:0.001:tspan;
 
 
 % Initial Condition
@@ -45,9 +44,9 @@ t_uniform = 0:0.01:tspan;
 % plot(xTarget(2,2),xTarget(2,3),'*')
 % plot(xCtrl(1,2),xCtrl(1,3),'d')
 % plot(xCtrl(2,2),xCtrl(2,3),'d')
-% plot(xEnd(2),xEnd(3),'o')
+% plot(xFinal(2),xFinal(3),'o')
 
-tolRad = 0.03;
+tolRad = 0.02;
 
 % Lower and Upper Limits
 lb = [0      ...  % Time
@@ -56,8 +55,8 @@ lb = [0      ...  % Time
       0.5 0.5 ...  % Wn3
       xTarget(1,2)-tolRad xTarget(1,3)-tolRad       ...  % Control Point1
       xTarget(2,2)-tolRad xTarget(2,3)-tolRad ];         % Control Point2
-ub = [ 5   ...   % Time
-      15 15  ...  % wn1
+ub = [3   ...   % Time
+      15 15 ...  % wn1
       15 15 ...  % Wn2
       15 15 ... % Wn3
       xTarget(1,2)+tolRad xTarget(1,3)+tolRad ... % Control Point1
@@ -65,7 +64,7 @@ ub = [ 5   ...   % Time
 
 
 % Objective Function
-objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xEnd);
+objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xFinal);
 
 % Run optimization
 options = optimoptions('fmincon','PlotFcns', 'optimplot', 'Display', 'off', ... 
@@ -86,25 +85,113 @@ numStarts = 5; % Number of random starting points
 
 % Run MultiStart optimization
 [Opt, fval] = run(ms, problem, numStarts);
-tOpt = 0:0.01:Opt(1);
+tUni = 0:0.001:Opt(1);
 
 % Simulate with optimal parameters
-[tt, yy] = ode45(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1),  Opt(2:3), Opt(4:5),Opt(6:7),Opt(8:9),Opt(10:11)), ...
-                  tOpt, zeros(12, 1));
+[tOpt, yOpt] = ode45(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1),  Opt(2:3), Opt(4:5),Opt(6:7),Opt(8:9),Opt(10:11)), ...
+                  tUni, zeros(12, 1));
 
 % Forward Kinematics
-[xi, yi, zi] = FK(yInit(:,7), yInit(:,8), yInit(:,9)); % Optimized Trajectory
-[x_opt, y_opt, z_opt] = FK(yy(:,7), yy(:,8), yy(:,9)); % Optimized Trajectory
-[x_Des, y_Des, z_Des] = FK(yy(:,1), yy(:,2), yy(:,3)); % Optimized Trajectory
+[CxInit, CyInit, CzInit] = FK(yInit(:,7), yInit(:,8), yInit(:,9)); % Initial Trajectory
+[CxOpt, CyOpt, CzOpt] = FK(yOpt(:,7), yOpt(:,8), yOpt(:,9)); % Optimized Trajectory
+[CxDes, CyDes, CzDes] = FK(yOpt(:,1), yOpt(:,2), yOpt(:,3)); % Optimized Trajectory
 
-plottingTwoTarget   
 
+
+dataNum = 19;  % Change this to 2, 3, etc. for other runs
+
+
+r = 0.01; % Radius
+theta = linspace(0, 2*pi, 100); % Angle for circle
+
+x_circle1 = Opt(8) + r*cos(theta); % x = center_x + r*cos(θ)
+y_circle1 = Opt(9) + r*sin(theta); % y = center_y + r*sin(θ)
+x_circle2 = Opt(10) + r*cos(theta); % x = center_x + r*cos(θ)
+y_circle2 = Opt(11) + r*sin(theta); % y = center_y + r*sin(θ)
+% Recompute distances to control points
+ctrl1 = [0 Opt(8:9)];
+ctrl2 = [0 Opt(10:11)];
+dist1 = sqrt((CxOpt - ctrl1(1)).^2 + (CyOpt - ctrl1(2)).^2 + (CzOpt - ctrl1(3)).^2);
+dist2 = sqrt((CxOpt - ctrl2(1)).^2 + (CyOpt - ctrl2(2)).^2 + (CzOpt - ctrl2(3)).^2);
+
+% % Find the first time where distance to control point 1 is less than threshold (phase 2 start)
+% tol = 0.01; % same as in your phase logic
+% idx_phase2 = find(dist1 <= tol, 1, 'first');
+% t_phase2 = tOpt(idx_phase2);
+% 
+% % Find the first time after phase 2 where distance to control point 2 is less than threshold (phase 3 start)
+% idx_phase3 = find(dist2 <= tol & tOpt <= t_phase2, 1, 'first');
+% t_phase3 = tOpt(idx_phase3);
+
+% Plot vertical lines at phase change times
+figure; hold on; grid on;
+plot(CyOpt, CzOpt, '.-')
+plot(xTarget(1,2), xTarget(1,3), '*')
+plot(xTarget(2,2), xTarget(2,3), '*')
+plot(xFinal(2), xFinal(3), 'o')
+plot(Opt(8), Opt(9), 'd')
+plot(Opt(10), Opt(11), 'd')
+plot(x_circle1, y_circle1, 'b--', 'LineWidth', 1.5);
+plot(x_circle2, y_circle2, 'b--', 'LineWidth', 1.5);
+
+legend('Optimized Trajectory','Target Point 1','Target Point 2','End Point','Control Point 1','Control Point 2')
+xlabel('Y axis (m)')
+ylabel('Z axis (m)')
+title('Cartesian Space Trajectory Results with Phase Changes')
+disp('Optimal Parameter:')
+disp(['tspan = [ ', num2str(Opt(1)), ' ];'])
+disp(['wn1 =  [ ', num2str(Opt(2:3)), ' ];'])
+disp(['wn2 =  [ ', num2str(Opt(4:5)), ' ];'])
+disp(['wn3 =  [ ', num2str(Opt(6:7)), ' ];'])
+disp(['CtrlPnt 1= [   ', num2str(Opt(8:9)), ' ];'])
+disp(['CtrlPnt 2= [   ', num2str(Opt(10:11)), ' ];'])
+
+
+   
+% Velocity Plot
+figure; hold on; grid on;
+plot(tOpt, yOpt(:,10:12))
+xlabel('Time (s)')
+ylabel('Velocity (rad/s)')
+title('Velocity')
+
+
+% Joint position 
+figure;
+for i = 1:3
+    subplot(3,1,i); hold on; grid on;
+    plot(tOpt, yOpt(:,i), '--') % desired
+    plot(tOpt, yOpt(:,i+6))     % actual
+    ylabel(['Joint ', num2str(i), ' Position (rad)'])
+    if i == 3
+        xlabel('Time (s)')
+    end
+    legend('Desired', 'Actual')
+end
+% saveas(gcf, sprintf('data%dJointPosition.fig', dataNum))  % Dynamic name
+
+
+
+% Joint Velocity 
+figure;
+for i = 4:6
+    subplot(3,1,i-3); hold on; grid on;
+    plot(tOpt, yOpt(:,i), '--') % desired
+    plot(tOpt, yOpt(:,i+6))     % actual
+    ylabel(['Joint ', num2str(i), ' Position (rad)'])
+    if i == 3
+        xlabel('Time (s)')
+    end
+    legend('Desired', 'Actual')
+end
+save(sprintf('data%d.mat', dataNum), ...
+    'Opt', 'tOpt','yOpt','tInit','yInit','xTarget');
 % Objective Function
-function error = objectiveFunction(prms, qDes, wt, xTarget, xEnd)
-
+function error = objectiveFunction(prms, qDes, wt, xTarget, xFinal)
+    tUni =  0:0.001:prms(1);
     % Simulate the system
     [t, y] = ode45(@(t,x) myTwolinkwithprefilter(t, x, qDes, prms(1),  prms(2:3), prms(4:5),prms(6:7),prms(8:9),prms(10:11)), ...
-                    0:0.01:prms(1), zeros(12, 1));
+                    tUni, zeros(12, 1));
     % y_uniform = interp1(t,y,t_uniform);
     [x0,y0,z0] = FK(y(:,7),y(:,8),y(:,9));
     xOut = [x0,y0,z0];
@@ -122,7 +209,7 @@ function error = objectiveFunction(prms, qDes, wt, xTarget, xEnd)
     distMidF = distMid1 + distMid2;
 
     % End point error
-    distEndErr = sum((xOut(end,:) - xEnd).^2,2);
+    distEndErr = sum((xOut(end,:) - xFinal).^2,2);
 
     
     % Time penalty
@@ -137,10 +224,10 @@ end
 % Constraint Function for Midpoint Proximity
 function [c, ceq] = trajConstraint(prms,qDes,xTarget)
     ceq = []; % No equality constraints
-
+    tUni = 0:0.001:prms(1);
     % Simulate trajectory
     [tt, yy] = ode45(@(t,x) myTwolinkwithprefilter(t, x, qDes, prms(1),  prms(2:3), prms(4:5),prms(6:7),prms(8:9),prms(10:11)), ...
-                    0:0.01:prms(1), zeros(12, 1));
+                   tUni , zeros(12, 1));
     
     [x0,y0,z0] = FK(yy(:,7),yy(:,8),yy(:,9));     % Optimized Trajectory
     x = [x0,y0,z0];

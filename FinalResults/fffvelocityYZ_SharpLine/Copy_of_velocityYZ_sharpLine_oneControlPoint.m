@@ -191,63 +191,46 @@ function [c, ceq] = trajConstraint(prms,qDes,xTarget)
     distEndErr = sum((xOut(end,:) - [0.0, 0.05,0.05]).^2,2);
     
     % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
-    c = [min(distanceMid1) - 0.00000001;
-         min(distanceMid2) - 0.00000001;
-         min(distanceMid3) - 0.00000001;
-         distEndErr    - 0.0000001];
+    c = [min(distanceMid1) - 1e-10;
+         min(distanceMid2) - 1e-10;
+         min(distanceMid3) - 1e-10;
+         distEndErr    - 1e-10];
 
 end
-% 
-function dxdt = myTwolinkwithprefilter(t, x,qDes,tspan , wn1, wn2, ctrlPnt)
-    zeta = [1 1 1];  % Damping ratio
+% % Dynamics Function with Prefilter
+function dxdt= myTwolinkwithprefilter(t,x,qDes,t_st,wn,xCtrl)
+    zeta = [1 1 1];
+    A1=[zeros(3), eye(3); -diag(wn(1:3)).^2,-2*diag(zeta)*diag(wn(1:3))];
+    B1=[zeros(3); diag(wn(1:3)).^2];
+    
+    A2=[zeros(3), eye(3); -diag(wn(4:6)).^2,-2*diag(zeta)*diag(wn(4:6))];
+    B2=[zeros(3); diag(wn(4:6)).^2];
+    
+    A3=[zeros(3), eye(3); -diag(wn(7:9)).^2,-2*diag(zeta)*diag(wn(7:9))];
+    B3=[zeros(3); diag(wn(7:9)).^2];
 
-    % Compute per-joint switching times
-    t_Vmax = 1 ./ wn1;
+    q=x(7:9);
+    qd=x(10:12);
 
-    % Get initial control point joint angles via IK
-    qCtrl = IK(ctrlPnt(1), ctrlPnt(2), ctrlPnt(3));
+    Kp=diag([70 70 70]);  
+    Kd=diag([120 120 120]);  
+    
+    
+    controller=Kp*(x(1:3)-q)+Kd*(x(4:6)-qd);
 
-    % Initialize natural frequency and control target for each joint
-    wn = zeros(1, 3);
-    qControl = zeros(1, 3);
-
-    % Per-joint switching logic based on t_Vmax
-    for i = 1:3
-        if t <= t_Vmax(i)
-            wn(i) = wn1(i);
-            qControl(i) = qCtrl(i);
-        else
-            wn(i) = wn2(i);
-            qControl(i) = qDes(2, i);  % Desired joint angle after switch
-        end
+    [M,C,G]=compute_M_C_G(q(1),q(2),q(3),qd(1),qd(2),qd(3));
+    
+    tau=M*(controller)+C*qd;
+    
+    qdd=M\(tau-C*qd);
+    if t <= t_st(1)
+        dxdt=[A1*x(1:6)+B1*qDes(:); qd; qdd];
+    elseif t > t_st(1) && t <= t_st(2)
+        dxdt=[A2*x(1:6)+B2*qDes(:); qd; qdd];
+    else
+        dxdt=[A3*x(1:6)+B3*qDes(:); qd; qdd];
     end
-
-    % Construct system matrices for prefilter dynamics
-    A = [zeros(3), eye(3); -diag(wn).^2, -2 * diag(zeta) * diag(wn)];
-    B = [zeros(3); diag(wn).^2];
-
-    % Extract actual joint state
-    q  = x(7:9);     % Joint angles
-    qd = x(10:12);   % Joint velocities
-
-    % PD control gains
-    Kp = diag([70 70 70]);  
-    Kd = diag([120 120 120]);  
-
-    % Control law using prefiltered desired joint values
-    controller = Kp * (x(1:3) - q) + Kd * (x(4:6) - qd);
-
-    % Dynamics matrices
-    [M, C, G] = compute_M_C_G(q(1), q(2), q(3), qd(1), qd(2), qd(3));
-
-    % Compute torque and acceleration
-    tau = M * controller + C * qd;
-    qdd = M \ (tau - C * qd);
-
-    % Return state derivative
-    dxdt = [A * x(1:6) + B * qControl'; qd; qdd];
 end
-
 
 % Forward Kinematics (FK)
 function [x,y,z]=FK(q1,q2,q3)
