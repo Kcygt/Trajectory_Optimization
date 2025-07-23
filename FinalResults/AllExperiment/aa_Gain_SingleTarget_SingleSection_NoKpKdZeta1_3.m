@@ -1,129 +1,110 @@
 clear; clc;
 close all;
+dataNum = 3;
 
 % Define desired trajectory and Middle Points
 qDes = [ 0   0.198678167676855   0.327814256075948 ];
 [Px, Py, Pz] = FK(qDes(1), qDes(2), qDes(3));
 xDes = [Px, Py, Pz];
 
-xTarget = [0, 0.04, 0.005];
-% xTarget = [0, 0.015, 0.04];
-% xTarget = [0,0.03 , 0.03];
-
-qMid = IK(xTarget(1), xTarget(2), xTarget(3));
+% xTarget = [0, 0.04, 0.005];
+% qMid = IK(xTarget(1), xTarget(2), xTarget(3));
 
 % Parameters
-tspan = 5.374621;
-zeta = [0.7541392     0.5660859     0.7463692];
-wn = [10.12181      11.57644      3.232965];
-Kp = [50.92372      41.07672       52.2669];
-Kd = [ 99.96      132.6114      81.72722];
+tOpt =1.5851;
+wnOpt = [3.2827        6.95      6.0672];
 
-Gain 
-tspan = 5.374621;
-zeta = [0.7541392     0.5660859     0.7463692];
-wn = [10.12181      11.57644      3.232965];
-Kp = [50.92372      41.07672       52.2669];
-Kd = [ 99.96      132.6114      81.72722];
-
-% Weights
-wt = [100, 1, 0.08, 1, 1]; % [Target, End, Time]
-
+Gain1 = 5;
+tOpt1 = tOpt / Gain1;
+wnOpt1 = Gain1 * wnOpt;
 
 % Initial Condition
-[tInit, yInit] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  zeta,wn,Kp,Kd), [0 tspan], zeros(12, 1));
-
-%%% Plotting
-[xi, yi, zi] = FK(yInit(:,7), yInit(:,8), yInit(:,9)); % Initial Trajectory
-
-%%% Plotting
+[tOut, yOut] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tOpt, wnOpt), [0 tOpt], zeros(12, 1));
+[tOut1, yOut1] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tOpt1, wnOpt1), [0 tOpt1], zeros(12, 1));
 
 % Compute Cartesian Trajectories
 [xOpt, yOpt, zOpt] = FK(yOut(:,7), yOut(:,8), yOut(:,9));
 [x_Des, y_Des, z_Des] = FK(yOut(:,1), yOut(:,2), yOut(:,3));
 
 [xOpt1, yOpt1, zOpt1] = FK(yOut1(:,7), yOut1(:,8), yOut1(:,9));
-[x_Des1, y_Des1, z_Des1] = FK(yOut1(:,1), yOut1(:,2), yOut1(:,3));
-
-
 
 % Cartesian Space Trajectory Plot
 figure; hold on; grid on;
 plot(yOpt, zOpt,'-b','LineWidth',1.5)
 plot(yOpt1, zOpt1,'--r','LineWidth',1.5)
 plot(y_Des,z_Des,':k','LineWidth',2)
-plot(xTarget(2),xTarget(3),'kp','MarkerSize',10,'MarkerFaceColor','y')
+% plot(xTarget(2),xTarget(3),'kp','MarkerSize',10,'MarkerFaceColor','y')
 plot(xDes(2),xDes(3),'ko','MarkerSize',8,'MarkerFaceColor','g')
 legend('Initial Trajectory','Gain1 Trajectory','Desired Trajectory','Target Point','End Point','Location','Best')
 xlabel('Y axis (m)')
 ylabel('Z axis (m)')
 title('Cartesian Space Trajectory Results')
 
-% Joint Position Plot
-figure;
-tiledlayout(3,1)
-for i = 1:3
-    nexttile; grid on; hold on;
-    plot(tOut, yOut(:,i), '--b', 'LineWidth', 1.5, 'DisplayName', 'Desired')
-    plot(tOut, yOut(:,i+6), '-b', 'LineWidth', 1.5, 'DisplayName', 'Actual')
-    plot(tOut1, yOut1(:,i), '--r', 'LineWidth', 1.5, 'DisplayName', 'Desired Gain')
-    plot(tOut1, yOut1(:,i+6), '-r', 'LineWidth', 1.5, 'DisplayName', 'Actual Gain')
-    ylabel(sprintf('q_%d (rad)', i))
-    if i == 3, xlabel('Time (s)'); end
-    legend show
-end
-sgtitle('Joint Positions Over Time')
-
-% Joint Velocity Plot
-figure;
-tiledlayout(3,1)
-for i = 4:6
-    nexttile; grid on; hold on;
-    plot(tOut, yOut(:,i), '--b', 'LineWidth', 1.5, 'DisplayName', 'Desired')
-    plot(tOut, yOut(:,i+6), '-b', 'LineWidth', 1.5, 'DisplayName', 'Actual')
-    plot(tOut1, yOut1(:,i), '--r', 'LineWidth', 1.5, 'DisplayName', 'Desired Gain')
-    plot(tOut1, yOut1(:,i+6), '-r', 'LineWidth', 1.5, 'DisplayName', 'Actual Gain')
-    ylabel(sprintf('q_%d velocity (rad/s)', i-3))
-    if i == 6, xlabel('Time (s)'); end
-    legend show
-end
-sgtitle('Joint Velocities Over Time')
-
-% Calculate Errors
-PosErr  = yOut(:,7:9)  - yOut(:,1:3);
-PosErr1 = yOut1(:,7:9) - yOut1(:,1:3);
-VelErr  = yOut(:,10:12)  - yOut(:,4:6);
-VelErr1 = yOut1(:,10:12) - yOut1(:,4:6);
-
-% Compute RMSE
-PosRMSE  = sum(rmse(yOut(:,7:9),  yOut(:,1:3)), 2);
-VelRMSE  = sum(rmse(yOut(:,10:12), yOut(:,4:6)), 2);
-PosRMSE1 = sum(rmse(yOut1(:,7:9),  yOut1(:,1:3)), 2);
-VelRMSE1 = sum(rmse(yOut1(:,10:12), yOut1(:,4:6)), 2);
-
-% Compute Min Distance to Target
-TargetMin  = min(sqrt(sum(([xOpt, yOpt, zOpt]   - xTarget).^2, 2)));
-TargetMin1 = min(sqrt(sum(([xOpt1, yOpt1, zOpt1] - xTarget).^2, 2)));
-
-% Display Results
-fprintf('Minimum Target Error:    %.6f\n', TargetMin);
-fprintf('Position RMSE (rad):      %.6f\n', PosRMSE);
-fprintf('Velocity RMSE (rad/s):    %.6f\n', VelRMSE);
-
-fprintf('Minimum Target Error 1:    %.6f\n', TargetMin1);
-fprintf('Position RMSE (rad) 1:      %.6f\n', PosRMSE1);
-fprintf('Velocity RMSE (rad/s) 1:    %.6f\n', VelRMSE1);
-
-TargetPer = ((TargetMin - TargetMin1) / TargetMin1) * 100;
-PosPer    = ((PosRMSE - PosRMSE1) / PosRMSE1) * 100;
-VelPer    = ((VelRMSE - VelRMSE1) / VelRMSE1) * 100;
-
-fprintf('Target change = %.2f%%\n', TargetPer);
-fprintf('Position change = %.2f%%\n', PosPer);
-fprintf('Velocity change = %.2f%%\n', VelPer);
+% % Joint Position Plot
+% figure;
+% tiledlayout(3,1)
+% for i = 1:3
+%     nexttile; grid on; hold on;
+%     plot(tOut, yOut(:,i), '--b', 'LineWidth', 1.5, 'DisplayName', 'Desired')
+%     plot(tOut, yOut(:,i+6), '-b', 'LineWidth', 1.5, 'DisplayName', 'Actual')
+%     plot(tOut1, yOut1(:,i), '--r', 'LineWidth', 1.5, 'DisplayName', 'Desired Gain')
+%     plot(tOut1, yOut1(:,i+6), '-r', 'LineWidth', 1.5, 'DisplayName', 'Actual Gain')
+%     ylabel(sprintf('q_%d (rad)', i))
+%     if i == 3, xlabel('Time (s)'); end
+%     legend show
+% end
+% sgtitle('Joint Positions Over Time')
+% 
+% % Joint Velocity Plot
+% figure;
+% tiledlayout(3,1)
+% for i = 4:6
+%     nexttile; grid on; hold on;
+%     plot(tOut, yOut(:,i), '--b', 'LineWidth', 1.5, 'DisplayName', 'Desired')
+%     plot(tOut, yOut(:,i+6), '-b', 'LineWidth', 1.5, 'DisplayName', 'Actual')
+%     plot(tOut1, yOut1(:,i), '--r', 'LineWidth', 1.5, 'DisplayName', 'Desired Gain')
+%     plot(tOut1, yOut1(:,i+6), '-r', 'LineWidth', 1.5, 'DisplayName', 'Actual Gain')
+%     ylabel(sprintf('q_%d velocity (rad/s)', i-3))
+%     if i == 6, xlabel('Time (s)'); end
+%     legend show
+% end
+% sgtitle('Joint Velocities Over Time')
+% 
+% % Calculate Errors
+% PosErr  = yOut(:,7:9)  - yOut(:,1:3);
+% PosErr1 = yOut1(:,7:9) - yOut1(:,1:3);
+% VelErr  = yOut(:,10:12)  - yOut(:,4:6);
+% VelErr1 = yOut1(:,10:12) - yOut1(:,4:6);
+% 
+% % Compute RMSE
+% PosRMSE  = sum(rmse(yOut(:,7:9),  yOut(:,1:3)), 2);
+% VelRMSE  = sum(rmse(yOut(:,10:12), yOut(:,4:6)), 2);
+% PosRMSE1 = sum(rmse(yOut1(:,7:9),  yOut1(:,1:3)), 2);
+% VelRMSE1 = sum(rmse(yOut1(:,10:12), yOut1(:,4:6)), 2);
+% 
+% % Compute Min Distance to Target
+% TargetMin  = min(sqrt(sum(([xOpt, yOpt, zOpt]   - xTarget).^2, 2)));
+% TargetMin1 = min(sqrt(sum(([xOpt1, yOpt1, zOpt1] - xTarget).^2, 2)));
+% 
+% % Display Results
+% fprintf('Minimum Target Error:    %.6f\n', TargetMin);
+% fprintf('Position RMSE (rad):      %.6f\n', PosRMSE);
+% fprintf('Velocity RMSE (rad/s):    %.6f\n', VelRMSE);
+% 
+% fprintf('Minimum Target Error 1:    %.6f\n', TargetMin1);
+% fprintf('Position RMSE (rad) 1:      %.6f\n', PosRMSE1);
+% fprintf('Velocity RMSE (rad/s) 1:    %.6f\n', VelRMSE1);
+% 
+% TargetPer = ((TargetMin - TargetMin1) / TargetMin1) * 100;
+% PosPer    = ((PosRMSE - PosRMSE1) / PosRMSE1) * 100;
+% VelPer    = ((VelRMSE - VelRMSE1) / VelRMSE1) * 100;
+% 
+% fprintf('Target change = %.2f%%\n', TargetPer);
+% fprintf('Position change = %.2f%%\n', PosPer);
+% fprintf('Velocity change = %.2f%%\n', VelPer);
 
 % Save Results
-save(sprintf('data%d.mat', dataNum), 'PosRMSE','VelRMSE','TargetMin','tOut','yOut','xTarget');
+save(sprintf('data%d.mat', dataNum), 'yOut1',"tOut1");
 
 % ----------- Helper Functions -----------
 
@@ -131,18 +112,21 @@ function e = rmse(a, b)
     e = sqrt(mean((a - b).^2, 1));
 end
 
+% Paste your FK, IK, myTwolinkwithprefilter, and compute_M_C_G functions here...
+% Keep them as-is unless you'd like me to revise them too.
 
 
 % Dynamics Function with Prefilter
-function dxdt= myTwolinkwithprefilter(t,x,qDes,t_st,zeta,wn,Kp,Kd)
+function dxdt= myTwolinkwithprefilter(t,x,qDes,t_st,wn)
+    zeta = [1 1 1];
     A1=[zeros(3), eye(3); -diag(wn).^2,-2*diag(zeta)*diag(wn)];
     B1=[zeros(3); diag(wn).^2];
 
     q=x(7:9);
     qd=x(10:12);
 
-    Kp=diag(Kp);  
-    Kd=diag(Kd);  
+    Kp=diag([70 70 70]);  
+    Kd=diag([120 120 120]);  
 
     controller=Kp*(x(1:3)-q)+Kd*(x(4:6)-qd);
 
