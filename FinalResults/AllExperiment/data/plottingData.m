@@ -1,19 +1,21 @@
 close all
 % publish('plottingData.m', 'html');
-for i = 14:17
+for i = 1:20
     % Construct filenames
     PdataFile = sprintf('Pdata%d.mat', i);
     SdataFile = sprintf('data%d.mat', i);
+    GdataFile = sprintf('Gdata%d.mat', i);
     
     % Load data
     Pdata = load(PdataFile);
     Sdata = load(SdataFile);
+    Gdata = load(GdataFile);
     
     % Call plotting function with dataset label
-    plotPhantomSimulation(Pdata, Sdata, sprintf('DataSet%d', i));
+    plotPhantomSimulation(Pdata, Sdata, Gdata, sprintf('DataSet%d', i));
 end
 
-function plotPhantomSimulation(Pdata, Sdata, figPrefix)
+function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     
     % Phantom Desired and Actual 
     PqDes = Pdata.Pdata(:,1:3);
@@ -24,18 +26,29 @@ function plotPhantomSimulation(Pdata, Sdata, figPrefix)
     % Extract data
     Stime = Sdata.tOpt;
     Ptime = linspace(0, Stime(end), length(PqAct));
+    Gtime = Gdata.Hys;
 
     % Simulation Desired and Actual 
     SqDes = Sdata.yOpt(:,1:3);
     SqdDes = Sdata.yOpt(:,4:6);
     SqAct = Sdata.yOpt(:,7:9);
     SqdAct = Sdata.yOpt(:,10:12);
+    
+    % Gain Data
+    GqDes = Gdata.yOut1(:,1:3);
+    GqdDes = Gdata.yOut1(:,4:6);
+    GqAct = Gdata.yOut1(:,7:9);
+    GqdAct = Gdata.yOut1(:,10:12);
+
+
 
     xTarget = Sdata.xTarget;
     [SxDes,SyDes,SzDes] = FK(SqDes(:,1),SqDes(:,2),SqDes(:,3));
     [SxAct,SyAct,SzAct] = FK(SqAct(:,1),SqAct(:,2),SqAct(:,3));
     [PxAct,PyAct,PzAct] = FK(PqAct(:,1),PqAct(:,2),PqAct(:,3));
-    
+    [GxDes,GyDes,GzDes] = FK(GqDes(:,1),GqDes(:,2),GqDes(:,3));
+    [GxAct,GyAct,GzAct] = FK(GqAct(:,1),GqAct(:,2),GqAct(:,3));
+
 
 
     % --- Calculate number of target points ---
@@ -44,6 +57,7 @@ function plotPhantomSimulation(Pdata, Sdata, figPrefix)
     % --- Initialize distance arrays ---
     TargetMinSim = zeros(nTargets, 1);
     TargetMinPthm = zeros(nTargets, 1);
+    TargetMinGain = zeros(nTargets, 1);
     
     % --- Compute minimum distances to each target point ---
     for i = 1:nTargets
@@ -54,6 +68,10 @@ function plotPhantomSimulation(Pdata, Sdata, figPrefix)
         % Phantom trajectory vs target
         diffsPthm = [PxAct, PyAct, PzAct] - xTarget(i, :);
         TargetMinPthm(i) = min(sqrt(sum(diffsPthm.^2, 2)));
+
+        % Gain trajectory vs target
+        diffsGain = [GxAct, GyAct, GzAct] - xTarget(i, :);
+        TargetMinGain(i) = min(sqrt(sum(diffsGain.^2, 2)));
     end
     
     % --- Begin Plotting ---
@@ -67,6 +85,7 @@ function plotPhantomSimulation(Pdata, Sdata, figPrefix)
     hDesired = plot(SyDes, SzDes, 'b', 'LineWidth', 2, 'DisplayName', 'Desired Position');
     hSim     = plot(SyAct, SzAct, 'r', 'LineWidth', 2, 'DisplayName', 'Simulation Trajectory');
     hPhantom = plot(PyAct, PzAct, 'g', 'LineWidth', 2, 'DisplayName', 'Phantom Trajectory');
+    hGain = plot(GyAct, GzAct, 'm', 'LineWidth', 2, 'DisplayName', 'Phantom Trajectory');
     
     % Target Points
     targetHandles = gobjects(nTargets,1);
@@ -94,23 +113,26 @@ function plotPhantomSimulation(Pdata, Sdata, figPrefix)
     end
     
     % --- Create Dummy Handles for Error Info (for legend) ---
-    errorHandles = gobjects(nTargets*2, 1); % Two per target
-    errorLabels = cell(nTargets*2, 1);
+    errorHandles = gobjects(nTargets*3, 1); % Two per target
+    errorLabels = cell(nTargets*3, 1);
     
     for k = 1:nTargets
-        errorHandles(2*k-1) = plot(nan, nan, 'w');  % Invisible handle for Sim error
-        errorLabels{2*k-1} = sprintf('Target %d Sim Err: %.6f', k, TargetMinSim(k));
+        errorHandles(3*k-2) = plot(nan, nan, 'w');  % Invisible handle for Sim error
+        errorLabels{3*k-2} = sprintf('Target %d Sim Err: %.6f', k, TargetMinSim(k));
     
-        errorHandles(2*k) = plot(nan, nan, 'w');    % Invisible handle for Pthm error
-        errorLabels{2*k} = sprintf('Target %d Pthm Err: %.6f', k, TargetMinPthm(k));
+        errorHandles(3*k-1) = plot(nan, nan, 'w');    % Invisible handle for Pthm error
+        errorLabels{3*k-1} = sprintf('Target %d Pthm Err: %.6f', k, TargetMinPthm(k));
+
+        errorHandles(3*k) = plot(nan, nan, 'w');    % Invisible handle for Pthm error
+        errorLabels{3*k} = sprintf('Target %d Gain Err: %.6f', k, TargetMinGain(k));
     end
     
     % --- Build Full Legend ---
-    legendHandles = [hStart, hEnd, hDesired, hSim, hPhantom, ...
+    legendHandles = [hStart, hEnd, hDesired, hSim, hPhantom, hGain,...
                      targetHandles(:)', ctrlHandles(:)', errorHandles(:)'];
     
     legendLabels = [{'Start Point', 'End Point', 'Desired Position', ...
-                     'Simulation Trajectory', 'Phantom Trajectory'}, ...
+                     'Simulation Trajectory', 'Phantom Trajectory', 'Gain Trajectory'}, ...
                      targetLabels(:)', ctrlLabel(:)', errorLabels(:)'];
     
     legend(legendHandles, legendLabels, 'Location', 'eastoutside');
@@ -128,12 +150,13 @@ function plotPhantomSimulation(Pdata, Sdata, figPrefix)
         plot(Ptime, PqAct(:,i), 'r-', 'LineWidth', 1.2);    % Phantom Actual
         plot(Stime, SqDes(:,i), 'g-', 'LineWidth', 1.2);    % Simulation Desired
         plot(Stime, SqAct(:,i), 'b-', 'LineWidth', 1.2);    % Simulation Actual
+        plot(Gtime, GqAct(:,i), 'm-', 'LineWidth', 1.2);    % Gain Actual
 
         title(sprintf('Joint %d Position', i));
         if i == 3, xlabel('Time'); end
         ylabel('Position(rad)');
     end
-    legend('Phantom Actual', 'Simulation Desired', 'Simulation Actual');
+    legend('Phantom Actual', 'Simulation Desired', 'Simulation Actual','Gain Actual');
     
     % Save Joint Position figure as PDF
     % saveas(fig2, sprintf('%s_Joint_Position.pdf', figPrefix));
@@ -145,12 +168,13 @@ function plotPhantomSimulation(Pdata, Sdata, figPrefix)
         plot(Ptime, PqdAct(:,i), 'r-', 'LineWidth', 1.2);    % Phantom Actual
         plot(Stime, SqdDes(:,i), 'g-', 'LineWidth', 1.2);    % Simulation Desired
         plot(Stime, SqdAct(:,i), 'b-', 'LineWidth', 1.2);    % Simulation Actual
+        plot(Gtime, GqdAct(:,i), 'm-', 'LineWidth', 1.2);    % Gain Actual
 
         title(sprintf('Joint %d Velocity', i));
         if i == 3, xlabel('Time'); end
         ylabel('Velocity rad/s');
     end
-    legend('Phantom Actual', 'Simulation Desired', 'Simulation Actual');
+    legend('Phantom Actual', 'Simulation Desired', 'Simulation Actual','Gain Actual');
 
     % Save Joint Velocity figure as PDF
     % saveas(fig3, sprintf('%s_Joint_Velocity.pdf', figPrefix));
