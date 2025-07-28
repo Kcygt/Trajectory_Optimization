@@ -1,5 +1,4 @@
-% data 21
-
+% data 22
 clear; clc;
 close all;
 
@@ -11,7 +10,8 @@ xTarget = zeros(2,3);
 xCtrl = zeros(2,3);
 qCtrl = zeros(2,3);
 xTarget(1,:) = [0, -0.03, -0.03] ;
-xTarget(2,:) = [0,  0.03, -0.03];
+xTarget(2,:) = [0,  0.0, -0.03];
+xTarget(3,:) = [0,  0.03, -0.03];
 
 % Parameters
 tspan =  5;
@@ -19,7 +19,7 @@ wn1 = [ 2 2 ];
 wn2 = [ 2 2 ];
 wn3 = [ 2 2 ];
 xCtrl(1,:) = xTarget(1,:) ;
-xCtrl(2,:) = xTarget(2,:) ;
+xCtrl(2,:) = xTarget(3,:) ;
 
 qCtrl(1,:) = IK(xCtrl(1,1), xCtrl(1,2), xCtrl(1,3));
 qCtrl(2,:) = IK(xCtrl(2,1), xCtrl(2,2), xCtrl(2,3));
@@ -27,7 +27,7 @@ qCtrl(2,:) = IK(xCtrl(2,1), xCtrl(2,2), xCtrl(2,3));
 qDes =[qCtrl; qDes];
 
 % Weights
-wt = [650, 50, 0.01];   % [Target, End, Time]
+wt = [650, 10, 0.001];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2,wn3, xCtrl(1,2:3),xCtrl(2,2:3)];
 
@@ -56,13 +56,13 @@ lb = [0      ...  % Time
       0.5 0.5 ...  % Wn2
       0.5 0.5 ...  % Wn3
       xTarget(1,2)-tolRad xTarget(1,3)-tolRad       ...  % Control Point1
-      xTarget(2,2)-tolRad xTarget(2,3)-tolRad ];         % Control Point2
+      xTarget(3,2)-tolRad xTarget(3,3)-tolRad ];         % Control Point2
 ub = [5   ...   % Time
-      15 15 ...  % wn1
-      15 15 ...  % Wn2
-      15 15 ... % Wn3
+      5 5 ...  % wn1
+      5 5 ...  % Wn2
+      5 5 ... % Wn3
       xTarget(1,2)+tolRad xTarget(1,3)+tolRad ... % Control Point1
-      xTarget(2,2)+tolRad xTarget(2,3)+tolRad ];  % Control Point2
+      xTarget(3,2)+tolRad xTarget(3,3)+tolRad ];  % Control Point2
 
 
 % Objective Function
@@ -100,7 +100,7 @@ tUni = 0:0.001:Opt(1);
 
 
 
-dataNum = 21;  % Change this to 2, 3, etc. for other runs
+dataNum = 22;  % Change this to 2, 3, etc. for other runs
 
 
 r = 0.01; % Radius
@@ -130,13 +130,14 @@ figure; hold on; grid on;
 plot(CyOpt, CzOpt, '.-')
 plot(xTarget(1,2), xTarget(1,3), '*')
 plot(xTarget(2,2), xTarget(2,3), '*')
+plot(xTarget(3,2), xTarget(3,3), '*')
 plot(xFinal(2), xFinal(3), 'o')
 plot(Opt(8), Opt(9), 'd')
 plot(Opt(10), Opt(11), 'd')
 plot(x_circle1, y_circle1, 'b--', 'LineWidth', 1.5);
 plot(x_circle2, y_circle2, 'b--', 'LineWidth', 1.5);
 
-legend('Optimized Trajectory','Target Point 1','Target Point 2','End Point','Control Point 1','Control Point 2')
+legend('Optimized Trajectory','Target Point 1','Target Point 2','Target Point 3','End Point','Control Point 1','Control Point 2')
 xlabel('Y axis (m)')
 ylabel('Z axis (m)')
 title('Cartesian Space Trajectory Results with Phase Changes')
@@ -201,12 +202,12 @@ function error = objectiveFunction(prms, qDes, wt, xTarget, xFinal)
 
 
     [tVal1,tIdx1] =  min( sum((xOut -  xTarget(1,:)).^2,2) );
-    [tVal2,tIdx2] =  min( sum((xOut -  xTarget(2,:)).^2,2) );
+    [tVal2,tIdx2] =  min( sum((xOut -  xTarget(3,:)).^2,2) );
     
     
     % Calculate minimum distance to middle point
     distMid1 = sum(min(sum((xOut(1:tIdx1,:) - permute(xTarget(1,:), [3 2 1])).^2, 2), [], 1));
-    distMid2 = sum(min(sum((xOut(tIdx1:end,:) - permute( xTarget(2,:), [3 2 1])).^2, 2), [], 1));
+    distMid2 = sum(min(sum((xOut(tIdx1:end,:) - permute( xTarget(3,:), [3 2 1])).^2, 2), [], 1));
 
     distMidF = distMid1 + distMid2;
 
@@ -236,11 +237,12 @@ function [c, ceq] = trajConstraint(prms,qDes,xTarget)
     
     % Order Section
     [tVal1,tIdx1] = min(  sum((x -  xTarget(1,:)).^2,2)  );
-    [tVal2,tIdx2] = min(  sum((x -  xTarget(2,:)).^2,2)  );
+    [tVal2,tIdx2] = min(  sum((x -  xTarget(3,:)).^2,2)  );
     
     % Calculate distances to midpoint in 3D space
     distanceMid1  = sum((x(1:tIdx1,:) -  xTarget(1,:)).^2,2);
-    distanceMid2  = sum((x(tIdx1:end,:) -  xTarget(2,:)).^2,2);
+    distanceMid2  = sum((x(tIdx1:tIdx2,:) -  xTarget(2,:)).^2,2);
+    distanceMid3  = sum((x(tIdx2:end,:) -  xTarget(3,:)).^2,2);
      
 
     % End point error
@@ -249,6 +251,7 @@ function [c, ceq] = trajConstraint(prms,qDes,xTarget)
     % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
     c = [min(distanceMid1) - 1e-10;
          min(distanceMid2) - 1e-10;
+         min(distanceMid3) - 1e-10;
          distEndErr    - 1e-10;
          tIdx1 - tIdx2];
 

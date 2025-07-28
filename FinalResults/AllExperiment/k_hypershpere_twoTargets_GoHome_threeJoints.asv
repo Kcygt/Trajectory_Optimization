@@ -11,13 +11,13 @@ xTarget = zeros(2,3);
 xCtrl = zeros(2,3);
 qCtrl = zeros(2,3);
 xTarget(1,:) = [0, -0.03, -0.03] ;
-xTarget(2,:) = [0,  0.03, -0.03];
+xTarget(2,:) = [0.01,  0.03, -0.03];
 
 % Parameters
 tspan =  5;
-wn1 = [ 2 2 ];
-wn2 = [ 2 2 ];
-wn3 = [ 2 2 ];
+wn1 = [2 2 2 ];
+wn2 = [2 2 2 ];
+wn3 = [2 2 2 ];
 xCtrl(1,:) = xTarget(1,:) ;
 xCtrl(2,:) = xTarget(2,:) ;
 
@@ -35,7 +35,7 @@ t_uniform = 0:0.001:tspan;
 
 
 % Initial Condition
-[tInit, yInit] = ode45(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,wn3,xCtrl(1,2:3),xCtrl(2,2:3)), t_uniform, zeros(12, 1));
+[tInit, yInit] = ode45(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,wn3,xCtrl(1,:),xCtrl(2,:)), t_uniform, zeros(12, 1));
 
 [xi, yi, zi] = FK(yInit(:,7), yInit(:,8), yInit(:,9));     % Initial Trajectory
 
@@ -52,17 +52,17 @@ tolRad = 0.02;
 
 % Lower and Upper Limits
 lb = [0      ...  % Time
-      0.5 0.5 ...  % wn1
-      0.5 0.5 ...  % Wn2
-      0.5 0.5 ...  % Wn3
-      xTarget(1,2)-tolRad xTarget(1,3)-tolRad       ...  % Control Point1
-      xTarget(2,2)-tolRad xTarget(2,3)-tolRad ];         % Control Point2
+      0.5 0.5 0.5 ...  % wn1
+      0.5 0.5 0.5 ...  % Wn2
+      0.5 0.5 0.5 ...  % Wn3
+      xTarget(1,1)-tolRad xTarget(1,2)-tolRad xTarget(1,3)-tolRad       ...  % Control Point1
+      xTarget(2,1)-tolRad xTarget(2,2)-tolRad xTarget(2,3)-tolRad ];         % Control Point2
 ub = [5   ...   % Time
-      15 15 ...  % wn1
-      15 15 ...  % Wn2
-      15 15 ... % Wn3
-      xTarget(1,2)+tolRad xTarget(1,3)+tolRad ... % Control Point1
-      xTarget(2,2)+tolRad xTarget(2,3)+tolRad ];  % Control Point2
+      15 15 15 ...  % wn1
+      15 15 15 ...  % Wn2
+      15 15 15 ... % Wn3
+      xTarget(1,1)+tolRad xTarget(1,2)+tolRad xTarget(1,3)+tolRad ... % Control Point1
+      xTarget(2,1)+tolRad xTarget(2,2)+tolRad xTarget(2,3)+tolRad ];  % Control Point2
 
 
 % Objective Function
@@ -90,7 +90,7 @@ numStarts = 5; % Number of random starting points
 tUni = 0:0.001:Opt(1);
 
 % Simulate with optimal parameters
-[tOpt, yOpt] = ode45(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1),  Opt(2:3), Opt(4:5),Opt(6:7),Opt(8:9),Opt(10:11)), ...
+[tOpt, yOpt] = ode45(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1),  Opt(2:4), Opt(5:7),Opt(8:10),Opt(11:13),Opt(14:16)), ...
                   tUni, zeros(12, 1));
 
 % Forward Kinematics
@@ -106,13 +106,13 @@ dataNum = 21;  % Change this to 2, 3, etc. for other runs
 r = 0.01; % Radius
 theta = linspace(0, 2*pi, 100); % Angle for circle
 
-x_circle1 = Opt(8) + r*cos(theta); % x = center_x + r*cos(θ)
-y_circle1 = Opt(9) + r*sin(theta); % y = center_y + r*sin(θ)
-x_circle2 = Opt(10) + r*cos(theta); % x = center_x + r*cos(θ)
-y_circle2 = Opt(11) + r*sin(theta); % y = center_y + r*sin(θ)
+x_circle1 = Opt(12) + r*cos(theta); % x = center_x + r*cos(θ)
+y_circle1 = Opt(13) + r*sin(theta); % y = center_y + r*sin(θ)
+x_circle2 = Opt(15) + r*cos(theta); % x = center_x + r*cos(θ)
+y_circle2 = Opt(16) + r*sin(theta); % y = center_y + r*sin(θ)
 % Recompute distances to control points
-ctrl1 = [0 Opt(8:9)];
-ctrl2 = [0 Opt(10:11)];
+ctrl1 = Opt(11:13);
+ctrl2 = Opt(14:16);
 dist1 = sqrt((CxOpt - ctrl1(1)).^2 + (CyOpt - ctrl1(2)).^2 + (CzOpt - ctrl1(3)).^2);
 dist2 = sqrt((CxOpt - ctrl2(1)).^2 + (CyOpt - ctrl2(2)).^2 + (CzOpt - ctrl2(3)).^2);
 
@@ -131,8 +131,8 @@ plot(CyOpt, CzOpt, '.-')
 plot(xTarget(1,2), xTarget(1,3), '*')
 plot(xTarget(2,2), xTarget(2,3), '*')
 plot(xFinal(2), xFinal(3), 'o')
-plot(Opt(8), Opt(9), 'd')
-plot(Opt(10), Opt(11), 'd')
+plot(Opt(12), Opt(13), 'd')
+plot(Opt(15), Opt(16), 'd')
 plot(x_circle1, y_circle1, 'b--', 'LineWidth', 1.5);
 plot(x_circle2, y_circle2, 'b--', 'LineWidth', 1.5);
 
@@ -142,11 +142,11 @@ ylabel('Z axis (m)')
 title('Cartesian Space Trajectory Results with Phase Changes')
 disp('Optimal Parameter:')
 disp(['tspan = [ ', num2str(Opt(1)), ' ];'])
-disp(['wn1 =  [ ', num2str(Opt(2:3)), ' ];'])
-disp(['wn2 =  [ ', num2str(Opt(4:5)), ' ];'])
-disp(['wn3 =  [ ', num2str(Opt(6:7)), ' ];'])
-disp(['CtrlPnt 1= [   ', num2str(Opt(8:9)), ' ];'])
-disp(['CtrlPnt 2= [   ', num2str(Opt(10:11)), ' ];'])
+disp(['wn1 =  [ ', num2str(Opt(2:4)), ' ];'])
+disp(['wn2 =  [ ', num2str(Opt(5:7)), ' ];'])
+disp(['wn3 =  [ ', num2str(Opt(8:10)), ' ];'])
+disp(['CtrlPnt 1= [   ', num2str(Opt(11:13)), ' ];'])
+disp(['CtrlPnt 2= [   ', num2str(Opt(14:16)), ' ];'])
 
 
    
@@ -192,7 +192,7 @@ save(sprintf('data%d.mat', dataNum), ...
 function error = objectiveFunction(prms, qDes, wt, xTarget, xFinal)
     tUni =  0:0.001:prms(1);
     % Simulate the system
-    [t, y] = ode45(@(t,x) myTwolinkwithprefilter(t, x, qDes, prms(1),  prms(2:3), prms(4:5),prms(6:7),prms(8:9),prms(10:11)), ...
+    [t, y] = ode45(@(t,x) myTwolinkwithprefilter(t, x, qDes, prms(1),  prms(2:4), prms(5:7),prms(8:10),prms(11:13),prms(14:16)), ...
                     tUni, zeros(12, 1));
     % y_uniform = interp1(t,y,t_uniform);
     [x0,y0,z0] = FK(y(:,7),y(:,8),y(:,9));
