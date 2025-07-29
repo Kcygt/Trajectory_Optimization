@@ -29,7 +29,7 @@ qDes =[qCtrl; qDes];
 % Weights
 wt = [650, 50, 0.01];   % [Target, End, Time]
 
-initPrms = [tspan, wn1, wn2,wn3, xCtrl(1,2:3),xCtrl(2,2:3)];
+initPrms = [tspan, wn1, wn2,wn3, xCtrl(1,:),xCtrl(2,:)];
 
 t_uniform = 0:0.001:tspan;
 
@@ -100,7 +100,7 @@ tUni = 0:0.001:Opt(1);
 
 
 
-dataNum = 21;  % Change this to 2, 3, etc. for other runs
+dataNum = 22;  % Change this to 2, 3, etc. for other runs
 
 
 r = 0.01; % Radius
@@ -126,20 +126,41 @@ dist2 = sqrt((CxOpt - ctrl2(1)).^2 + (CyOpt - ctrl2(2)).^2 + (CzOpt - ctrl2(3)).
 % t_phase3 = tOpt(idx_phase3);
 
 % Plot vertical lines at phase change times
-figure; hold on; grid on;
-plot(CyOpt, CzOpt, '.-')
-plot(xTarget(1,2), xTarget(1,3), '*')
-plot(xTarget(2,2), xTarget(2,3), '*')
-plot(xFinal(2), xFinal(3), 'o')
-plot(Opt(12), Opt(13), 'd')
-plot(Opt(15), Opt(16), 'd')
-plot(x_circle1, y_circle1, 'b--', 'LineWidth', 1.5);
-plot(x_circle2, y_circle2, 'b--', 'LineWidth', 1.5);
+figure;
+hold on;
+grid on;
 
-legend('Optimized Trajectory','Target Point 1','Target Point 2','End Point','Control Point 1','Control Point 2')
-xlabel('Y axis (m)')
-ylabel('Z axis (m)')
-title('Cartesian Space Trajectory Results with Phase Changes')
+% 3D trajectory
+plot3(CxOpt, CyOpt, CzOpt, '.-', 'DisplayName', 'Optimized Trajectory');
+
+% Target points
+plot3(xTarget(1,1), xTarget(1,2), xTarget(1,3), '*', 'DisplayName', 'Target Point 1');
+plot3(xTarget(2,1), xTarget(2,2), xTarget(2,3), '*', 'DisplayName', 'Target Point 2');
+
+% End point (final point)
+plot3(xFinal(1), xFinal(2), xFinal(3), 'o', 'DisplayName', 'End Point');
+
+% Control points
+plot3(Opt(11), Opt(12), Opt(13), 'd', 'DisplayName', 'Control Point 1');
+plot3(Opt(14), Opt(15), Opt(16), 'd', 'DisplayName', 'Control Point 2');
+
+% Circles (assumed in XY plane, adjust Z if needed)
+plot3(x_circle1, y_circle1, zeros(size(x_circle1)), 'b--', 'LineWidth', 1.5);
+plot3(x_circle2, y_circle2, zeros(size(x_circle2)), 'b--', 'LineWidth', 1.5);
+
+% Labels and title
+xlabel('Y axis (m)');
+ylabel('Z axis (m)');
+zlabel('X axis (m)');  % Adjust if needed based on your coordinate system
+title('Cartesian Space Trajectory Results with Phase Changes');
+
+% Legend
+legend('Location', 'best');
+
+% 3D view
+view(3);
+
+
 disp('Optimal Parameter:')
 disp(['tspan = [ ', num2str(Opt(1)), ' ];'])
 disp(['wn1 =  [ ', num2str(Opt(2:4)), ' ];'])
@@ -228,7 +249,7 @@ function [c, ceq] = trajConstraint(prms,qDes,xTarget)
     ceq = []; % No equality constraints
     tUni = 0:0.001:prms(1);
     % Simulate trajectory
-    [tt, yy] = ode45(@(t,x) myTwolinkwithprefilter(t, x, qDes, prms(1),  prms(2:3), prms(4:5),prms(6:7),prms(8:9),prms(10:11)), ...
+    [tt, yy] = ode45(@(t,x) myTwolinkwithprefilter(t, x, qDes, prms(1),  prms(2:4), prms(5:7),prms(8:10),prms(11:13),prms(14:16)), ...
                    tUni , zeros(12, 1));
     
     [x0,y0,z0] = FK(yy(:,7),yy(:,8),yy(:,9));     % Optimized Trajectory
@@ -276,12 +297,12 @@ function dxdt = myTwolinkwithprefilter(t, x, qDes, tspan, wn1, wn2, wn3, xCtrl1,
     x_curr = [x_now, y_now, z_now];
 
     % Distance to control points
-    dist1 = norm(x_curr - [0 xCtrl1]);
-    dist2 = norm(x_curr - [0 xCtrl2]);
+    dist1 = norm(x_curr -  xCtrl1);
+    dist2 = norm(x_curr -  xCtrl2);
 
     % Compute joint-space control targets
-    qCtrl(1,:) = IK(0, xCtrl1(1), xCtrl1(2));
-    qCtrl(2,:) = IK(0, xCtrl2(1), xCtrl2(2));
+    qCtrl(1,:) = IK( xCtrl1(1), xCtrl1(2), xCtrl1(3));
+    qCtrl(2,:) = IK( xCtrl2(1), xCtrl2(2), xCtrl2(3));
 
     % Phase transition logic
     if phase == 1 && dist1 <= 0.01
@@ -294,13 +315,13 @@ function dxdt = myTwolinkwithprefilter(t, x, qDes, tspan, wn1, wn2, wn3, xCtrl1,
     % Select controller based on phase
     switch phase
         case 1
-            wn = [1 wn1];
+            wn =  wn1;
             qControl = qCtrl(1,:);
         case 2
-            wn = [1 wn2];
+            wn = wn2;
             qControl = qCtrl(2,:);
         case 3
-            wn = [1 wn3];
+            wn = wn3;
             qControl = qDes(end,:);
     end
 
