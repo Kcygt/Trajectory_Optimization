@@ -2,55 +2,73 @@ clear; clc;
 close all;
 
 % Define desired trajectory and Middle Points
-qDes = [ 0   0.198678167676855   0.327814256075948 ];
+qDes = [    0.191425481525343   0.190854007095390   0.356154760943820 ];
 [Px, Py, Pz] = FK(qDes(1), qDes(2), qDes(3));
 xFinal = [Px, Py, Pz];
 
-xTarget1 = [0, 0.04, 0.005];
-xTarget2 = [0, 0.015, 0.04];
-xTarget3 = [0,0.03 , 0.03];
 
-% Select one of the xTargets
-xTarget = xTarget1;  % Change this to xTarget2 or xTarget3 as needed
+xTarget = zeros(2,3);
+xTarget(1,:) = [0.015, 0.02, 0.01];
+xTarget(2,:) = [0.035, 0.03, 0.04];
+% 
+% xTarget(1,:) = [0, 0.01, 0.02];
+% xTarget(2,:) = [0, 0.04, 0.03];
+% 
+% xTarget(1,:) = [0, 0.02, 0.02];
+% xTarget(2,:) = [0, 0.04, 0.04];
+% % 
+% xTarget(1,:) = [0, 0.02, 0.01];
+% xTarget(2,:) = [0, 0.04, 0.03];
 
-% Determine which xTarget was selected
-if isequal(xTarget, xTarget1)
-    dataNum = 1;
-elseif isequal(xTarget, xTarget2)
-    dataNum = 2;
-elseif isequal(xTarget, xTarget3)
-    dataNum = 3;
-else
-    error('xTarget does not match any predefined targets.');
-end
+% 
 
-% Parameters
-tspan = 10;
-wn = [1 1 1];
-
+tspan = [.4 .6 3];
+wn = [3 5 7   3 10 1    1 1 1];
+% wn = [2.6269    0.9641    0.9804  1.4005    2.9646    5.9315  1.0418    0.7773    2.9987];
+% tspan = [0.4579    1.4884    7.4918];
 % Weights
-wt = [200, 5, 0.1]; % [Target, End, Time]
+wt = [1000, 5, 0.001]; % [Target, End, Time]
 
 initPrms = [tspan, wn];
 
+tUni = 0:0.001: tspan(end);
 % Initial Condition
-[tInit, yInit] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn), [0 tspan], zeros(12, 1));
+[tInit, yInit] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan, wn),tUni, zeros(12, 1));
 
-t_uniform = 0:0.01:tspan;
+% %%% Plotting
+[CxInit, CyInit, CzInit] = FK(yInit(:,7), yInit(:,8), yInit(:,9)); % Initial Trajectory
+% 
+% % Cartesian Space Trajectory 
+figure; hold on; grid on;
+plot3(CxInit,CyInit,CzInit,'--')
+plot3(xTarget(:,1),xTarget(:,2),xTarget(:,3),'*','LineW',1.2,'MarkerSize',8,'Color',[0,0.4,0.8])
+plot3(xFinal(1),xFinal(2),xFinal(3),'p','LineW',1.5,'MarkerSize',14,'Color',[1,0.5,0.05])
+legend('Init','Desired','Opt','Target','End')
+xlabel('X'); ylabel('Y'); zlabel('Z')
+title('3D Trajectory')
+view(45,30)
+
+
 
 % Lower and Upper Limits
-lb = [0 ... % time
-      0.5 0.5 0.5 ]; % Wn
-ub = [2 ... % time
-      25 25 25]; % Wn
+lb = [0 0 0  ... % time
+      0.5 0.5 0.5  .5 0.5 0.5  .5 0.5 0.5 ]; % Wn
+ub = [5 5 5 ... % time
+      10  10  10   10  10  10   10 10  10]; % Wn
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xFinal);
 
 % Run optimization
-options = optimoptions('fmincon','PlotFcns', [], 'Display', 'off', ... 
-                        'TolCon', 1e-10,    'MaxFunctionEvaluations', 200); % Limit ; % Added constraint tolerance
-
+% options = optimoptions('fmincon','PlotFcns', 'optimplot', 'Display', 'off', ... 
+%                         'TolCon', 1e-10,'MaxIterations',50); % Added constraint tolerance
+options = optimoptions('fmincon', ...
+    'Display', 'none', ...
+    'Algorithm', 'sqp', ...
+    'TolCon', 1e-10, ...
+    'OptimalityTolerance', 1e-10, ...
+    'StepTolerance', 1e-10, ...
+    'MaxIterations', 150);
 % Create optimization problem
 problem = createOptimProblem('fmincon',...
     'objective', objectiveFunc, ...
@@ -58,18 +76,19 @@ problem = createOptimProblem('fmincon',...
     'lb', lb, ...
     'ub', ub, ...
     'options', options, ...
-    'nonlcon', @(prms) trajConstraint(prms, qDes, xTarget));
+    'nonlcon', @(prms) trajConstraint(prms, qDes, xTarget,xFinal));
 
 % MultiStart setup
 ms = MultiStart('UseParallel', true, 'Display', 'iter');
-numStarts = 5; % Number of random starting points
+numStarts =10; % Number of random starting points
 
 % Run MultiStart optimization
 [Opt, fval] = run(ms, problem, numStarts);
+tUni = 0:0.001: Opt(3);
 
 % Simulate with optimal parameters
-[tOpt, yOpt] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1),  Opt(2:4)), ...
-                  [0 Opt(1)], zeros(12, 1));
+[tOpt, yOpt] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1:3),  Opt(4:12)), ...
+                 tUni, zeros(12, 1));
 
 %%% Plotting
 [CxInit, CyInit, CzInit] = FK(yInit(:,7), yInit(:,8), yInit(:,9)); % Initial Trajectory
@@ -77,18 +96,23 @@ numStarts = 5; % Number of random starting points
 [CxDes, CyDes, CzDes] = FK(yOpt(:,1), yOpt(:,2), yOpt(:,3)); % Optimized Trajectory
 
 
+dataNum = 17;  % Change this to 2, 3, etc. for other runs
+
 % Cartesian Space Trajectory 
+% 3D Cartesian Trajectory (Short)
 figure; hold on; grid on;
-plot(CyInit, CzInit,'--')
-plot(CyDes,CzDes,'o')
-plot(CyOpt,CzOpt,'.')
-plot(xTarget(2),xTarget(3),'*')
-plot(xFinal(2),xFinal(3),'o')
-legend('Initial Trajectory','Desired Trajectory','Optimized Trajectory','Target Point','End Point')
-xlabel('X axis (m)')
-ylabel('Y axis (m)')
-title('Cartesian Space Trajectory Results')
-disp(['Optimal Parameter:', num2str(Opt)])
+plot3(CxInit,CyInit,CzInit,'--')
+plot3(CxDes,CyDes,CzDes,'o','LineW',1,'Color',[0.17,0.63,0.17],'MarkerSize',7)
+plot3(CxOpt,CyOpt,CzOpt,'-.','LineW',1.2,'Color',[0.8,0,0.8])
+plot3(xTarget(:,1),xTarget(:,2),xTarget(:,3),'*','LineW',1.2,'MarkerSize',8,'Color',[0,0.4,0.8])
+plot3(xFinal(1),xFinal(2),xFinal(3),'p','LineW',1.5,'MarkerSize',14,'Color',[1,0.5,0.05])
+legend('Init','Desired','Opt','Target','End')
+xlabel('X'); ylabel('Y'); zlabel('Z')
+title('3D Trajectory')
+view(45,30)
+disp(['Opt Param: ', num2str(Opt)])
+
+% saveas(gcf, sprintf('data%dCartesianPosition.fig', dataNum))  % Dynamic name
 
 
 % Joint position 
@@ -119,71 +143,88 @@ for i = 4:6
     legend('Desired', 'Actual')
 end
 
-
 save(sprintf('data%d.mat', dataNum), ...
     'Opt','tOpt','yOpt','tInit','yInit','xTarget');
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 
 % Objective Function
-function error = objectiveFunction(prms, qDes, wt, xTarget, xDes)
+function error = objectiveFunction(prms, qDes, wt, xTarget, xFinal)
     x0 = zeros(12, 1);
     x0(1:3) = qDes;
-
+    tUni = 0:0.001:prms(3);
     % Simulate the system
-    [~, y] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1),prms(2:4)), ...
-                    [0 prms(1)], x0);
+    [~, y] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1:3),prms(4:12)), ...
+                    tUni, x0);
 
-    [xO,yO,zO] = FK(y(:,7),y(:,8),y(:,9));
-    xOut = [xO,yO,zO];
-   
+    [x,y,z] = FK(y(:,7),y(:,8),y(:,9));
+    xOut = [x,y,z];
     % Calculate minimum distance to middle point
-    distMid = min(sqrt(sum((xOut - xTarget).^2,2)));
-    
+    distMid1 = min(sqrt(sum((xOut - xTarget(1,:)).^2,2)));
+    distMid2 = min(sqrt(sum((xOut - xTarget(2,:)).^2,2)));
+
+    distMid = distMid1 + distMid2; 
+
     % End point error
-    distEndErr = min(sqrt(sum((xOut - xDes).^2,2)));
-    
+    distEndErr = min(sqrt(sum((xOut - xFinal).^2,2)));
+
+
     % Time penalty
-    timePenalty = prms(1);
+    timePenalty = prms(3);
 
     % Composite error (normalized)
-    error = wt(1)*distMid + wt(2)*distEndErr + wt(3)*timePenalty;
+    % error = wt(1)*distMid + wt(2)*distEndErr + wt(3)*timePenalty + 0.01*d;
+    error = wt(1)*distMid + wt(2)*distEndErr + wt(3)*timePenalty ;
+
 end
 
 % Constraint Function for Midpoint Proximity
-function [c, ceq] = trajConstraint(prms,qDes,xTarget)
+function [c, ceq] = trajConstraint(prms,qDes,xTarget,xFinal)
     ceq = []; % No equality constraints
+    tUni = 0:0.001: prms(3);
 
     % Simulate trajectory
-    [~, yy] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1),prms(2:4)), ...
-                    [0 prms(1)], zeros(12, 1));
-    [xO,yO,zO] = FK(yy(:,7),yy(:,8),yy(:,9));
-    xOut = [xO,yO,zO];
-   
-    % Calculate minimum distance to middle point
-    distMid = min(sqrt(sum((xOut - xTarget).^2,2)));
-    
+    [~, yy] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1:3),prms(4:12)), ...
+                    tUni, zeros(12, 1));
+    [x,y,z] = FK(yy(:,7),yy(:,8),yy(:,9));     % Optimized Trajectory
+    xOut = [x,y,z];
+    % Calculate distances to midpoint in 3D space
+    distMid1 = min(sqrt(sum((xOut - xTarget(1,:)).^2,2)));
+    distMid2 = min(sqrt(sum((xOut - xTarget(2,:)).^2,2)));
+
+
     % End point error
-    distEndErr = min(sqrt(sum((xOut - [0 0.05 0.05]).^2,2)));
+    distEndErr = min(sqrt(sum((xOut - xFinal).^2,2)));
 
     % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
-    c = [min(distMid) - 1e-10;
-         distEndErr    - 1e-10]; 
+    c = [min(distMid1) - 1e-10;
+        min(distMid2) - 1e-10;
+        distEndErr    - 1e-10;
+        prms(1) - prms(2);
+        prms(2) - prms(3)]; 
 end
 
 % Dynamics Function with Prefilter
 function dxdt= myTwolinkwithprefilter(t,x,qDes,t_st,wn)
     zeta = [1 1 1];
-    A1=[zeros(3), eye(3); -diag(wn).^2,-2*diag(zeta)*diag(wn)];
-    B1=[zeros(3); diag(wn).^2];
+    A1=[zeros(3), eye(3); -diag(wn(1:3)).^2,-2*diag(zeta)*diag(wn(1:3))];
+    B1=[zeros(3); diag(wn(1:3)).^2];
+    
+    A2=[zeros(3), eye(3); -diag(wn(4:6)).^2,-2*diag(zeta)*diag(wn(4:6))];
+    B2=[zeros(3); diag(wn(4:6)).^2];
+    
+    A3=[zeros(3), eye(3); -diag(wn(7:9)).^2,-2*diag(zeta)*diag(wn(7:9))];
+    B3=[zeros(3); diag(wn(7:9)).^2];
 
     q=x(7:9);
     qd=x(10:12);
 
     Kp=diag([70 70 70]);  
     Kd=diag([120 120 120]);  
-
+    
+    
     controller=Kp*(x(1:3)-q)+Kd*(x(4:6)-qd);
 
     [M,C,G]=compute_M_C_G(q(1),q(2),q(3),qd(1),qd(2),qd(3));
@@ -191,8 +232,13 @@ function dxdt= myTwolinkwithprefilter(t,x,qDes,t_st,wn)
     tau=M*(controller)+C*qd;
     
     qdd=M\(tau-C*qd);
-
-    dxdt=[A1*x(1:6)+B1*qDes(:); qd; qdd];
+    if t <= t_st(1)
+        dxdt=[A1*x(1:6)+B1*qDes(:); qd; qdd];
+    elseif t > t_st(1) && t <= t_st(2)
+        dxdt=[A2*x(1:6)+B2*qDes(:); qd; qdd];
+    else
+        dxdt=[A3*x(1:6)+B3*qDes(:); qd; qdd];
+    end
 end
 
 % Forward Kinematics (FK)

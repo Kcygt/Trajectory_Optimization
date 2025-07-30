@@ -2,11 +2,11 @@ clear; clc;
 close all;
 
 % Define desired trajectory and Middle Points
-qDes = [ 0   0.198678167676855   0.327814256075948 ];
+qDes = [ 0.077364659427973   0.197461387421127   0.332371171870866 ];
 [Px, Py, Pz] = FK(qDes(1), qDes(2), qDes(3));
 xFinal = [Px, Py, Pz];
 
-xTarget1 = [0, 0.04, 0.005];
+xTarget1 = [0.01, 0.04, 0.02];
 xTarget2 = [0, 0.015, 0.04];
 xTarget3 = [0,0.03 , 0.03];
 
@@ -29,7 +29,7 @@ tspan = 10;
 wn = [1 1 1];
 
 % Weights
-wt = [200, 5, 0.1]; % [Target, End, Time]
+wt = [1000, 10, 0.01]; % [Target, End, Time]
 
 initPrms = [tspan, wn];
 
@@ -58,7 +58,7 @@ problem = createOptimProblem('fmincon',...
     'lb', lb, ...
     'ub', ub, ...
     'options', options, ...
-    'nonlcon', @(prms) trajConstraint(prms, qDes, xTarget));
+    'nonlcon', @(prms) trajConstraint(prms, qDes, xTarget,xFinal));
 
 % MultiStart setup
 ms = MultiStart('UseParallel', true, 'Display', 'iter');
@@ -76,19 +76,18 @@ numStarts = 5; % Number of random starting points
 [CxOpt, CyOpt, CzOpt] = FK(yOpt(:,7), yOpt(:,8), yOpt(:,9)); % Optimized Trajectory
 [CxDes, CyDes, CzDes] = FK(yOpt(:,1), yOpt(:,2), yOpt(:,3)); % Optimized Trajectory
 
-
-% Cartesian Space Trajectory 
+% 3D Cartesian Trajectory
 figure; hold on; grid on;
-plot(CyInit, CzInit,'--')
-plot(CyDes,CzDes,'o')
-plot(CyOpt,CzOpt,'.')
-plot(xTarget(2),xTarget(3),'*')
-plot(xFinal(2),xFinal(3),'o')
-legend('Initial Trajectory','Desired Trajectory','Optimized Trajectory','Target Point','End Point')
-xlabel('X axis (m)')
-ylabel('Y axis (m)')
-title('Cartesian Space Trajectory Results')
-disp(['Optimal Parameter:', num2str(Opt)])
+plot3(CxInit,CyInit,CzInit,'--')
+plot3(CxDes,CyDes,CzDes,'o')
+plot3(CxOpt,CyOpt,CzOpt,'.')
+plot3(xTarget(1),xTarget(2),xTarget(3),'*')
+plot3(xFinal(1),xFinal(2),xFinal(3),'o')
+legend('Init','Desired','Optimized','Target','End')
+xlabel('X (m)'); ylabel('Y (m)'); zlabel('Z (m)')
+title('3D Trajectory')
+view(45, 30)  % <-- This ensures 3D view
+disp(['Opt Param: ', num2str(Opt)])
 
 
 % Joint position 
@@ -152,7 +151,7 @@ function error = objectiveFunction(prms, qDes, wt, xTarget, xDes)
 end
 
 % Constraint Function for Midpoint Proximity
-function [c, ceq] = trajConstraint(prms,qDes,xTarget)
+function [c, ceq] = trajConstraint(prms,qDes,xTarget,xFinal)
     ceq = []; % No equality constraints
 
     % Simulate trajectory
@@ -165,7 +164,7 @@ function [c, ceq] = trajConstraint(prms,qDes,xTarget)
     distMid = min(sqrt(sum((xOut - xTarget).^2,2)));
     
     % End point error
-    distEndErr = min(sqrt(sum((xOut - [0 0.05 0.05]).^2,2)));
+    distEndErr = min(sqrt(sum((xOut - xFinal).^2,2)));
 
     % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
     c = [min(distMid) - 1e-10;
