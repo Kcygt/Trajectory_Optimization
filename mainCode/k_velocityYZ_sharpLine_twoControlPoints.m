@@ -38,7 +38,7 @@ qCtrl2= IK(CtrlPnt2(1), CtrlPnt2(2), CtrlPnt2(3));
 qDes =[qCtrl1;qCtrl2;qDes];
 
 % Weights
-wt = [400, 10, 0.01];   % [Target, End, Time]
+wt = [1000, 10, 0.01];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2, wn3, CtrlPnt1,CtrlPnt2];
 
@@ -55,7 +55,7 @@ plot(yi,zi)
 
 tb = [0 0.015 0.015];
 % Lower and Upper Limits
-lb = [0   0.2 0.2 0.2   0.2 0.2 0.2    0.2 0.2 0.2   CtrlPnt1 - tb CtrlPnt2 - tb];     % Wn
+lb = [0   0.2 0.2 0.2   0.2 0.2 0.2    0.2 0.2 0.2   CtrlPnt1 CtrlPnt1];     % Wn
 ub = [4   5   5   5     5   5   5      5   5   5     CtrlPnt1 + tb CtrlPnt2 + tb];      % wn
 
 lb = [0   0.2 0.2 0.2   0.2 0.2 0.2    0.2 0.2 0.2   0 0 0  0 0 0];     % Wn
