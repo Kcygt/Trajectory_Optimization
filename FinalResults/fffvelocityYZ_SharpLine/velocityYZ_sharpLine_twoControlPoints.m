@@ -13,13 +13,13 @@ qDes = [ 0   0.198678167676855   0.327814256075948 ];
 xDes = [x, y, z];
 
 xTarget = zeros(3,3);
-xTarget(1,:) = [0, 0.02, 0.01];
-xTarget(2,:) = [0, 0.03, 0.02];
-xTarget(3,:) = [0, 0.04, 0.03];
+% xTarget(1,:) = [0, 0.02, 0.01];
+% xTarget(2,:) = [0, 0.03, 0.02];
+% xTarget(3,:) = [0, 0.04, 0.03];
 
-% xTarget(1,:) = [0, 0.015, 0.005];
-% xTarget(2,:) = [0, 0.025, 0.025];
-% xTarget(3,:) = [0, 0.045, 0.04];
+xTarget(1,:) = [0, 0.015, 0.005];
+xTarget(2,:) = [0, 0.025, 0.025];
+xTarget(3,:) = [0, 0.045, 0.04];
 
 % Parameters
 tspan =  20;
@@ -53,16 +53,16 @@ plot(yi,zi)
 % plot(0.025, 0.07,'d')
 
 
-tb = [0 0.02 0.02];
+tb = [0 0.015 0.015];
 % Lower and Upper Limits
-lb = [0   1 1 1   1 1 1   1 1 1  CtrlPnt1 - tb CtrlPnt2 - tb];     % Wn
-ub = [4   4 4 4   4 4 4   4 4 4  CtrlPnt1 + tb CtrlPnt2 + tb];      % wn
+lb = [0   0.2 0.2 0.2   0.2 0.2 0.2    0.2 0.2 0.2   CtrlPnt1 - tb CtrlPnt2 - tb];     % Wn
+ub = [4   4   4   4     4   4   4      4   4   4     CtrlPnt1 + tb CtrlPnt2 + tb];      % wn
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xDes);
 
 % Run optimization
-options = optimoptions('fmincon','PlotFcns', 'optimplot', 'Display', 'off', ... 
+options = optimoptions('fmincon', 'Display', 'off', ... 
                         'TolCon', 1e-10,'Maxiterations',50); % Added constraint tolerance
 
 % Create optimization problem
@@ -93,8 +93,21 @@ t_Vmax = 1./[Opt(2:4)];
 [xOpt, yOpt, zOpt] = FK(yy(:,7), yy(:,8), yy(:,9)); % Optimized Trajectory
 [x_Des, y_Des, z_Des] = FK(yy(:,1), yy(:,2), yy(:,3)); % Optimized Trajectory
 
-plotting
+% plotting
+figure; hold on; grid on;
+plot(yi, zi,'--')
+plot(yOpt,zOpt,'.-')
+plot(xTarget(1,2),xTarget(1,3),'*')
+plot(xTarget(2,2),xTarget(2,3),'*')
+plot(xTarget(3,2),xTarget(3,3),'*')
+plot(Opt(12),Opt(13),'d')
 
+plot(xDes(2),xDes(3),'o')
+legend('Initial Trjectory','Optimized Trajectory','Target Point 1','Target Point 2','Target Point 3','Control Point 1','Control Point 2','End Point')
+xlabel('X axis (m)')
+ylabel('Y axis (m)')
+title('Cartesian Space Trajectory Results')
+disp(['Optimal Parameter:', num2str(Opt)])
 % Velocity Plot
 figure; hold on; grid on;
 plot(tt, yy(:,10:12))
