@@ -9,8 +9,8 @@ xFinal = [Px, Py, Pz];
 
 xTarget = zeros(2,3);
 xTarget(1,:) = [0.005, 0.02, 0.01];
-xTarget(2,:) = [0.035, 0.03, 0.04];
-% 
+xTarget(2,:) = [0.035, 0.03, 0.03];
+
 % xTarget(1,:) = [0, 0.01, 0.02];
 % xTarget(2,:) = [0, 0.04, 0.03];
 % 
@@ -22,39 +22,42 @@ xTarget(2,:) = [0.035, 0.03, 0.04];
 
 % 
 
-tspan = [.4 .6 3];
-wn = [3 5 7   3 10 1    1 1 1];
+tspan = [1 2 3];
+wn = [1 1 1   1 1 1    1 1 1];
 % wn = [2.6269    0.9641    0.9804  1.4005    2.9646    5.9315  1.0418    0.7773    2.9987];
 % tspan = [0.4579    1.4884    7.4918];
 % Weights
-wt = [1000, 5, 0.001]; % [Target, End, Time]
+wt = [200, 5, 0.001]; % [Target, End, Time]
 
 initPrms = [tspan, wn];
 
-tUni = 0:0.01: tspan(end);
+tUni = 0:0.001: tspan(end);
 % Initial Condition
-[tInit, yInit] = ode45(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan, wn),tUni, zeros(12, 1));
+[tInit, yInit] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan, wn),tUni, zeros(12, 1));
 
 % %%% Plotting
 % [CxInit, CyInit, CzInit] = FK(yInit(:,7), yInit(:,8), yInit(:,9)); % Initial Trajectory
-% % 
-% % % Cartesian Space Trajectory 
+% 
+% % Cartesian Space Trajectory 
 % figure; hold on; grid on;
-% plot3(CxInit,CyInit,CzInit,'--')
-% plot3(xTarget(:,1),xTarget(:,2),xTarget(:,3),'*','LineW',1.2,'MarkerSize',8,'Color',[0,0.4,0.8])
-% plot3(xFinal(1),xFinal(2),xFinal(3),'p','LineW',1.5,'MarkerSize',14,'Color',[1,0.5,0.05])
-% legend('Init','Desired','Opt','Target','End')
-% xlabel('X'); ylabel('Y'); zlabel('Z')
-% title('3D Trajectory')
-% view(45,30)
+% plot(CyInit, CzInit,'--')
+% plot(xTarget(1,2),xTarget(1,3),'*','LineWidth',1.2,'MarkerSize',8,'Color',[0, 0.3984, 0.8])
+% plot(xTarget(2,2),xTarget(2,3),'*','LineWidth',1.2,'MarkerSize',8, 'Color',[0, 0.3984, 0.8])
+% 
+% plot(xFinal(2),xFinal(3),'p','LineWidth',1.5,'MarkerSize',14,'Color',[1.0000, 0.4980, 0.0549])
+% xlabel('X axis (m)')
+% ylabel('Y axis (m)')
+% title('Cartesian Space Trajectory Results')
+
+
 
 
 
 % Lower and Upper Limits
-lb = [0 0 0  ... % time
-      0.5 0.5 0.5  0.5 0.5 0.5  0.5 0.5 0.5 ]; % Wn
-ub = [5 5 5 ... % time
-      50  50  50   50  50  50   50 50  50]; % Wn
+lb = [0 0 0   ... % time
+      .1 0.1 0.1  .1 0.1 0.1  .1 0.1 0.1 ]; % Wn
+ub = [1 1 1 ... % time
+      10 10 10  10 10 10  10 10 10]; % Wn
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xFinal);
@@ -64,10 +67,8 @@ objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xFinal);
 %                         'TolCon', 1e-10,'MaxIterations',50); % Added constraint tolerance
 options = optimoptions('fmincon', ...
     'Display', 'none', ...
-    'TolCon', 1e-4, ...
-    'OptimalityTolerance', 1e-4, ...
-    'StepTolerance', 1e-4, ...
-    'MaxIterations', 60);
+    'TolCon', 1e-6, ...
+    'MaxIterations', 50);
 % Create optimization problem
 problem = createOptimProblem('fmincon',...
     'objective', objectiveFunc, ...
@@ -75,18 +76,18 @@ problem = createOptimProblem('fmincon',...
     'lb', lb, ...
     'ub', ub, ...
     'options', options, ...
-    'nonlcon', @(prms) trajConstraint(prms, qDes, xTarget,xFinal));
+    'nonlcon', @(prms) trajConstraint(prms, qDes, xTarget));
 
 % MultiStart setup
-ms = MultiStart('UseParallel', false, 'Display', 'iter');
+ms = MultiStart('UseParallel', true, 'Display', 'iter');
 numStarts = 5; % Number of random starting points
 
 % Run MultiStart optimization
 [Opt, fval] = run(ms, problem, numStarts);
-tUni = 0:0.01: Opt(3);
+tUni = 0:0.001: Opt(3);
 
 % Simulate with optimal parameters
-[tOpt, yOpt] = ode45(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1:3),  Opt(4:12)), ...
+[tOpt, yOpt] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1:3),  Opt(4:12)), ...
                  tUni, zeros(12, 1));
 
 %%% Plotting
@@ -98,7 +99,6 @@ tUni = 0:0.01: Opt(3);
 dataNum = 17;  % Change this to 2, 3, etc. for other runs
 
 % Cartesian Space Trajectory 
-% 3D Cartesian Trajectory (Short)
 figure; hold on; grid on;
 plot3(CxInit,CyInit,CzInit,'--')
 plot3(CxDes,CyDes,CzDes,'o','LineW',1,'Color',[0.17,0.63,0.17],'MarkerSize',7)
@@ -110,40 +110,39 @@ xlabel('X'); ylabel('Y'); zlabel('Z')
 title('3D Trajectory')
 view(45,30)
 disp(['Opt Param: ', num2str(Opt)])
-
 % saveas(gcf, sprintf('data%dCartesianPosition.fig', dataNum))  % Dynamic name
-
-
-% Joint position 
-figure;
-for i = 1:3
-    subplot(3,1,i); hold on; grid on;
-    plot(tOpt, yOpt(:,i), '--') % desired
-    plot(tOpt, yOpt(:,i+6))     % actual
-    ylabel(['Joint ', num2str(i), ' Position (rad)'])
-    if i == 3
-        xlabel('Time (s)')
-    end
-    legend('Desired', 'Actual')
-end
-
-
-
-% Joint Velocity 
-figure;
-for i = 4:6
-    subplot(3,1,i-3); hold on; grid on;
-    plot(tOpt, yOpt(:,i), '--') % desired
-    plot(tOpt, yOpt(:,i+6))     % actual
-    ylabel(['Joint ', num2str(i), ' Position (rad)'])
-    if i == 3
-        xlabel('Time (s)')
-    end
-    legend('Desired', 'Actual')
-end
-
-save(sprintf('data%d.mat', dataNum), ...
-    'Opt','tOpt','yOpt','tInit','yInit','xTarget');
+% 
+% 
+% % Joint position 
+% figure;
+% for i = 1:3
+%     subplot(3,1,i); hold on; grid on;
+%     plot(tOpt, yOpt(:,i), '--') % desired
+%     plot(tOpt, yOpt(:,i+6))     % actual
+%     ylabel(['Joint ', num2str(i), ' Position (rad)'])
+%     if i == 3
+%         xlabel('Time (s)')
+%     end
+%     legend('Desired', 'Actual')
+% end
+% 
+% 
+% 
+% % Joint Velocity 
+% figure;
+% for i = 4:6
+%     subplot(3,1,i-3); hold on; grid on;
+%     plot(tOpt, yOpt(:,i), '--') % desired
+%     plot(tOpt, yOpt(:,i+6))     % actual
+%     ylabel(['Joint ', num2str(i), ' Position (rad)'])
+%     if i == 3
+%         xlabel('Time (s)')
+%     end
+%     legend('Desired', 'Actual')
+% end
+% 
+% save(sprintf('data%d.mat', dataNum), ...
+%     'Opt','tOpt','yOpt','tInit','yInit','xTarget');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -153,9 +152,9 @@ save(sprintf('data%d.mat', dataNum), ...
 function error = objectiveFunction(prms, qDes, wt, xTarget, xFinal)
     x0 = zeros(12, 1);
     x0(1:3) = qDes;
-    tUni = 0:0.01:prms(3);
+    tUni = 0:0.001:prms(3);
     % Simulate the system
-    [~, y] = ode45(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1:3),prms(4:12)), ...
+    [~, y] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1:3),prms(4:12)), ...
                     tUni, x0);
 
     [x,y,z] = FK(y(:,7),y(:,8),y(:,9));
@@ -169,7 +168,9 @@ function error = objectiveFunction(prms, qDes, wt, xTarget, xFinal)
     % End point error
     distEndErr = min(sqrt(sum((xOut - xFinal).^2,2)));
 
-
+    d1 = prms(1) - prms(2);
+    d2 = prms(2) - prms(3);
+    d = d1 + d2;
     % Time penalty
     timePenalty = prms(3);
 
@@ -180,9 +181,9 @@ function error = objectiveFunction(prms, qDes, wt, xTarget, xFinal)
 end
 
 % Constraint Function for Midpoint Proximity
-function [c, ceq] = trajConstraint(prms,qDes,xTarget,xFinal)
+function [c, ceq] = trajConstraint(prms,qDes,xTarget)
     ceq = []; % No equality constraints
-    tUni = 0:0.01: prms(3);
+    tUni = 0:0.001: prms(3);
 
     % Simulate trajectory
     [~, yy] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,prms(1:3),prms(4:12)), ...
@@ -195,12 +196,12 @@ function [c, ceq] = trajConstraint(prms,qDes,xTarget,xFinal)
 
 
     % End point error
-    distEndErr = min(sqrt(sum((xOut - xFinal).^2,2)));
+    distEndErr = min(sqrt(sum((xOut - [0.05, 0.05 0.05]).^2,2)));
 
     % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
-    c = [min(distMid1) - 1e-6;
-        min(distMid2) - 1e-6;
-        distEndErr    - 1e-6;
+    c = [min(distMid1) - 1e-10;
+        min(distMid2) - 1e-10;
+        distEndErr    - 1e-10;
         prms(1) - prms(2);
         prms(2) - prms(3)]; 
 end
