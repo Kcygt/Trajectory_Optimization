@@ -22,12 +22,11 @@ xTarget(2,:) = [0.035, 0.03, 0.04];
 
 % 
 
-tspan = [.4 .6 3];
-wn = [3 5 7   3 10 1    1 1 1];
-% wn = [2.6269    0.9641    0.9804  1.4005    2.9646    5.9315  1.0418    0.7773    2.9987];
-% tspan = [0.4579    1.4884    7.4918];
+tspan = [ 0.4154    0.9925    1.5251];
+wn = [1.3195    1.6735    1.8446      2.86879    3.9139    4.00    16.6248    0.1000    0.6028];
+
 % Weights
-wt = [1000, 5, 0.001]; % [Target, End, Time]
+wt = [200, 5, 0.001]; % [Target, End, Time]
 
 initPrms = [tspan, wn];
 
@@ -35,26 +34,18 @@ tUni = 0:0.01: tspan(end);
 % Initial Condition
 [tInit, yInit] = ode45(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan, wn),tUni, zeros(12, 1));
 
-% %%% Plotting
-% [CxInit, CyInit, CzInit] = FK(yInit(:,7), yInit(:,8), yInit(:,9)); % Initial Trajectory
-% % 
-% % % Cartesian Space Trajectory 
-% figure; hold on; grid on;
-% plot3(CxInit,CyInit,CzInit,'--')
-% plot3(xTarget(:,1),xTarget(:,2),xTarget(:,3),'*','LineW',1.2,'MarkerSize',8,'Color',[0,0.4,0.8])
-% plot3(xFinal(1),xFinal(2),xFinal(3),'p','LineW',1.5,'MarkerSize',14,'Color',[1,0.5,0.05])
-% legend('Init','Desired','Opt','Target','End')
-% xlabel('X'); ylabel('Y'); zlabel('Z')
-% title('3D Trajectory')
-% view(45,30)
+%%% Plotting
+[CxInit, CyInit, CzInit] = FK(yInit(:,7), yInit(:,8), yInit(:,9)); % Initial Trajectory
+% 
 
+% newplotting
 
 
 % Lower and Upper Limits
 lb = [0 0 0  ... % time
-      0.5 0.5 0.5  0.5 0.5 0.5  0.5 0.5 0.5 ]; % Wn
-ub = [5 5 5 ... % time
-      50  50  50   50  50  50   50 50  50]; % Wn
+      0.1 0.1 0.1  0.1 0.1 0.1  0.1 0.1 0.1 ]; % Wn
+ub = [2 2 2 ... % time
+      7 7 7  7 7 7  7 7 7]; % Wn
 
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xFinal);
@@ -94,56 +85,127 @@ tUni = 0:0.01: Opt(3);
 [CxOpt, CyOpt, CzOpt] = FK(yOpt(:,7), yOpt(:,8), yOpt(:,9)); % Optimized Trajectory
 [CxDes, CyDes, CzDes] = FK(yOpt(:,1), yOpt(:,2), yOpt(:,3)); % Optimized Trajectory
 
+% Extract optimal switching times
+t1 = Opt(1);
+t2 = Opt(2);
+t3 = Opt(3);
 
-dataNum = 17;  % Change this to 2, 3, etc. for other runs
+% Find closest indices in tUni
+[~, i1] = min(abs(tUni - t1));
+[~, i2] = min(abs(tUni - t2));
+[~, i3] = min(abs(tUni - t3));
+
+% Optional: show them
+disp(['Index t1: ', num2str(i1), ', t2: ', num2str(i2), ', t3: ', num2str(i3)])
+
+% Plot segmented trajectory in different colors
+figure; hold on; grid on;
+plot3(CxOpt(1:i1), CyOpt(1:i1), CzOpt(1:i1), 'r-', 'LineWidth', 1.5)
+plot3(CxOpt(i1+1:i2), CyOpt(i1+1:i2), CzOpt(i1+1:i2), 'g-', 'LineWidth', 1.5)
+plot3(CxOpt(i2+1:i3), CyOpt(i2+1:i3), CzOpt(i2+1:i3), 'b-', 'LineWidth', 1.5)
+plot3(CxOpt(i3+1:end), CyOpt(i3+1:end), CzOpt(i3+1:end), 'k--', 'LineWidth', 1.2)
+plot3(xTarget(:,1), xTarget(:,2), xTarget(:,3), '*', 'LineWidth', 1.2, 'MarkerSize', 8, 'Color', [0,0.4,0.8])
+plot3(xFinal(1), xFinal(2), xFinal(3), 'p', 'LineWidth', 1.5, 'MarkerSize', 14, 'Color', [1,0.5,0.05])
+
+legend('Segment 1', 'Segment 2', 'Segment 3', 'Post t3', 'Target', 'End')
+xlabel('X'); ylabel('Y'); zlabel('Z')
+title('3D Trajectory Segmented by Optimal Times')
+view(45,30)
+
+% Colors and line styles
+colors = {'r-', 'g-', 'b-', 'k--'};
+
+% -------------------
+% 1. X–Z View
+% -------------------
+figure; hold on; grid on;
+plot3(CxOpt(1:i1),  CzOpt(1:i1),  CyOpt(1:i1),  colors{1}, 'LineWidth', 1.5)
+plot3(CxOpt(i1+1:i2), CzOpt(i1+1:i2), CyOpt(i1+1:i2), colors{2}, 'LineWidth', 1.5)
+plot3(CxOpt(i2+1:i3), CzOpt(i2+1:i3), CyOpt(i2+1:i3), colors{3}, 'LineWidth', 1.5)
+plot3(CxOpt(i3+1:end), CzOpt(i3+1:end), CyOpt(i3+1:end), colors{4}, 'LineWidth', 1.2)
+plot3(xTarget(:,1), xTarget(:,3), xTarget(:,2), '*', 'LineWidth', 1.2, 'MarkerSize', 8, 'Color', [0,0.4,0.8])
+plot3(xFinal(1), xFinal(3), xFinal(2), 'p', 'LineWidth', 1.5, 'MarkerSize', 14, 'Color', [1,0.5,0.05])
+xlabel('X'); ylabel('Z'); zlabel('Y')
+title('Segmented Trajectory – X-Z View')
+view(0, 0)
+
+% -------------------
+% 2. X–Y View
+% -------------------
+figure; hold on; grid on;
+plot3(CxOpt(1:i1),  CyOpt(1:i1),  CzOpt(1:i1),  colors{1}, 'LineWidth', 1.5)
+plot3(CxOpt(i1+1:i2), CyOpt(i1+1:i2), CzOpt(i1+1:i2), colors{2}, 'LineWidth', 1.5)
+plot3(CxOpt(i2+1:i3), CyOpt(i2+1:i3), CzOpt(i2+1:i3), colors{3}, 'LineWidth', 1.5)
+plot3(CxOpt(i3+1:end), CyOpt(i3+1:end), CzOpt(i3+1:end), colors{4}, 'LineWidth', 1.2)
+plot3(xTarget(:,1), xTarget(:,2), xTarget(:,3), '*', 'LineWidth', 1.2, 'MarkerSize', 8, 'Color', [0,0.4,0.8])
+plot3(xFinal(1), xFinal(2), xFinal(3), 'p', 'LineWidth', 1.5, 'MarkerSize', 14, 'Color', [1,0.5,0.05])
+xlabel('X'); ylabel('Y'); zlabel('Z')
+title('Segmented Trajectory – X-Y View')
+view(0, 90)
+
+% -------------------
+% 3. Y–Z View
+% -------------------
+figure; hold on; grid on;
+plot3(CyOpt(1:i1),  CzOpt(1:i1),  CxOpt(1:i1),  colors{1}, 'LineWidth', 1.5)
+plot3(CyOpt(i1+1:i2), CzOpt(i1+1:i2), CxOpt(i1+1:i2), colors{2}, 'LineWidth', 1.5)
+plot3(CyOpt(i2+1:i3), CzOpt(i2+1:i3), CxOpt(i2+1:i3), colors{3}, 'LineWidth', 1.5)
+plot3(CyOpt(i3+1:end), CzOpt(i3+1:end), CxOpt(i3+1:end), colors{4}, 'LineWidth', 1.2)
+plot3(xTarget(:,2), xTarget(:,3), xTarget(:,1), '*', 'LineWidth', 1.2, 'MarkerSize', 8, 'Color', [0,0.4,0.8])
+plot3(xFinal(2), xFinal(3), xFinal(1), 'p', 'LineWidth', 1.5, 'MarkerSize', 14, 'Color', [1,0.5,0.05])
+xlabel('Y'); ylabel('Z'); zlabel('X')
+title('Segmented Trajectory – Y-Z View')
+view(90, 90)
+
+% dataNum = 17;  % Change this to 2, 3, etc. for other runs
 
 % Cartesian Space Trajectory 
 % 3D Cartesian Trajectory (Short)
-figure; hold on; grid on;
-plot3(CxInit,CyInit,CzInit,'--')
-plot3(CxDes,CyDes,CzDes,'o','LineW',1,'Color',[0.17,0.63,0.17],'MarkerSize',7)
-plot3(CxOpt,CyOpt,CzOpt,'-.','LineW',1.2,'Color',[0.8,0,0.8])
-plot3(xTarget(:,1),xTarget(:,2),xTarget(:,3),'*','LineW',1.2,'MarkerSize',8,'Color',[0,0.4,0.8])
-plot3(xFinal(1),xFinal(2),xFinal(3),'p','LineW',1.5,'MarkerSize',14,'Color',[1,0.5,0.05])
-legend('Init','Desired','Opt','Target','End')
-xlabel('X'); ylabel('Y'); zlabel('Z')
-title('3D Trajectory')
-view(45,30)
-disp(['Opt Param: ', num2str(Opt)])
+% figure; hold on; grid on;
+% plot3(CxInit,CyInit,CzInit,'--')
+% % plot3(CxDes,CyDes,CzDes,'o','LineW',1,'Color',[0.17,0.63,0.17],'MarkerSize',7)
+% plot3(CxOpt,CyOpt,CzOpt,'-.','LineW',1.2,'Color',[0.8,0,0.8])
+% plot3(xTarget(:,1),xTarget(:,2),xTarget(:,3),'*','LineW',1.2,'MarkerSize',8,'Color',[0,0.4,0.8])
+% plot3(xFinal(1),xFinal(2),xFinal(3),'p','LineW',1.5,'MarkerSize',14,'Color',[1,0.5,0.05])
+% legend('Init','Opt','Target1','Target2','End')
+% xlabel('X'); ylabel('Y'); zlabel('Z')
+% title('3D Trajectory')
+% view(45,30)
+% disp(['Opt Param: ', num2str(Opt)])
 
 % saveas(gcf, sprintf('data%dCartesianPosition.fig', dataNum))  % Dynamic name
 
+% 
+% % Joint position 
+% figure;
+% for i = 1:3
+%     subplot(3,1,i); hold on; grid on;
+%     plot(tOpt, yOpt(:,i), '--') % desired
+%     plot(tOpt, yOpt(:,i+6))     % actual
+%     ylabel(['Joint ', num2str(i), ' Position (rad)'])
+%     if i == 3
+%         xlabel('Time (s)')
+%     end
+%     legend('Desired', 'Actual')
+% end
+% 
+% 
+% 
+% % Joint Velocity 
+% figure;
+% for i = 4:6
+%     subplot(3,1,i-3); hold on; grid on;
+%     plot(tOpt, yOpt(:,i), '--') % desired
+%     plot(tOpt, yOpt(:,i+6))     % actual
+%     ylabel(['Joint ', num2str(i), ' Position (rad)'])
+%     if i == 3
+%         xlabel('Time (s)')
+%     end
+%     legend('Desired', 'Actual')
+% end
 
-% Joint position 
-figure;
-for i = 1:3
-    subplot(3,1,i); hold on; grid on;
-    plot(tOpt, yOpt(:,i), '--') % desired
-    plot(tOpt, yOpt(:,i+6))     % actual
-    ylabel(['Joint ', num2str(i), ' Position (rad)'])
-    if i == 3
-        xlabel('Time (s)')
-    end
-    legend('Desired', 'Actual')
-end
-
-
-
-% Joint Velocity 
-figure;
-for i = 4:6
-    subplot(3,1,i-3); hold on; grid on;
-    plot(tOpt, yOpt(:,i), '--') % desired
-    plot(tOpt, yOpt(:,i+6))     % actual
-    ylabel(['Joint ', num2str(i), ' Position (rad)'])
-    if i == 3
-        xlabel('Time (s)')
-    end
-    legend('Desired', 'Actual')
-end
-
-save(sprintf('data%d.mat', dataNum), ...
-    'Opt','tOpt','yOpt','tInit','yInit','xTarget');
+% save(sprintf('data%d.mat', dataNum), ...
+%     'Opt','tOpt','yOpt','tInit','yInit','xTarget');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -198,9 +260,9 @@ function [c, ceq] = trajConstraint(prms,qDes,xTarget,xFinal)
     distEndErr = min(sqrt(sum((xOut - xFinal).^2,2)));
 
     % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
-    c = [min(distMid1) - 1e-6;
-        min(distMid2) - 1e-6;
-        distEndErr    - 1e-6;
+    c = [min(distMid1) - 1e-10;
+        min(distMid2) - 1e-10;
+        distEndErr    - 1e-10;
         prms(1) - prms(2);
         prms(2) - prms(3)]; 
 end
