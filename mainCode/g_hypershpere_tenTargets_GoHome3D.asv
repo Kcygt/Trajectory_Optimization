@@ -306,11 +306,7 @@ function [c, ceq] = trajConstraint(prms,qDes,xTarget)
          min(distanceMid5) - 1e-10;
          min(distanceMid6) - 1e-10;
          distEndErr    - 1e-10;
-         tIdx1 - tIdx2;
-         tIdx2 - tIdx3;
-         tIdx3 - tIdx4;
-         tIdx4 - tIdx5;
-         tIdx5 - tIdx6];
+         tIdx1 - tIdx2];
 
 end
  
