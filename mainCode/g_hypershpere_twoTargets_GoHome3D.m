@@ -134,24 +134,24 @@ dist2 = sqrt((CxOpt - ctrl2(1)).^2 + (CyOpt - ctrl2(2)).^2 + (CzOpt - ctrl2(3)).
 
 % Plotting
 figure; hold on; grid on; view(3);
-xlabel('Y axis (m)');
-ylabel('Z axis (m)');
-zlabel('X axis (m)');
+xlabel('X axis (m)');
+ylabel('Y axis (m)');
+zlabel('Z axis (m)');
 title('Cartesian Space Trajectory Results with Phase Changes');
 
-% Trajectory
-plot3(CyOpt, CzOpt, CxOpt, '.-');
+% Trajectory (X, Y, Z)
+plot3(CxOpt, CyOpt, CzOpt, '.-');
 
-% Target Points
-plot3(xTarget(1,2), xTarget(1,3), xTarget(1,1), '*');
-plot3(xTarget(2,2), xTarget(2,3), xTarget(2,1), '*');
+% Target Points (X, Y, Z)
+plot3(xTarget(1,1), xTarget(1,2), xTarget(1,3), '*');
+plot3(xTarget(2,1), xTarget(2,2), xTarget(2,3), '*');
 
-% Final Point
-plot3(xFinal(2), xFinal(3), xFinal(1), 'o');
+% Final Point (X, Y, Z)
+plot3(xFinal(1), xFinal(2), xFinal(3), 'o');
 
-% Control Points (plotted as diamonds)
-plot3(ctrl1_y, ctrl1_z, ctrl1_x, 'd');
-plot3(ctrl2_y, ctrl2_z, ctrl2_x, 'd');
+% Control Points (plotted as diamonds, X, Y, Z)
+plot3(ctrl1_x, ctrl1_y, ctrl1_z, 'd');
+plot3(ctrl2_x, ctrl2_y, ctrl2_z, 'd');
 
 % Generate a sphere mesh
 [sx, sy, sz] = sphere(20); % Sphere resolution
@@ -159,17 +159,17 @@ sx = r * sx;
 sy = r * sy;
 sz = r * sz;
 
-% Plot sphere around Control Point 1
-surf(ctrl1_y + sx, ctrl1_z + sy, ctrl1_x + sz, ...
+% Plot sphere around Control Point 1 (X, Y, Z)
+surf(ctrl1_x + sx, ctrl1_y + sy, ctrl1_z + sz, ...
      'EdgeColor', 'none', 'FaceAlpha', 0.3, 'FaceColor', 'b');
 
-% Plot sphere around Control Point 2
-surf(ctrl2_y + sx, ctrl2_z + sy, ctrl2_x + sz, ...
+% Plot sphere around Control Point 2 (X, Y, Z)
+surf(ctrl2_x + sx, ctrl2_y + sy, ctrl2_z + sz, ...
      'EdgeColor', 'none', 'FaceAlpha', 0.3, 'FaceColor', 'b');
 
-% Legend
 legend('Optimized Trajectory', 'Target Point 1', 'Target Point 2', ...
        'End Point', 'Control Point 1', 'Control Point 2');
+
 
 
 disp('Optimal Parameter:')
@@ -180,46 +180,46 @@ disp(['wn3 =  [ ', num2str(Opt(6:7)), ' ];'])
 disp(['CtrlPnt 1= [   ', num2str(Opt(8:9)), ' ];'])
 disp(['CtrlPnt 2= [   ', num2str(Opt(10:11)), ' ];'])
 
-
-   
-% Velocity Plot
-figure; hold on; grid on;
-plot(tOpt, yOpt(:,10:12))
-xlabel('Time (s)')
-ylabel('Velocity (rad/s)')
-title('Velocity')
-
-
-% Joint position 
-figure;
-for i = 1:3
-    subplot(3,1,i); hold on; grid on;
-    plot(tOpt, yOpt(:,i), '--') % desired
-    plot(tOpt, yOpt(:,i+6))     % actual
-    ylabel(['Joint ', num2str(i), ' Position (rad)'])
-    if i == 3
-        xlabel('Time (s)')
-    end
-    legend('Desired', 'Actual')
-end
-% saveas(gcf, sprintf('data%dJointPosition.fig', dataNum))  % Dynamic name
-
-
-
-% Joint Velocity 
-figure;
-for i = 4:6
-    subplot(3,1,i-3); hold on; grid on;
-    plot(tOpt, yOpt(:,i), '--') % desired
-    plot(tOpt, yOpt(:,i+6))     % actual
-    ylabel(['Joint ', num2str(i), ' Position (rad)'])
-    if i == 3
-        xlabel('Time (s)')
-    end
-    legend('Desired', 'Actual')
-end
-save(sprintf('data%d.mat', dataNum), ...
-    'Opt', 'tOpt','yOpt','tInit','yInit','xTarget');
+% 
+% 
+% % Velocity Plot
+% figure; hold on; grid on;
+% plot(tOpt, yOpt(:,10:12))
+% xlabel('Time (s)')
+% ylabel('Velocity (rad/s)')
+% title('Velocity')
+% 
+% 
+% % Joint position 
+% figure;
+% for i = 1:3
+%     subplot(3,1,i); hold on; grid on;
+%     plot(tOpt, yOpt(:,i), '--') % desired
+%     plot(tOpt, yOpt(:,i+6))     % actual
+%     ylabel(['Joint ', num2str(i), ' Position (rad)'])
+%     if i == 3
+%         xlabel('Time (s)')
+%     end
+%     legend('Desired', 'Actual')
+% end
+% % saveas(gcf, sprintf('data%dJointPosition.fig', dataNum))  % Dynamic name
+% 
+% 
+% 
+% % Joint Velocity 
+% figure;
+% for i = 4:6
+%     subplot(3,1,i-3); hold on; grid on;
+%     plot(tOpt, yOpt(:,i), '--') % desired
+%     plot(tOpt, yOpt(:,i+6))     % actual
+%     ylabel(['Joint ', num2str(i), ' Position (rad)'])
+%     if i == 3
+%         xlabel('Time (s)')
+%     end
+%     legend('Desired', 'Actual')
+% end
+% save(sprintf('data%d.mat', dataNum), ...
+%     'Opt', 'tOpt','yOpt','tInit','yInit','xTarget');
 % Objective Function
 function error = objectiveFunction(prms, qDes, wt, xTarget, xFinal)
     tUni =  0:0.001:prms(1);
