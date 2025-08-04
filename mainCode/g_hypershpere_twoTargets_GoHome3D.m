@@ -220,6 +220,12 @@ disp(['CtrlPnt 2= [   ', num2str(Opt(10:11)), ' ];'])
 % end
 % save(sprintf('data%d.mat', dataNum), ...
 %     'Opt', 'tOpt','yOpt','tInit','yInit','xTarget');
+
+
+save(sprintf('data%d.mat', 3), ...
+    'Opt','tOpt','yOpt','tInit','yInit','xTarget','xFinal');
+
+
 % Objective Function
 function error = objectiveFunction(prms, qDes, wt, xTarget, xFinal)
     tUni =  0:0.001:prms(1);

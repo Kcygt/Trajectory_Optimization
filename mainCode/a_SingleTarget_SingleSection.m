@@ -120,7 +120,7 @@ end
 
 
 save(sprintf('data%d.mat', dataNum), ...
-    'Opt','tOpt','yOpt','tInit','yInit','xTarget');
+    'Opt','tOpt','yOpt','tInit','yInit','xTarget','xFinal');
 
 
 

@@ -26,7 +26,7 @@ tspan = [ 0.4154    0.9925    1.5251];
 wn = [1.3195    1.6735    1.8446      2.86879    3.9139    4.00    16.6248    0.1000    0.6028];
 
 % Weights
-wt = [200, 5, 0.001]; % [Target, End, Time]
+wt = [500, 1, 0.001]; % [Target, End, Time]
 
 initPrms = [tspan, wn];
 
@@ -112,52 +112,9 @@ xlabel('X'); ylabel('Y'); zlabel('Z')
 title('3D Trajectory Segmented by Optimal Times')
 view(45,30)
 
-% Colors and line styles
-colors = {'r-', 'g-', 'b-', 'k--'};
 
-% -------------------
-% 1. X–Z View
-% -------------------
-figure; hold on; grid on;
-plot3(CxOpt(1:i1),  CzOpt(1:i1),  CyOpt(1:i1),  colors{1}, 'LineWidth', 1.5)
-plot3(CxOpt(i1+1:i2), CzOpt(i1+1:i2), CyOpt(i1+1:i2), colors{2}, 'LineWidth', 1.5)
-plot3(CxOpt(i2+1:i3), CzOpt(i2+1:i3), CyOpt(i2+1:i3), colors{3}, 'LineWidth', 1.5)
-plot3(CxOpt(i3+1:end), CzOpt(i3+1:end), CyOpt(i3+1:end), colors{4}, 'LineWidth', 1.2)
-plot3(xTarget(:,1), xTarget(:,3), xTarget(:,2), '*', 'LineWidth', 1.2, 'MarkerSize', 8, 'Color', [0,0.4,0.8])
-plot3(xFinal(1), xFinal(3), xFinal(2), 'p', 'LineWidth', 1.5, 'MarkerSize', 14, 'Color', [1,0.5,0.05])
-xlabel('X'); ylabel('Z'); zlabel('Y')
-title('Segmented Trajectory – X-Z View')
-view(0, 0)
 
-% -------------------
-% 2. X–Y View
-% -------------------
-figure; hold on; grid on;
-plot3(CxOpt(1:i1),  CyOpt(1:i1),  CzOpt(1:i1),  colors{1}, 'LineWidth', 1.5)
-plot3(CxOpt(i1+1:i2), CyOpt(i1+1:i2), CzOpt(i1+1:i2), colors{2}, 'LineWidth', 1.5)
-plot3(CxOpt(i2+1:i3), CyOpt(i2+1:i3), CzOpt(i2+1:i3), colors{3}, 'LineWidth', 1.5)
-plot3(CxOpt(i3+1:end), CyOpt(i3+1:end), CzOpt(i3+1:end), colors{4}, 'LineWidth', 1.2)
-plot3(xTarget(:,1), xTarget(:,2), xTarget(:,3), '*', 'LineWidth', 1.2, 'MarkerSize', 8, 'Color', [0,0.4,0.8])
-plot3(xFinal(1), xFinal(2), xFinal(3), 'p', 'LineWidth', 1.5, 'MarkerSize', 14, 'Color', [1,0.5,0.05])
-xlabel('X'); ylabel('Y'); zlabel('Z')
-title('Segmented Trajectory – X-Y View')
-view(0, 90)
-
-% -------------------
-% 3. Y–Z View
-% -------------------
-figure; hold on; grid on;
-plot3(CyOpt(1:i1),  CzOpt(1:i1),  CxOpt(1:i1),  colors{1}, 'LineWidth', 1.5)
-plot3(CyOpt(i1+1:i2), CzOpt(i1+1:i2), CxOpt(i1+1:i2), colors{2}, 'LineWidth', 1.5)
-plot3(CyOpt(i2+1:i3), CzOpt(i2+1:i3), CxOpt(i2+1:i3), colors{3}, 'LineWidth', 1.5)
-plot3(CyOpt(i3+1:end), CzOpt(i3+1:end), CxOpt(i3+1:end), colors{4}, 'LineWidth', 1.2)
-plot3(xTarget(:,2), xTarget(:,3), xTarget(:,1), '*', 'LineWidth', 1.2, 'MarkerSize', 8, 'Color', [0,0.4,0.8])
-plot3(xFinal(2), xFinal(3), xFinal(1), 'p', 'LineWidth', 1.5, 'MarkerSize', 14, 'Color', [1,0.5,0.05])
-xlabel('Y'); ylabel('Z'); zlabel('X')
-title('Segmented Trajectory – Y-Z View')
-view(90, 90)
-
-% dataNum = 17;  % Change this to 2, 3, etc. for other runs
+dataNum = 2;  % Change this to 2, 3, etc. for other runs
 
 % Cartesian Space Trajectory 
 % 3D Cartesian Trajectory (Short)
@@ -204,8 +161,8 @@ view(90, 90)
 %     legend('Desired', 'Actual')
 % end
 
-% save(sprintf('data%d.mat', dataNum), ...
-%     'Opt','tOpt','yOpt','tInit','yInit','xTarget');
+save(sprintf('data%d.mat', dataNum), ...
+    'Opt','tOpt','yOpt','tInit','yInit','xTarget','xFinal');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

@@ -145,8 +145,8 @@ for i = 4:6
     legend('Desired', 'Actual')
 end
 
-save(sprintf('data%d.mat', dataNum), ...
-    'Opt','tOpt','yOpt','tInit','yInit','xTarget');
+save(sprintf('data%d.mat', 5), ...
+    'Opt','tOpt','yOpt','tInit','yInit','xTarget','xFinal');
 
 % Objective Function
 function error = objectiveFunction(prms, qDes, wt, xTarget, xFinal)
@@ -222,7 +222,7 @@ function dxdt = myTwolinkwithprefilter(t, x,qDes,tspan , wn1, wn2, ctrlPnt)
 
     % Per-joint switching logic based on t_Vmax
     for i = 1:3
-        if t <= t_Vmax(i)
+        if t <= t_Vmax(i) && 
             wn(i) = wn1(i);
             qControl(i) = qCtrl(i);
         else

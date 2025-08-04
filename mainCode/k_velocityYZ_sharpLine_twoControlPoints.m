@@ -47,13 +47,13 @@ t_uniform = 0:0.01:tspan;
 % Initial Condition
 [tInit, yInit] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,wn3,CtrlPnt1,CtrlPnt2), t_uniform, zeros(12, 1));
 
-[xi, yi, zi] = FK(yInit(:,7), yInit(:,8), yInit(:,9));     % Initial Trajectory
-figure; hold on; grid on;
-plot(yi,zi)
+% [xi, yi, zi] = FK(yInit(:,7), yInit(:,8), yInit(:,9));     % Initial Trajectory
+% figure; hold on; grid on;
+% plot(yi,zi)
 % plot(0.025, 0.07,'d')
 
 
-tb = [0 0.015 0.015];
+tb = [0 0.005 0.005];
 % Lower and Upper Limits
 lb = [0   0.2 0.2 0.2   0.2 0.2 0.2    0.2 0.2 0.2   CtrlPnt1 - tb CtrlPnt2 - tb];     % Wn
 ub = [4   5   5   5     5   5   5      5   5   5     CtrlPnt1 + tb CtrlPnt2 + tb];      % wn

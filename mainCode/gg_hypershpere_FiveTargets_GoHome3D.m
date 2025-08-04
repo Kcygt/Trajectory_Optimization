@@ -105,6 +105,9 @@ fprintf('Ctrl2 = [ %.4f %.4f %.4f ]\n', Opt(14:16));
 % plot3(Opt(14), Opt(15), Opt(16), 'd');
 % 
 % legend('Trajectory', 'Target Points', 'Final', 'Ctrl 1', 'Ctrl 2');
+save(sprintf('data%d.mat', 4), ...
+    'Opt','tOpt','yOpt','tInit','yInit','xTarget','xFinal');
+
 
 % Objective Function
 function error = objectiveFunction(prms, qDes, wt, xTarget, xFinal)
@@ -284,6 +287,9 @@ end
 %     dxdt = [A * x(1:6) + B * qControl'; qd; qdd];
 % end
 % 
+save(sprintf('data%d.mat', 3), ...
+    'Opt','tOpt','yOpt','tInit','yInit','xTarget','xFinal');
+
 
 
 % Forward Kinematics (FK)

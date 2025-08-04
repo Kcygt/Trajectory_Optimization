@@ -7,7 +7,7 @@ close all;
 % wn1 =  [ 6.62997      20.1284      5.70866 ];
 % wn2 =  [ 22.1803      11.2432      32.1501 ];
 % CtrlPnt = [   0   0.0008976    0.040571 ];
-qDes = [    0   0.190854007095390   0.356154760943820 ];
+qDes = [    0.191425481525343   0.190854007095390   0.356154760943820 ];
 [Px, Py, Pz] = FK(qDes(1), qDes(2), qDes(3));
 xFinal = [Px, Py, Pz];
 
@@ -26,9 +26,9 @@ xTarget(1,:) = [0, 0.02, 0.005];
 xTarget(2,:) = [0, 0.035, 0.02];
 xTarget(3,:) = [0, 0.045, 0.03];
 
-xTarget(1,:) = [0, 0.02, 0.005];
-xTarget(2,:) = [0, 0.03, 0.03];
-xTarget(3,:) = [0, 0.035, 0.045];
+xTarget(1,:) = [0.005, 0.02, 0.005];
+xTarget(2,:) = [0.01, 0.03, 0.03];
+xTarget(3,:) = [0.02, 0.035, 0.045];
 
 
 % Parameters
@@ -41,7 +41,7 @@ qCtrl = IK(CtrlPnt(1), CtrlPnt(2), CtrlPnt(3));
 qDes =[qCtrl; qDes];
 dataNum = 5;
 % Weights
-wt = [400, 5, 0.01];   % [Target, End, Time]
+wt = [700, 1, 0.001];   % [Target, End, Time]
 
 initPrms = [tspan, wn1, wn2, CtrlPnt];
 
@@ -49,16 +49,16 @@ t_uniform = 0:0.001:tspan;
 
 % Initial Condition
 [tInit, yInit] = ode23s(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,CtrlPnt), t_uniform, zeros(12, 1));
-[CxInit, CyInit, CzInit] = FK(yInit(:,7), yInit(:,8), yInit(:,9)); % Initial Trajectory
-figure; hold on; grid on;
-plot(CyInit, CzInit,'--')
-plot(xTarget(1,2),xTarget(1,3),'*','LineWidth',1.2,'MarkerSize',8,'Color',[0, 0.3984, 0.8])
-plot(xTarget(2,2),xTarget(2,3),'*','LineWidth',1.2,'MarkerSize',8, 'Color',[0, 0.3984, 0.8])
-plot(xTarget(3,2),xTarget(3,3),'*','LineWidth',1.2,'MarkerSize',8, 'Color',[0, 0.3984, 0.8])
+% [CxInit, CyInit, CzInit] = FK(yInit(:,7), yInit(:,8), yInit(:,9)); % Initial Trajectory
+% figure; hold on; grid on;
+% plot(CyInit, CzInit,'--')
+% plot(xTarget(1,2),xTarget(1,3),'*','LineWidth',1.2,'MarkerSize',8,'Color',[0, 0.3984, 0.8])
+% plot(xTarget(2,2),xTarget(2,3),'*','LineWidth',1.2,'MarkerSize',8, 'Color',[0, 0.3984, 0.8])
+% plot(xTarget(3,2),xTarget(3,3),'*','LineWidth',1.2,'MarkerSize',8, 'Color',[0, 0.3984, 0.8])
 
 
 
-tb = [0 0.02 0.02];
+tb = [0.02 0.02 0.02];
 % Lower and Upper Limits
 lb = [0   0.1 0.1 0.1     0.1 0.1 0.1    CtrlPnt - tb];     % Wn
 ub = [4   5   5   5       5   5   5      CtrlPnt + tb];      % wn
@@ -77,7 +77,7 @@ problem = createOptimProblem('fmincon',...
     'lb', lb, ...
     'ub', ub, ...
     'options', options, ...
-    'nonlcon', @(prms) trajConstraint(prms, qDes, xTarget));
+    'nonlcon', @(prms) trajConstraint(prms, qDes, xTarget,xFinal));
 
 % MultiStart setup
 ms = MultiStart('UseParallel', true, 'Display', 'iter');
@@ -100,20 +100,21 @@ t_Vmax = 1./[Opt(2:4)];
 
 % Cartesian Space Trajectory 
 figure; hold on; grid on;
-plot(CyInit, CzInit,'--')
+plot3(CxInit,CyInit, CzInit,'--')
 % plot(CyDes,CzDes,'o',  'LineWidth',1., 'Color', [0.1725, 0.6275, 0.1725],'MarkerSize',7)
-plot(CyOpt,CzOpt,'-.', 'LineWidth',1.2, 'Color',[ 0.7969 0  0.7969])
-plot(xTarget(1,2),xTarget(1,3),'*','LineWidth',1.2,'MarkerSize',8,'Color',[0, 0.3984, 0.8])
-plot(xTarget(2,2),xTarget(2,3),'*','LineWidth',1.2,'MarkerSize',8, 'Color',[0, 0.3984, 0.8])
-plot(xTarget(3,2),xTarget(3,3),'*','LineWidth',1.2,'MarkerSize',8, 'Color',[0, 0.3984, 0.8])
+plot3(CxOpt,CyOpt,CzOpt,'-.', 'LineWidth',1.2, 'Color',[ 0.7969 0  0.7969])
+plot3(xTarget(1,1),xTarget(1,2),xTarget(1,3),'*','LineWidth',1.2,'MarkerSize',8,'Color',[0, 0.3984, 0.8])
+plot3(xTarget(2,1),xTarget(2,2),xTarget(2,3),'*','LineWidth',1.2,'MarkerSize',8, 'Color',[0, 0.3984, 0.8])
+plot3(xTarget(3,1),xTarget(3,2),xTarget(3,3),'*','LineWidth',1.2,'MarkerSize',8, 'Color',[0, 0.3984, 0.8])
 
-plot(xFinal(2),xFinal(3),'p','LineWidth',1.5,'MarkerSize',14,'Color',[1.0000, 0.4980, 0.0549])
-plot(Opt(9),Opt(10),'d')
+plot3(xFinal(1),xFinal(2),xFinal(3),'p','LineWidth',1.5,'MarkerSize',14,'Color',[1.0000, 0.4980, 0.0549])
+plot3(Opt(8),Opt(9),Opt(10),'d')
 legend('Initial Trajectory','Optimized Trajectory','Target Point 1','Target Point 2','Target Point 3','End Point','Control Point')
 xlabel('X axis (m)')
 ylabel('Y axis (m)')
 title('Cartesian Space Trajectory Results')
 disp(['Optimal Parameter:', num2str(Opt)])
+view(45,30)
 % saveas(gcf, sprintf('data%dCartesianPosition.fig', dataNum))  % Dynamic name
 
 
@@ -145,7 +146,7 @@ for i = 4:6
     legend('Desired', 'Actual')
 end
 
-save(sprintf('data%d.mat', dataNum), ...
+save(sprintf('data%d.mat', 6), ...
     'Opt','tOpt','yOpt','tInit','yInit','xTarget');
 
 % Objective Function
@@ -181,7 +182,7 @@ function error = objectiveFunction(prms, qDes, wt, xTarget, xFinal)
 end
 
 % Constraint Function for Midpoint Proximity
-function [c, ceq] = trajConstraint(prms,qDes,xTarget)
+function [c, ceq] = trajConstraint(prms,qDes,xTarget,xFinal)
     ceq = []; % No equality constraints
    
     t_uniform = 0:0.001:prms(1);
@@ -197,13 +198,13 @@ function [c, ceq] = trajConstraint(prms,qDes,xTarget)
     distanceMid3  = sum((xOut - xTarget(3,:)).^2,2);
     
     % End point error
-    distEndErr = sum((xOut(end,:) - [0.0, 0.05,0.05]).^2,2);
+    distEndErr = sum((xOut(end,:) - xFinal).^2,2);
     
     % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
-    c = [min(distanceMid1) - 0.00000001;
-         min(distanceMid2) - 0.00000001;
-         min(distanceMid3) - 0.00000001;
-         distEndErr    - 0.0000001];
+    c = [min(distanceMid1) - 1e-10;
+         min(distanceMid2) - 1e-10;
+         min(distanceMid3) - 1e-10;
+         distEndErr    - 1e-10];
 
 end
 % 
