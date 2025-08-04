@@ -55,11 +55,11 @@ plot(yi,zi)
 
 tb = [0 0.015 0.015];
 % Lower and Upper Limits
-lb = [0   0.2 0.2 0.2   0.2 0.2 0.2    0.2 0.2 0.2   CtrlPnt1 CtrlPnt1];     % Wn
+lb = [0   0.2 0.2 0.2   0.2 0.2 0.2    0.2 0.2 0.2   CtrlPnt1 - tb CtrlPnt2 - tb];     % Wn
 ub = [4   5   5   5     5   5   5      5   5   5     CtrlPnt1 + tb CtrlPnt2 + tb];      % wn
 
-lb = [0   0.2 0.2 0.2   0.2 0.2 0.2    0.2 0.2 0.2   0 0 0  0 0 0];     % Wn
-ub = [4   5   5   5     5   5   5      5   5   5     0.0 0.05 0.05 0.0 0.05 0.05];      % wn
+% lb = [0   0.2 0.2 0.2   0.2 0.2 0.2    0.2 0.2 0.2   0 0 0  0 0 0];     % Wn
+% ub = [4   5   5   5     5   5   5      5   5   5     0.0 0.05 0.05 0.0 0.05 0.05];      % wn
 % Objective Function
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xDes);
 
@@ -185,8 +185,8 @@ function [c, ceq] = trajConstraint(prms,qDes,xTarget)
     
     % Calculate distances to midpoint in 3D space
     distMid1 = min(sqrt(sum((xOut - xTarget(1,:)).^2,2)));
-    distMid2 = min(sqrt(sum((xOut - xTarget(1,:)).^2,2)));
-    distMid3 = min(sqrt(sum((xOut - xTarget(1,:)).^2,2)));
+    distMid2 = min(sqrt(sum((xOut - xTarget(2,:)).^2,2)));
+    distMid3 = min(sqrt(sum((xOut - xTarget(3,:)).^2,2)));
     
     % End point error
     distEndErr = min(sqrt(sum((xOut - [0, 0.05 0.05]).^2,2)));

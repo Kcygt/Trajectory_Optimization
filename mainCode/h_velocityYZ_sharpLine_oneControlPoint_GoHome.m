@@ -7,7 +7,7 @@ close all;
 % wn1 =  [ 6.62997      20.1284      5.70866 ];
 % wn2 =  [ 22.1803      11.2432      32.1501 ];
 % CtrlPnt = [   0   0.0008976    0.040571 ];
-qDes = [ 0   0 0 ];
+qDes = [ 0   0.198678167676855   0.327814256075948 ];
 [Px, Py, Pz] = FK(qDes(1), qDes(2), qDes(3));
 xFinal = [Px, Py, Pz];
 
@@ -197,7 +197,7 @@ function [c, ceq] = trajConstraint(prms,qDes,xTarget)
     distanceMid3  = sum((xOut - xTarget(3,:)).^2,2);
     
     % End point error
-    distEndErr = sum((xOut(end,:) - [0.0, 0.0,0.0]).^2,2);
+    distEndErr = sum((xOut(end,:) - [0.0, 0.05,0.05]).^2,2);
     
     % Nonlinear inequality constraint: min distance <= 10cm (0.1m)
     c = [min(distanceMid1) - 0.00000001;
@@ -227,7 +227,7 @@ function dxdt = myTwolinkwithprefilter(t, x,qDes,tspan , wn1, wn2, ctrlPnt)
             qControl(i) = qCtrl(i);
         else
             wn(i) = wn2(i);
-            qControl(i) = qDes(end, i);  % Desired joint angle after switch
+            qControl(i) = qDes(2, i);  % Desired joint angle after switch
         end
     end
 
