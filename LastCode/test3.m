@@ -15,9 +15,7 @@ xTarget = [...
     0.02,  -0.03, 0.0;
     0.025,  -0.03, 0.0];
 
-xTarget = [    -0.02, -0.03, 0.0;
-        0.0,  -0.03,0.0;
-    0.02,  -0.03, 0.0
+xTarget = [    0.005, -0.03, 0.0;
 ];
 
 % Use first and last as control points
@@ -229,7 +227,78 @@ function dxdt = myTwolinkwithprefilter(t, x, qDes, tspan, wn1, wn2, wn3, xCtrl1,
     dxdt = [A * x(1:6) + B * qControl'; qd; qdd];
 end
 
-
+% function dxdt = myTwolinkwithprefilter(t, x, qDes, tspan, wn1, wn2, wn3, xCtrl1, xCtrl2)
+%     persistent phase
+% 
+%     % Automatically reset phase at start of new simulation
+%     if t == 0
+%         phase = 1;
+%     elseif isempty(phase)
+%         phase = 1;
+%     end
+% 
+%     zeta = [1 1 1];  % Damping ratio
+% 
+%     % Extract joint state
+%     q  = x(7:9);     % Joint angles
+%     qd = x(10:12);   % Joint velocities
+% 
+%     % Current Cartesian position
+%     [x_now, y_now, z_now] = FK(q(1), q(2), q(3));
+%     x_curr = [x_now, y_now, z_now];
+% 
+%     % Distance to control points
+%     dist1 = norm(x_curr - xCtrl1);
+%     dist2 = norm(x_curr - xCtrl2);
+% 
+%     % Compute joint-space control targets
+%     qCtrl(1,:) = IK(xCtrl1(1), xCtrl1(2),xCtrl1(3));
+%     qCtrl(2,:) = IK(xCtrl2(1), xCtrl2(2),xCtrl2(3));
+% 
+%     % Phase transition logic
+%     if phase == 1 && dist1 <= 0.01
+%         phase = 2;
+%     end
+%     if phase == 2 && dist2 <= 0.01
+%         phase = 3;
+%         disp('x')
+%     end
+% 
+%     % Select controller based on phase
+%     switch phase
+%         case 1
+%             wn = wn1;
+%             qControl = qCtrl(1,:);
+%         case 2
+%             wn = wn2;
+%             qControl = qCtrl(2,:);
+%         case 3
+%             wn =  wn3;
+%             qControl = qDes(end,:);
+%     end
+% 
+%     % Prefilter dynamics
+%     A = [zeros(3), eye(3); -diag(wn).^2, -2 * diag(zeta) * diag(wn)];
+%     B = [zeros(3); diag(wn).^2];
+% 
+%     % PD control gains
+%     Kp = diag([70 70 70]);  
+%     Kd = diag([120 120 120]);  
+% 
+%     % Control law
+%     controller = Kp * (x(1:3) - q) + Kd * (x(4:6) - qd);
+% 
+%     % Dynamics
+%     [M, C, G] = compute_M_C_G(q(1), q(2), q(3), qd(1), qd(2), qd(3));
+%     tau = M * controller + C * qd;
+%     qdd = M \ (tau - C * qd);
+% 
+%     % Final state derivative
+%     dxdt = [A * x(1:6) + B * qControl'; qd; qdd];
+% end
+% 
+save(sprintf('data%d.mat', 3), ...
+    'Opt','tOpt','yOpt','tInit','yInit','xTarget','xFinal');
 
 
 

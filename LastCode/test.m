@@ -1,152 +1,50 @@
 clear; clc;
 close all;
 
+tspan = 5.8252;
+wn1   = [ 6.4051, 11.0167, 12.8383 ];
+wn2   = [ 5.0062, 7.1107, 3.3427 ];
+wn3   = [ 14.0630, 7.6125, 2.4258 ];
+xCtrl(1,:) = [ -0.0001, -0.0452, -0.0426 ];
+xCtrl(2,:) = [ 0.1927, 0.0588, 0.0181 ];
+
+qDes = [ 0   0 0 ];
+[Px, Py, Pz] = FK(qDes(1), qDes(2), qDes(3));
+xFinal = [Px, Py, Pz];
+
 % Define 5 target points
 xTarget = [...
-    -0.1,  -0.03,  0;
-    -0.05, -0.03,  0;
-     0,    -0.03,  0;
-    0.05,  -0.03,  0;
-    0.1,   -0.03,  0];
+    0.00, -0.03, 0;
+    0.04, -0.01, 0;
+    0.08,  0.01, 0;
+    0.13,  0.03, 0;
+    0.18,  0.05, 0];
 
-% Use first and last as control points
-xCtrl(1,:) = xTarget(1,:);
-xCtrl(2,:) = xTarget(end,:);
+
 
 qCtrl(1,:) = IK(xCtrl(1,1), xCtrl(1,2), xCtrl(1,3));
 qCtrl(2,:) = IK(xCtrl(2,1), xCtrl(2,2), xCtrl(2,3));
 
-% Final desired configuration
-qDes = [qCtrl; 0 0 0];
+qDes =[qCtrl; qDes];
 
-% Weights and Initial Parameters
-wt = [1000, 10, 0.0001];
-tspan = 5;
-wn1 = [2 2 2]; wn2 = [ 2 2 2]; wn3 = [2 2 2 ];
-initPrms = [tspan, wn1, wn2, wn3, xCtrl(1,:), xCtrl(2,:)];
-
-% Simulation
 t_uniform = 0:0.001:tspan;
-[tInit, yInit] = ode45(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan, wn1, wn2, wn3, xCtrl(1,:), xCtrl(2,:)), ...
-                      t_uniform, zeros(12, 1));
-[Px, Py, Pz] = FK(qDes(end,1), qDes(end,2), qDes(end,3));
-xFinal = [Px, Py, Pz];
 
 
-% Bounds
-tolRad = 0.02;
-lb = [0, 0.5*ones(1,9), xCtrl(1,:)-tolRad, xCtrl(2,:)-tolRad];
-ub = [6, 15*ones(1,9), xCtrl(1,:)+tolRad, xCtrl(2,:)+tolRad];
+% Initial Condition
+[tInit, yInit] = ode45(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan,  wn1,wn2,wn3,xCtrl(1,:),xCtrl(2,:)), t_uniform, zeros(12, 1));
 
-% Optimization
-objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xFinal);
-options = optimoptions('fmincon', 'Display', 'none', 'Algorithm', 'sqp', ...
-    'TolCon', 1e-6, 'OptimalityTolerance', 1e-43, 'StepTolerance', 1e-3, 'MaxIterations', 50);
-problem = createOptimProblem('fmincon', ...
-    'objective', objectiveFunc, ...
-    'x0', initPrms, ...
-    'lb', lb, ...
-    'ub', ub, ...
-    'options', options, ...
-    'nonlcon', @(prms) trajConstraint(prms, qDes, xTarget,xFinal));
-ms = MultiStart('UseParallel', true, 'Display', 'iter');
-[Opt, fval] = run(ms, problem, 5);
-
-% Simulate with optimal parameters
-tOpt = 0:0.001:Opt(1);
-[tOpt, yOpt] = ode45(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1), Opt(2:4), Opt(5:7), Opt(8:10), Opt(11:13), Opt(14:16)), ...
-                     tOpt, zeros(12, 1));
-[CxOpt, CyOpt, CzOpt] = FK(yOpt(:,7), yOpt(:,8), yOpt(:,9));
+[xi, yi, zi] = FK(yInit(:,7), yInit(:,8), yInit(:,9));     % Initial Trajectory
 
 
-% Plotting
-figure; hold on; grid on; view(3);
-xlabel('X (m)'); ylabel('Y (m)'); zlabel('Z (m)');
-title('Optimized Cartesian Trajectory with Phases');
+% %%% Plotting
+figure; hold on; grid on;
+plot3(xi,yi, zi,'--')
+plot3(xTarget(:,1),xTarget(:,2),xTarget(:,3),'*')
+plot3(xCtrl(1,1),xCtrl(1,2),xCtrl(1,3),'d')
+plot3(xCtrl(2,1),xCtrl(2,2),xCtrl(2,3),'d')
+plot3(xFinal(1),xFinal(2),xFinal(3),'o')
 
-% Trajectory
-plot3(CxOpt, CyOpt, CzOpt, '.-');
-
-% Target Points
-plot3(xTarget(:,1), xTarget(:,2), xTarget(:,3), '*');
-
-% Final & Control Points
-plot3(xFinal(1), xFinal(2), xFinal(3), 'o');
-plot3(Opt(11), Opt(12), Opt(13), 'd');  % Ctrl 1
-plot3(Opt(14), Opt(15), Opt(16), 'd');  % Ctrl 2
-
-% Sphere radius and mesh
-r = 0.01;
-[sx, sy, sz] = sphere(20);
-surf(Opt(11)+r*sx, Opt(12)+r*sy, Opt(13)+r*sz, 'EdgeColor','none', 'FaceAlpha',0.3, 'FaceColor','b');
-surf(Opt(14)+r*sx, Opt(15)+r*sy, Opt(16)+r*sz, 'EdgeColor','none', 'FaceAlpha',0.3, 'FaceColor','b');
-
-legend('Trajectory', 'Target Points', 'Final Point', 'Control Pt 1', 'Control Pt 2');
-
-% Display optimized parameters
-fprintf('Optimized Parameters:\n');
-fprintf('tspan = %.4f\n', Opt(1));
-fprintf('wn1   = [ %.4f %.4f %.4f ]\n', Opt(2:4));
-fprintf('wn2   = [ %.4f %.4f %.4f ]\n', Opt(5:7));
-fprintf('Ctrl1 = [ %.4f %.4f %.4f ]\n', Opt(11:13));
-fprintf('Ctrl2 = [ %.4f %.4f %.4f ]\n', Opt(14:16));
-
-
-% % Plot
-% figure; hold on; grid on; view(3);
-% xlabel('X'); ylabel('Y'); zlabel('Z');
-% title('Trajectory with 5 Targets and 2 Control Points');
-% plot3(CxOpt, CyOpt, CzOpt, '.-');
-% for i = 1:size(xTarget,1)
-%     plot3(xTarget(i,1), xTarget(i,2), xTarget(i,3), '*');
-% end
-% plot3(xFinal(1), xFinal(2), xFinal(3), 'o');
-% plot3(Opt(11), Opt(12), Opt(13), 'd');
-% plot3(Opt(14), Opt(15), Opt(16), 'd');
-% 
-% legend('Trajectory', 'Target Points', 'Final', 'Ctrl 1', 'Ctrl 2');
-save(sprintf('data%d.mat', 4), ...
-    'Opt','tOpt','yOpt','tInit','yInit','xTarget','xFinal');
-
-
-% Objective Function
-function error = objectiveFunction(prms, qDes, wt, xTarget, xFinal)
-    tUni = 0:0.001:prms(1);
-    [~, y] = ode45(@(t,x) myTwolinkwithprefilter(t, x, qDes, prms(1), prms(2:4), prms(5:7), prms(8:10), prms(11:13), prms(14:16)), ...
-                   tUni, zeros(12, 1));
-    [x0,y0,z0] = FK(y(:,7),y(:,8),y(:,9));
-    xOut = [x0,y0,z0];
-    
-    distMidF = 0;
-    for i = 1:size(xTarget,1)
-        distMidF = distMidF + min(sum((xOut - xTarget(i,:)).^2, 2));
-    end
-    distEndErr = sum((xOut(end,:) - xFinal).^2,2);
-    timePenalty = prms(1);
-    error = wt(1)*distMidF + wt(2)*distEndErr + wt(3)*timePenalty;
-end
-
-% Constraint Function
-function [c, ceq] = trajConstraint(prms, qDes, xTarget,xFinal)
-    ceq = [];
-    tUni = 0:0.001:prms(1);
-    [~, yy] = ode45(@(t,x) myTwolinkwithprefilter(t, x, qDes, prms(1), prms(2:4), prms(5:7), prms(8:10), prms(11:13), prms(14:16)), ...
-                    tUni, zeros(12, 1));
-    [x0,y0,z0] = FK(yy(:,7),yy(:,8),yy(:,9));
-    x = [x0,y0,z0];
-    idxs = zeros(size(xTarget,1),1);
-    for i = 1:size(xTarget,1)
-        [~, idxs(i)] = min(sum((x - xTarget(i,:)).^2, 2));
-    end
-    c = [];
-    for i = 1:length(idxs)-1
-        c(end+1) = idxs(i) - idxs(i+1);
-    end
-    for i = 1:size(xTarget,1)
-        c(end+1) = min(sum((x - xTarget(i,:)).^2, 2)) - 1e-10;
-    end
-    c(end+1) = sum((x(end,:) - xFinal).^2) - 1e-10;
-end
+view(45,30)
 
 function dxdt = myTwolinkwithprefilter(t, x, qDes, tspan, wn1, wn2, wn3, xCtrl1, xCtrl2)
     persistent phase
@@ -172,7 +70,7 @@ function dxdt = myTwolinkwithprefilter(t, x, qDes, tspan, wn1, wn2, wn3, xCtrl1,
     dist1 = norm(x_curr - xCtrl1);
     dist2 = norm(x_curr - xCtrl2);
 
-    % Compute joint-space control targets from Cartesian control points
+    % Compute joint-space control targets
     qCtrl(1,:) = IK(xCtrl1(1), xCtrl1(2),xCtrl1(3));
     qCtrl(2,:) = IK(xCtrl2(1), xCtrl2(2),xCtrl2(3));
 
@@ -216,79 +114,6 @@ function dxdt = myTwolinkwithprefilter(t, x, qDes, tspan, wn1, wn2, wn3, xCtrl1,
     % Final state derivative
     dxdt = [A * x(1:6) + B * qControl'; qd; qdd];
 end
-
-% function dxdt = myTwolinkwithprefilter(t, x, qDes, tspan, wn1, wn2, wn3, xCtrl1, xCtrl2)
-%     persistent phase
-% 
-%     % Automatically reset phase at start of new simulation
-%     if t == 0
-%         phase = 1;
-%     elseif isempty(phase)
-%         phase = 1;
-%     end
-% 
-%     zeta = [1 1 1];  % Damping ratio
-% 
-%     % Extract joint state
-%     q  = x(7:9);     % Joint angles
-%     qd = x(10:12);   % Joint velocities
-% 
-%     % Current Cartesian position
-%     [x_now, y_now, z_now] = FK(q(1), q(2), q(3));
-%     x_curr = [x_now, y_now, z_now];
-% 
-%     % Distance to control points
-%     dist1 = norm(x_curr - xCtrl1);
-%     dist2 = norm(x_curr - xCtrl2);
-% 
-%     % Compute joint-space control targets
-%     qCtrl(1,:) = IK(xCtrl1(1), xCtrl1(2),xCtrl1(3));
-%     qCtrl(2,:) = IK(xCtrl2(1), xCtrl2(2),xCtrl2(3));
-% 
-%     % Phase transition logic
-%     if phase == 1 && dist1 <= 0.01
-%         phase = 2;
-%     end
-%     if phase == 2 && dist2 <= 0.01
-%         phase = 3;
-%         disp('x')
-%     end
-% 
-%     % Select controller based on phase
-%     switch phase
-%         case 1
-%             wn = wn1;
-%             qControl = qCtrl(1,:);
-%         case 2
-%             wn = wn2;
-%             qControl = qCtrl(2,:);
-%         case 3
-%             wn =  wn3;
-%             qControl = qDes(end,:);
-%     end
-% 
-%     % Prefilter dynamics
-%     A = [zeros(3), eye(3); -diag(wn).^2, -2 * diag(zeta) * diag(wn)];
-%     B = [zeros(3); diag(wn).^2];
-% 
-%     % PD control gains
-%     Kp = diag([70 70 70]);  
-%     Kd = diag([120 120 120]);  
-% 
-%     % Control law
-%     controller = Kp * (x(1:3) - q) + Kd * (x(4:6) - qd);
-% 
-%     % Dynamics
-%     [M, C, G] = compute_M_C_G(q(1), q(2), q(3), qd(1), qd(2), qd(3));
-%     tau = M * controller + C * qd;
-%     qdd = M \ (tau - C * qd);
-% 
-%     % Final state derivative
-%     dxdt = [A * x(1:6) + B * qControl'; qd; qdd];
-% end
-% 
-save(sprintf('data%d.mat', 3), ...
-    'Opt','tOpt','yOpt','tInit','yInit','xTarget','xFinal');
 
 
 
