@@ -6,14 +6,19 @@ close all;
 
 % Define target points (N x 3 matrix where N is number of targets)
 xTarget = [...
-    0.005, -0.03, 0.0;
-    0.01, -0.03, 0.0;
-    0.015, -0.03, 0.0;
+    0.0, -0.03, 0.0;
     0.02, -0.03, 0.0;
-    0.025, -0.03, 0.0];
+    0.04, -0.03, 0.0;
+    0.06, -0.03, 0.0;
+    0.08, -0.03, 0.0];
+% xTarget = [...
+%     0.0, -0.03, 0.0;
+%     0.02, -0.03, 0.0;
+%     0.04, -0.03, 0.0];
+
 
 % Specify which targets to use as control points (indices)
-controlPointIndices = [1, 5]; % Use first and last targets as control points
+controlPointIndices = [1, 3, 5]; % Use first and last targets as control points
 
 % Final desired configuration
 qDes = [0, 0, 0];
@@ -23,12 +28,11 @@ wt = [1000, 10, 0.0001]; % [Target, End, Time]
 
 % Initial parameters
 tspan = 5;
-wn1 = [2, 2, 2]; 
-wn2 = [2, 2, 2]; 
-wn3 = [2, 2, 2];
+% Define wn parameters for each phase (one for each control point + one for final phase)
+wnValues = [2, 2, 2]; % Base wn values for each phase
 
 % Optimization parameters
-tolRad = 0.02;
+tolRad = 0.015;
 maxIterations = 50;
 numStarts = 5;
 
@@ -60,19 +64,30 @@ qDes = [qCtrl; qDes];
 xFinal = [Px, Py, Pz];
 
 % Build initial parameter vector
-initPrms = [tspan, wn1, wn2, wn3];
+initPrms = [tspan];
+% Add wn parameters for each phase (numControlPoints + 1 phases total)
+for i = 1:(numControlPoints + 1)
+    initPrms = [initPrms, wnValues];
+end
+% Add control point parameters
 for i = 1:numControlPoints
     initPrms = [initPrms, xCtrl(i,:)];
 end
 
 % Simulation
 t_uniform = 0:0.001:tspan;
-[tInit, yInit] = ode45(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan, wn1, wn2, wn3, xCtrl), ...
+[tInit, yInit] = ode45(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan, extractWnParameters(initPrms, numControlPoints), xCtrl), ...
                       t_uniform, zeros(12, 1));
 
 % Build bounds
-lb = [0, 0.5*ones(1,9)]; % Time + 9 wn parameters
-ub = [6, 15*ones(1,9)];  % Time + 9 wn parameters
+lb = [0]; % Time
+ub = [6]; % Time
+
+% Add bounds for wn parameters (3 parameters per phase)
+for i = 1:(numControlPoints + 1)
+    lb = [lb, 0.5*ones(1,3)]; % wn parameters
+    ub = [ub, 15*ones(1,3)];  % wn parameters
+end
 
 % Add bounds for control points
 for i = 1:numControlPoints
@@ -82,7 +97,7 @@ end
 
 % Optimization
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xFinal, numControlPoints);
-options = optimoptions('fmincon', 'Display', 'iter', 'Algorithm', 'sqp', ...
+options = optimoptions('fmincon', 'Display', 'none', 'Algorithm', 'sqp', ...
     'TolCon', 1e-6, 'OptimalityTolerance', 1e-7, 'StepTolerance', 1e-3, 'MaxIterations', maxIterations);
 problem = createOptimProblem('fmincon', ...
     'objective', objectiveFunc, ...
@@ -99,8 +114,8 @@ fprintf('Number of targets: %d\n', numTargets);
 fprintf('Number of control points: %d\n', numControlPoints);
 fprintf('Number of optimization runs: %d\n\n', numStarts);
 
-% Add custom output function to show run progress
-options.OutputFcn = @(x, optimValues, state) outputFunction(x, optimValues, state, numTargets, numControlPoints);
+% % Add custom output function to show run progress
+% options.OutputFcn = @(x, optimValues, state) outputFunction(x, optimValues, state, numTargets, numControlPoints);
 
 % Update problem with new options
 problem.options = options;
@@ -109,7 +124,7 @@ problem.options = options;
 
 % Simulate with optimal parameters
 tOpt = 0:0.001:Opt(1);
-[tOpt, yOpt] = ode45(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1), Opt(2:4), Opt(5:7), Opt(8:10), extractControlPoints(Opt, numControlPoints)), ...
+[tOpt, yOpt] = ode45(@(t, x) myTwolinkwithprefilter(t, x, qDes, Opt(1), extractWnParameters(Opt, numControlPoints), extractControlPoints(Opt, numControlPoints)), ...
                      tOpt, zeros(12, 1));
 [CxOpt, CyOpt, CzOpt] = FK(yOpt(:,7), yOpt(:,8), yOpt(:,9));
 
@@ -151,13 +166,17 @@ legend(legendEntries);
 % Display optimized parameters
 fprintf('\nOptimized Parameters:\n');
 fprintf('tspan = %.4f;\n', Opt(1));
-fprintf('wn1   = [ %.4f, %.4f, %.4f ];\n', Opt(2:4));
-fprintf('wn2   = [ %.4f, %.4f, %.4f ];\n', Opt(5:7));
-fprintf('wn3   = [ %.4f, %.4f, %.4f ];\n', Opt(8:10));
 
+% Display wn parameters for each phase
+wnParams = extractWnParameters(Opt, numControlPoints);
+for i = 1:length(wnParams)
+    fprintf('wn%d   = [ %.4f, %.4f, %.4f ];\n', i, wnParams{i});
+end
+
+% Display control point parameters
+ctrlPoints = extractControlPoints(Opt, numControlPoints);
 for i = 1:numControlPoints
-    idx = 10 + (i-1)*3 + 1;
-    fprintf('xCtrl(%d,:) = [ %.4f, %.4f, %.4f ];\n', i, Opt(idx:idx+2));
+    fprintf('xCtrl(%d,:) = [ %.4f, %.4f, %.4f ];\n', i, ctrlPoints(i,:));
 end
 
 % Save results
@@ -166,11 +185,22 @@ save(sprintf('flexible_data_%d_targets_%d_controls.mat', numTargets, numControlP
 
 %% ===== HELPER FUNCTIONS =====
 
+% Extract wn parameters from optimization parameters
+function wnParams = extractWnParameters(Opt, numControlPoints)
+    wnParams = cell(numControlPoints + 1, 1);
+    startIdx = 2; % Start after tspan
+    for i = 1:(numControlPoints + 1)
+        idx = startIdx + (i-1)*3;
+        wnParams{i} = Opt(idx:idx+2);
+    end
+end
+
 % Extract control points from optimization parameters
 function ctrlPoints = extractControlPoints(Opt, numControlPoints)
     ctrlPoints = zeros(numControlPoints, 3);
+    startIdx = 2 + (numControlPoints + 1)*3; % Start after tspan and wn parameters
     for i = 1:numControlPoints
-        idx = 10 + (i-1)*3 + 1;
+        idx = startIdx + (i-1)*3;
         ctrlPoints(i,:) = Opt(idx:idx+2);
     end
 end
@@ -178,9 +208,10 @@ end
 % Objective Function
 function error = objectiveFunction(prms, qDes, wt, xTarget, xFinal, numControlPoints)
     tUni = 0:0.001:prms(1);
+    wnParams = extractWnParameters(prms, numControlPoints);
     ctrlPoints = extractControlPoints(prms, numControlPoints);
     
-    [~, y] = ode45(@(t,x) myTwolinkwithprefilter(t, x, qDes, prms(1), prms(2:4), prms(5:7), prms(8:10), ctrlPoints), ...
+    [~, y] = ode45(@(t,x) myTwolinkwithprefilter(t, x, qDes, prms(1), wnParams, ctrlPoints), ...
                    tUni, zeros(12, 1));
     [x0,y0,z0] = FK(y(:,7),y(:,8),y(:,9));
     xOut = [x0,y0,z0];
@@ -198,9 +229,10 @@ end
 function [c, ceq] = trajConstraint(prms, qDes, xTarget, xFinal, numControlPoints)
     ceq = [];
     tUni = 0:0.001:prms(1);
+    wnParams = extractWnParameters(prms, numControlPoints);
     ctrlPoints = extractControlPoints(prms, numControlPoints);
     
-    [~, yy] = ode45(@(t,x) myTwolinkwithprefilter(t, x, qDes, prms(1), prms(2:4), prms(5:7), prms(8:10), ctrlPoints), ...
+    [~, yy] = ode45(@(t,x) myTwolinkwithprefilter(t, x, qDes, prms(1), wnParams, ctrlPoints), ...
                     tUni, zeros(12, 1));
     [x0,y0,z0] = FK(yy(:,7),yy(:,8),yy(:,9));
     x = [x0,y0,z0];
@@ -220,7 +252,7 @@ function [c, ceq] = trajConstraint(prms, qDes, xTarget, xFinal, numControlPoints
     c(end+1) = sum((x(end,:) - xFinal).^2) - 1e-10;
 end
 
-function dxdt = myTwolinkwithprefilter(t, x, qDes, tspan, wn1, wn2, wn3, xCtrl)
+function dxdt = myTwolinkwithprefilter(t, x, qDes, tspan, wnParams, xCtrl)
     persistent phase
 
     % Automatically reset phase at start of new simulation
@@ -260,10 +292,10 @@ function dxdt = myTwolinkwithprefilter(t, x, qDes, tspan, wn1, wn2, wn3, xCtrl)
 
     % Select controller based on phase
     if phase <= numControlPoints
-        wn = wn1; % Use wn1 for all control point phases
+        wn = wnParams{phase}; % Use wn for current phase
         qControl = qCtrl(phase,:);
     else
-        wn = wn3;
+        wn = wnParams{end}; % Use final wn for end phase
         qControl = qDes(end,:);
     end
 
