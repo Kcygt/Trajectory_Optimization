@@ -11,9 +11,14 @@ xTarget = [...
     0.04, -0.03, 0.0;
     0.06, -0.03, 0.0;
     0.08, -0.03, 0.0];
+% xTarget = [...
+%     0.0, -0.03, 0.0;
+%     0.02, -0.03, 0.0;
+%     0.04, -0.03, 0.0];
+
 
 % Specify which targets to use as control points (indices)
-controlPointIndices = [1, 3,5]; % Use first and last targets as control points
+controlPointIndices = [1, 3, 5]; % Use first and last targets as control points
 
 % Final desired configuration
 qDes = [0, 0, 0];
