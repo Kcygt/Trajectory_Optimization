@@ -1,17 +1,22 @@
 clear; clc;
 close all;
 
+saveData = 1;
+dataNumber = 3;
 %% ===== CONFIGURATION SECTION =====
 % ONLY CHANGE THESE TWO PARAMETERS - everything else is automatic!
 
 % Define target points (N x 3 matrix where N is number of targets)
-% xTarget(1,:) = [0.005, 0.02, 0.01];
-xTarget(1,:) = [0.040, 0.035, 0.005];
-% xTarget(3,:) = [0.035, 0.03, 0.04];
+% Case 1
+xTarget(1,:) = [0.02, 0.01, 0.005];
+xTarget(2,:) = [0.04, 0.02, 0.04];
+
+% xTarget(1,:) = [0.020, 0.015, 0.005];
+% xTarget(2,:) = [0.03, 0.04, 0.04];
 
 
 % Define number of phases (this determines tspan and wn)
-numPhases =1;  % Change this to 2, 3, 4, 5, etc.
+numPhases = 3;  % Change this to 2, 3, 4, 5, etc.
 
 %% ===== AUTOMATIC SETUP (Don't modify below this line) =====
 
@@ -22,7 +27,7 @@ numTargets = size(xTarget, 1);
 qDes = [0.191425481525343, 0.190854007095390, 0.356154760943820];
 
 % Weights for optimization
-wt = [200, 1, 0.001]; % [Target, End, Time]
+wt = [400, 5, 0.0001]; % [Target, End, Time]
 
 % Base parameters (will be automatically adjusted)
 baseTspan = [0.4154, 0.9925, 1.5251];
@@ -48,7 +53,7 @@ fprintf('Number of wn parameters: %d\n', length(wn));
 fprintf('Total optimization parameters: %d\n\n', length(tspan) + length(wn));
 
 % Compute final position
-[Px, Py, Pz] = FK(qDes(1), qDes(2), qDes(3));
+[Px, Py, Pz] = FKnew(qDes(1), qDes(2), qDes(3));
 xFinal = [Px, Py, Pz];
 
 % Build initial parameter vector
@@ -59,7 +64,7 @@ tUni = 0:0.01:tspan(end);
 [tInit, yInit] = ode45(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan, wn), tUni, zeros(12, 1));
 
 % Extract initial trajectory
-[CxInit, CyInit, CzInit] = FK(yInit(:,7), yInit(:,8), yInit(:,9));
+[CxInit, CyInit, CzInit] = FKnew(yInit(:,7), yInit(:,8), yInit(:,9));
 
 % Build bounds
 lb = zeros(1, length(initPrms));
@@ -67,13 +72,13 @@ ub = zeros(1, length(initPrms));
 
 % Time bounds (switching times)
 lb(1:length(tspan)) = 0;
-ub(1:length(tspan)) = 3;
+ub(1:length(tspan)) = 2;
 
 % Wn bounds
 startIdx = length(tspan) + 1;
 for i = 1:numPhases
     idx = startIdx + (i-1)*3;
-    lb(idx:idx+2) = 0.1;
+    lb(idx:idx+2) = 0.5;
     ub(idx:idx+2) = 15;
 end
 
@@ -82,9 +87,9 @@ objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xFinal, n
 
 options = optimoptions('fmincon', ...
     'Display', 'none', ...
-    'TolCon', 1e-4, ...
-    'OptimalityTolerance', 1e-4, ...
-    'StepTolerance', 1e-4, ...
+    'TolCon', 1e-8, ...
+    'OptimalityTolerance', 1e-8, ...
+    'StepTolerance', 1e-8, ...
     'MaxIterations', 60);
 
 problem = createOptimProblem('fmincon', ...
@@ -118,72 +123,22 @@ tUni = 0:0.01:optimalTimes(end);
                      tUni, zeros(12, 1));
 
 % Extract optimized trajectory
-[CxOpt, CyOpt, CzOpt] = FK(yOpt(:,7), yOpt(:,8), yOpt(:,9));
+[CxOpt, CyOpt, CzOpt] = FKnew(yOpt(:,7), yOpt(:,8), yOpt(:,9));
 
-%% ===== PLOTTING =====
+% %% ===== PLOTTING =====
 
-% Plot segmented trajectory
-figure; hold on; grid on; view(3);
-xlabel('X (m)'); ylabel('Y (m)'); zlabel('Z (m)');
-title(sprintf('Optimized Cartesian Trajectory with %d Targets, %d Phases', numTargets, numPhases));
+plotting
 
-% Find switching time indices
-switchIndices = zeros(1, length(optimalTimes));
-for i = 1:length(optimalTimes)
-    [~, switchIndices(i)] = min(abs(tUni - optimalTimes(i)));
-end
-
-% Plot trajectory segments in different colors
-colors = {'r', 'g', 'b', 'm', 'c', 'y'};
-for i = 1:length(switchIndices)
-    if i == 1
-        startIdx = 1;
-    else
-        startIdx = switchIndices(i-1) + 1;
-    end
-    endIdx = switchIndices(i);
-    
-    colorIdx = mod(i-1, length(colors)) + 1;
-    plot3(CxOpt(startIdx:endIdx), CyOpt(startIdx:endIdx), CzOpt(startIdx:endIdx), ...
-          'Color', colors{colorIdx}, 'LineWidth', 2);
-end
-
-% Plot final segment
-if length(switchIndices) > 0
-    plot3(CxOpt(switchIndices(end)+1:end), CyOpt(switchIndices(end)+1:end), CzOpt(switchIndices(end)+1:end), ...
-          'Color', 'k', 'LineStyle', '--', 'LineWidth', 1.5);
-end
-
-% Plot targets and final point
-plot3(xTarget(:,1), xTarget(:,2), xTarget(:,3), '*', 'MarkerSize', 10, 'Color', [0,0.4,0.8]);
-plot3(xFinal(1), xFinal(2), xFinal(3), 'p', 'MarkerSize', 14, 'Color', [1,0.5,0.05]);
-
-% Build legend
-legendEntries = {};
-for i = 1:length(switchIndices)
-    legendEntries{end+1} = sprintf('Phase %d', i);
-end
-legendEntries{end+1} = 'Final Phase';
-legendEntries{end+1} = 'Target Points';
-legendEntries{end+1} = 'Final Point';
-legend(legendEntries);
-
-% Display optimized parameters
-fprintf('\nOptimized Parameters:\n');
-fprintf('Switching Times:\n');
-for i = 1:length(optimalTimes)
-    fprintf('  t%d = %.4f\n', i, optimalTimes(i));
-end
-
-fprintf('\nWn Parameters:\n');
-for i = 1:numPhases
-    idx = (i-1)*3 + 1;
-    fprintf('  wn%d = [%.4f, %.4f, %.4f]\n', i, optimalWn(idx:idx+2));
-end
-
+%%
 % Save results
-save(sprintf('flexible_test5_data_%d_targets_%d_phases.mat', numTargets, numPhases), ...
-    'Opt', 'tOpt', 'yOpt', 'tInit', 'yInit', 'xTarget', 'xFinal', 'numTargets', 'numPhases', 'optimalTimes', 'optimalWn');
+if saveData==1
+    save(sprintf('Sdata%d.mat', dataNumber), ...
+        'Opt', 'tOpt', 'yOpt', 'xTarget', 'xFinal','optimalTimes', 'optimalWn');
+    print('Data not saved')
+
+else
+    print('Data not saved')
+end
 
 %% ===== HELPER FUNCTIONS =====
 
@@ -202,7 +157,7 @@ function error = objectiveFunction(prms, qDes, wt, xTarget, xFinal, numTargets)
     % Simulate the system
     [~, y] = ode45(@(t,x) myTwolinkwithprefilter(t,x,qDes,tspan,wn), tUni, x0);
     
-    [x,y,z] = FK(y(:,7),y(:,8),y(:,9));
+    [x,y,z] = FKnew(y(:,7),y(:,8),y(:,9));
     xOut = [x,y,z];
     
     % Calculate minimum distance to each target
@@ -234,7 +189,7 @@ function [c, ceq] = trajConstraint(prms, qDes, xTarget, xFinal, numTargets)
     
     % Simulate trajectory
     [~, yy] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,tspan,wn), tUni, zeros(12, 1));
-    [x,y,z] = FK(yy(:,7),yy(:,8),yy(:,9));
+    [x,y,z] = FKnew(yy(:,7),yy(:,8),yy(:,9));
     xOut = [x,y,z];
     
     % Calculate distances to each target
@@ -298,33 +253,120 @@ function dxdt = myTwolinkwithprefilter(t, x, qDes, t_st, wn)
 end
 
 % Forward Kinematics (FK)
-function [x,y,z] = FK(q1,q2,q3)
+function [x, y, z, valid] = FKnew(q1, q2, q3)
+    % Joint limits
+    q1_min = -1.5708; q1_max = 1.5708;
+    q2_min = -1.07;   q2_max = 1.97;
+    q3_min = -0.4;    q3_max = 2.92;
+    
+    % Link lengths
     l1 = 0.208; 
-    l2 = 0.168;  
-    x = sin(q1).*(l1*cos(q2)+l2*sin(q3));
-    y = l2-l2*cos(q3)+l1*sin(q2);
-    z = -l1+cos(q1).*(l1*cos(q2)+l2*sin(q3));
+    l2 = 0.168;
+    
+    % Store original values for validation
+    q1_orig = q1;
+    q2_orig = q2;
+    q3_orig = q3;
+    
+    % Clamp to absolute limits
+    q1 = max(q1_min, min(q1_max, q1));
+    q2 = max(q2_min, min(q2_max, q2));
+    q3 = max(q3_min, min(q3_max, q3));
+    
+    % Relative limits for q3 based on q2
+    q3_min_rel = max(q3_min, q2 - 0.93);
+    q3_max_rel = min(q3_max, q2 + 0.95);
+    
+    % Apply relative limits
+    q3 = max(q3_min_rel, min(q3_max_rel, q3));
+    
+    % Validity check (element-wise)
+    valid = true(size(q1));
+    valid = valid & (q1_orig >= q1_min & q1_orig <= q1_max);
+    valid = valid & (q2_orig >= q2_min & q2_orig <= q2_max);
+    valid = valid & (q3_orig >= q3_min & q3_orig <= q3_max);
+    valid = valid & (q3_orig >= q3_min_rel & q3_orig <= q3_max_rel);
+    
+    % Forward kinematics (element-wise operations)
+    x = sin(q1) .* (l1 .* cos(q2) + l2 .* sin(q3));
+    y = l2 - l2 .* cos(q3) + l1 .* sin(q2);
+    z = -l1 + cos(q1) .* (l1 .* cos(q2) + l2 .* sin(q3));
 end
 
+
 % Inverse Kinematics (IK)
-function Q = IK(x,y,z)
-    l1 = 0.208; 
-    l2 = 0.168;  
-    q1 = atan2(x,z+l1);
+function [Q, valid] = IKnew(x,y,z)
+    % Joint limits
+    q1_min = -1.5708; q1_max = 1.5708;
+    q2_min = -1.07; q2_max = 1.97;
+    q3_min = -0.4; q3_max = 2.92;
     
-    R = sqrt(x^2+(z+l1)^2);
-    r = sqrt(x^2+(y-l2)^2+(z+l1)^2);
+    % Link lengths
+    l1=0.208; 
+    l2=0.168;
     
-    Beta = atan2(y-l2,R);
-    Gamma = acos((l1^2+r^2-l2^2)/(2*l1*r));
+    % Calculate inverse kinematics
+    q1=atan2(x,z+l1);
     
-    q2 = Gamma+Beta;
+    % Check if q1 is within limits
+    if q1 < q1_min || q1 > q1_max
+        valid = false;
+        Q = [q1, 0, 0];
+        warning('Joint 1 out of limits: [%.4f, %.4f]', q1_min, q1_max);
+        return;
+    end
+
+    R=sqrt(x^2+(z+l1)^2);
+    r=sqrt(x^2+(y-l2)^2+(z+l1)^2);
     
-    Alpha = acos((l1^2+l2^2-r^2)/(2*l1*l2));
+    Beta=atan2(y-l2,R);
+    Gamma=acos((l1^2+r^2-l2^2)/(2*l1*r));
     
-    q3 = q2+Alpha-pi/2;
+    q2=Gamma+Beta;
+
+    Alpha=acos((l1^2+l2^2-r^2)/(2*l1*l2));
     
-    Q = [q1,q2,q3];
+    q3=q2+Alpha-pi/2;
+
+    Q=[q1,q2,q3];
+    
+    % Check basic joint limits
+    valid = true;
+    if q2 < q2_min || q2 > q2_max
+        valid = false;
+        warning('Joint 2 out of limits: [%.4f, %.4f]', q2_min, q2_max);
+    end
+    
+    if q3 < q3_min || q3 > q3_max
+        valid = false;
+        warning('Joint 3 out of limits: [%.4f, %.4f]', q3_min, q3_max);
+    end
+    
+    % Check relationship between joint 2 and joint 3
+    if valid
+        % When Joint 2 is at position x, Joint 3 range is [x-0.86, x+0.95]
+        q3_min_rel = q2 - 0.86;
+        q3_max_rel = q2 + 0.95;
+        
+        % When Joint 3 is at position -x, Joint 2 range is [x-0.95, x+0.93]
+        % This is equivalent to: when Joint 2 is at position x, Joint 3 range is [x-0.93, x+0.95]
+        % We'll use the more restrictive constraint
+        q3_min_rel2 = q2 - 0.93;
+        q3_max_rel2 = q2 + 0.95;
+        
+        % Take the more restrictive limits
+        q3_min_rel = max(q3_min_rel, q3_min_rel2);
+        q3_max_rel = min(q3_max_rel, q3_max_rel2);
+        
+        % Apply absolute limits
+        q3_min_rel = max(q3_min_rel, q3_min);
+        q3_max_rel = min(q3_max_rel, q3_max);
+        
+        if q3 < q3_min_rel || q3 > q3_max_rel
+            valid = false;
+            warning('Joint 3 out of relationship limits: [%.4f, %.4f] for q2=%.4f', q3_min_rel, q3_max_rel, q2);
+        end
+    end
 end
 
 function [M, C, G] = compute_M_C_G(theta1, theta2,theta3, dtheta1, dtheta2,dtheta3)
