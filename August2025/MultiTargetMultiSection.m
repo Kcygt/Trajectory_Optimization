@@ -11,8 +11,8 @@ dataNumber = 2;
 xTarget(1,:) = [0.02, 0.01, 0.005];
 xTarget(2,:) = [0.04, 0.02, 0.04];
 
-% xTarget(1,:) = [0.020, 0.015, 0.005];
-% xTarget(2,:) = [0.03, 0.04, 0.04];
+% xTarget(1,:) = [0.02, 0.03, 0.02];
+% xTarget(2,:) = [0.04,  0.04, 0.04];
 
 
 % Define number of phases (this determines tspan and wn)
@@ -24,10 +24,13 @@ numPhases = 3;  % Change this to 2, 3, 4, 5, etc.
 numTargets = size(xTarget, 1);
 
 % Define desired final configuration
-qDes = [0.191425481525343, 0.190854007095390, 0.356154760943820];
+% qDes = [0.191425481525343, 0.190854007095390, 0.356154760943820];
+qDes = [         0    0.1987    0.3278];
+xTarget(1,:) = [0.0, 0.01, 0.01];
+xTarget(2,:) = [0.0, 0.02, 0.04];
 
 % Weights for optimization
-wt = [200, 1, 0.0001]; % [Target, End, Time]
+wt = [400, 1, 0.0001]; % [Target, End, Time]
 
 % Base parameters (will be automatically adjusted)
 baseTspan = [0.4154, 0.9925, 1.5251];
@@ -72,14 +75,14 @@ ub = zeros(1, length(initPrms));
 
 % Time bounds (switching times)
 lb(1:length(tspan)) = 0;
-ub(1:length(tspan)) = 2;
+ub(1:length(tspan)) = 1;
 
 % Wn bounds
 startIdx = length(tspan) + 1;
 for i = 1:numPhases
     idx = startIdx + (i-1)*3;
-    lb(idx:idx+2) = 0.5;
-    ub(idx:idx+2) = 15;
+    lb(idx:idx+2) = 0.01;
+    ub(idx:idx+2) = 20;
 end
 
 % Optimization
@@ -87,9 +90,9 @@ objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xFinal, n
 
 options = optimoptions('fmincon', ...
     'Display', 'none', ...
-    'TolCon', 1e-8, ...
-    'OptimalityTolerance', 1e-8, ...
-    'StepTolerance', 1e-8, ...
+    'TolCon', 1e-10, ...
+    'OptimalityTolerance', 1e-10, ...
+    'StepTolerance', 1e-10, ...
     'MaxIterations', 60);
 
 problem = createOptimProblem('fmincon', ...
