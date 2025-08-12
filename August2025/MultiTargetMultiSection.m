@@ -9,7 +9,7 @@ dataNumber = 2;
 % Define target points (N x 3 matrix where N is number of targets)
 % Case 1
 xTarget(1,:) = [0.02, 0.01, 0.005];
-xTarget(2,:) = [0.04, 0.02, 0.04];
+% xTarget(2,:) = [0.04, 0.02, 0.04];
 
 % xTarget(1,:) = [0.02, 0.03, 0.02];
 % xTarget(2,:) = [0.04,  0.04, 0.04];
@@ -20,21 +20,23 @@ numPhases = 3;  % Change this to 2, 3, 4, 5, etc.
 
 %% ===== AUTOMATIC SETUP (Don't modify below this line) =====
 
-% Get number of targets
-numTargets = size(xTarget, 1);
 
 % Define desired final configuration
 % qDes = [0.191425481525343, 0.190854007095390, 0.356154760943820];
-qDes = [         0    0.1987    0.3278];
-xTarget(1,:) = [0.0, 0.01, 0.01];
-xTarget(2,:) = [0.0, 0.02, 0.04];
+qDes = [          0.4266    0.3466    1.0148];
+xTarget(1,:) = [0.06, 0.05, 0.03];
+xTarget(2,:) = [0.11, 0.1, 0.05];
+
+% Get number of targets
+numTargets = size(xTarget, 1);
+
 
 % Weights for optimization
 wt = [400, 1, 0.0001]; % [Target, End, Time]
 
 % Base parameters (will be automatically adjusted)
-baseTspan = [0.4154, 0.9925, 1.5251];
-baseWn = [1.3195, 1.6735, 1.8446, 2.86879, 3.9139, 4.00, 16.6248, 0.1000, 0.6028];
+baseTspan = [0.5, 1, 1.5 ];
+baseWn = [1 1 1 1 1 1 1 1 1];
 
 % Automatically generate tspan and wn based on numPhases
 if numPhases <= length(baseTspan)
@@ -74,14 +76,14 @@ lb = zeros(1, length(initPrms));
 ub = zeros(1, length(initPrms));
 
 % Time bounds (switching times)
-lb(1:length(tspan)) = 0;
-ub(1:length(tspan)) = 1;
+lb(1:length(tspan)) = 0.3;
+ub(1:length(tspan)) = 2;
 
 % Wn bounds
 startIdx = length(tspan) + 1;
 for i = 1:numPhases
     idx = startIdx + (i-1)*3;
-    lb(idx:idx+2) = 0.01;
+    lb(idx:idx+2) = 0.5;
     ub(idx:idx+2) = 20;
 end
 

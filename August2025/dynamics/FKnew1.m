@@ -1,4 +1,4 @@
-function [x, y, z, valid] = FKnew(q1, q2, q3)
+function [x, y, z, valid] = FKnew1(q1, q2, q3)
     % Joint limits
     q1_min = -1.5708; q1_max = 1.5708;
     q2_min = -1.07;   q2_max = 1.97;

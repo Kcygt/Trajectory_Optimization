@@ -5,11 +5,11 @@ close all;
 % Change these parameters to modify the number of targets and control points
 
 % Define target points (N x 3 matrix where N is number of targets)
-xTarget = [  -0.0, -0.03, -0.03;
-             -0.0, -0.03, -0.01;
-              0.0, -0.03, 0.01;
-              0.0, -0.03, 0.03;
-              0.0, -0.03, 0.05];
+xTarget = [  -0.04, -0.03, 0;
+             -0.01, -0.03, 0;
+              0.02, -0.03, 0;
+              0.05, -0.03, 0;
+              0.08, -0.03, 0];
 % xTarget = [...
 %     0.0, -0.03, 0.0;
 %     0.02, -0.03, 0.0;
@@ -17,7 +17,7 @@ xTarget = [  -0.0, -0.03, -0.03;
 
 
 % Specify which targets to use as control points (indices)
-controlPointIndices = [1, 3,5]; % Use first and last targets as control points
+controlPointIndices = [1, 5]; % Use first and last targets as control points
 
 % Final desired configuration
 qDes = [0, 0, 0];
@@ -179,8 +179,8 @@ for i = 1:numControlPoints
 end
 
 % Save results
-save(sprintf('flexible_data_%d_targets_%d_controls.mat', numTargets, numControlPoints), ...
-    'Opt','tOpt','yOpt','tInit','yInit','xTarget','xFinal','numTargets','numControlPoints');
+% save(sprintf('flexible_data_%d_targets_%d_controls.mat', numTargets, numControlPoints), ...
+%     'Opt','tOpt','yOpt','tInit','yInit','xTarget','xFinal','numTargets','numControlPoints');
 
 %% ===== HELPER FUNCTIONS =====
 
