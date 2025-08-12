@@ -133,6 +133,8 @@ legend( ...
 );
 %%%%%%%%%%%% FUNCTION %%%%%%%%%%%%%
 
+
+
 % Objective Function
 function error = objectiveFunction(prms, qDes, wt, xTarget, xDes)
     

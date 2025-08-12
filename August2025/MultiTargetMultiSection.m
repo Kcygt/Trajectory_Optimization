@@ -2,30 +2,39 @@ clear; clc;
 close all;
 
 saveData = 1;
-dataNumber = 2;
+dataNumber = 1;
 %% ===== CONFIGURATION SECTION =====
-% ONLY CHANGE THESE TWO PARAMETERS - everything else is automatic!
-
-% Define target points (N x 3 matrix where N is number of targets)
-% Case 1
-xTarget(1,:) = [0.02, 0.01, 0.005];
-% xTarget(2,:) = [0.04, 0.02, 0.04];
-
-% xTarget(1,:) = [0.02, 0.03, 0.02];
-% xTarget(2,:) = [0.04,  0.04, 0.04];
-
 
 % Define number of phases (this determines tspan and wn)
-numPhases = 3;  % Change this to 2, 3, 4, 5, etc.
+numPhases = 1;  % Change this to 2, 3, 4, 5, etc.
 
 %% ===== AUTOMATIC SETUP (Don't modify below this line) =====
+qDes = [   0.3139    0.2332    0.8081]; % [0.1, 0.1, 0.1]
+
+% Case 1
+qTarget = [      0.3120    0.1945    0.3430];
 
 
-% Define desired final configuration
-% qDes = [0.191425481525343, 0.190854007095390, 0.356154760943820];
-qDes = [          0.4266    0.3466    1.0148];
-xTarget(1,:) = [0.06, 0.05, 0.03];
-xTarget(2,:) = [0.11, 0.1, 0.05];
+% Case 2
+% qTarget = [    0.0894    0.0683    0.1577;
+%                0.1380    0.1756    0.6371];
+
+% Case 3
+% qTarget = [         0.1815    0.1412    0.0936;
+%                       0.2751    0.1992    0.3260];
+
+
+% Preallocate result
+xTarget = zeros(size(qTarget,1),3 );  % 3 rows (x,y,z), N columns
+
+for i = 1:size(qTarget, 1)
+    q1 = qTarget(i, 1);
+    q2 = qTarget(i, 2);
+    q3 = qTarget(i, 3);
+    [x, y, z] = FK(q1, q2, q3);
+    xTarget(i,:) = [x; y; z];
+end
+
 
 % Get number of targets
 numTargets = size(xTarget, 1);
@@ -76,15 +85,15 @@ lb = zeros(1, length(initPrms));
 ub = zeros(1, length(initPrms));
 
 % Time bounds (switching times)
-lb(1:length(tspan)) = 0.3;
+lb(1:length(tspan)) = 0.1;
 ub(1:length(tspan)) = 2;
 
 % Wn bounds
 startIdx = length(tspan) + 1;
 for i = 1:numPhases
     idx = startIdx + (i-1)*3;
-    lb(idx:idx+2) = 0.5;
-    ub(idx:idx+2) = 20;
+    lb(idx:idx+2) = 0.1;
+    ub(idx:idx+2) = 15;
 end
 
 % Optimization

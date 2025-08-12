@@ -1,15 +1,16 @@
 clear; clc;
 close all;
+dataNumber = 5;
 
 %% ===== CONFIGURATION SECTION =====
 % Change these parameters to modify the number of targets and control points
 
 % Define target points (N x 3 matrix where N is number of targets)
-xTarget = [  -0.04, -0.03, 0;
-             -0.01, -0.03, 0;
-              0.02, -0.03, 0;
-              0.05, -0.03, 0;
-              0.08, -0.03, 0];
+xTarget = [  0.01, -0.03, 0;
+             0.04, -0.03, 0;
+              0.07, -0.03, 0;
+              0.1, -0.03, 0;
+              0.13, -0.03, 0];
 % xTarget = [...
 %     0.0, -0.03, 0.0;
 %     0.02, -0.03, 0.0;
@@ -17,7 +18,7 @@ xTarget = [  -0.04, -0.03, 0;
 
 
 % Specify which targets to use as control points (indices)
-controlPointIndices = [1, 5]; % Use first and last targets as control points
+controlPointIndices = [1,3, 5]; % Use first and last targets as control points
 
 % Final desired configuration
 qDes = [0, 0, 0];
@@ -84,7 +85,7 @@ ub = 5; % Time
 
 % Add bounds for wn parameters (3 parameters per phase)
 for i = 1:(numControlPoints + 1)
-    lb = [lb, 0.5*ones(1,3)]; % wn parameters
+    lb = [lb, 0.01*ones(1,3)]; % wn parameters
     ub = [ub, 10*ones(1,3)];  % wn parameters
 end
 
@@ -97,7 +98,7 @@ end
 % Optimization
 objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xFinal, numControlPoints);
 options = optimoptions('fmincon', 'Display', 'none', 'Algorithm', 'sqp', ...
-    'TolCon', 1e-6, 'OptimalityTolerance', 1e-7, 'StepTolerance', 1e-3, 'MaxIterations', maxIterations);
+    'TolCon', 1e-8, 'OptimalityTolerance', 1e-8, 'StepTolerance', 1e-8, 'MaxIterations', maxIterations);
 problem = createOptimProblem('fmincon', ...
     'objective', objectiveFunc, ...
     'x0', initPrms, ...
@@ -179,8 +180,8 @@ for i = 1:numControlPoints
 end
 
 % Save results
-% save(sprintf('flexible_data_%d_targets_%d_controls.mat', numTargets, numControlPoints), ...
-%     'Opt','tOpt','yOpt','tInit','yInit','xTarget','xFinal','numTargets','numControlPoints');
+save(sprintf('Sdata%d.mat', dataNumber ), ...
+    'Opt','tOpt','yOpt','tInit','yInit','xTarget','xFinal','numTargets','numControlPoints');
 
 %% ===== HELPER FUNCTIONS =====
 

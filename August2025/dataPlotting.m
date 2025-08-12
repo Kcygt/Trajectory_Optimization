@@ -1,6 +1,6 @@
 close all
 % publish('plottingData.m', 'html');
-for i = 1:2
+for i = 1:5
     % Construct filenames
     PdataFile = sprintf('Pdata%d.mat', i);
     SdataFile = sprintf('Sdata%d.mat', i);
@@ -159,7 +159,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     
     % Start and End Points
     hStart = plot3(0, 0, 0, 'o', 'LineWidth', 2, 'MarkerSize', 5, 'DisplayName', 'Start Point');
-    hEnd   = plot3(0.05, 0.05, 0.05, 'o', 'LineWidth', 2, 'MarkerSize', 5, 'DisplayName', 'End Point');
+    hEnd   = plot3(Sdata.xFinal(1),Sdata.xFinal(2),Sdata.xFinal(3), 'o', 'LineWidth', 2, 'MarkerSize', 5, 'DisplayName', 'End Point');
     plotHandles = [plotHandles, hStart, hEnd];
     plotLabels = [plotLabels, {'Start Point', 'End Point'}];
     
