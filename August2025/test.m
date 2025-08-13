@@ -1,5 +1,5 @@
 clear; clc; close all;
-
+dataNumber = 6;
 %%%%% Configuration - Choose control point indices %%%%%
 indexControlPoint = [1, 3];   % choose directly from xTarget rows
 
@@ -10,11 +10,15 @@ qDes = [ 0   0.198678167676855   0.327814256075948 ];
 xDes = [x, y, z];
 
 % Example target points (can be larger)
+% xTarget = [
+%     0,     0.02,  0.005;
+%     0,     0.03,  0.03;
+%     0,     0.04, 0.045];
+
 xTarget = [
     0,     0.02,  0.005;
-    0,     0.03,  0.03;
-    0,     0.04, 0.045];
-
+    0,     0.03,  0.015;
+    0,     0.04, 0.03];
 % Number of control points is based on chosen indices
 numControlPoints = numel(indexControlPoint);
 
@@ -41,7 +45,7 @@ end
 qDes = [qCtrl; qDes];
 
 % Weights
-wt = [400, 10, 0.001];   % [Target, End, Time]
+wt = [800, 20, 0.001];   % [Target, End, Time]
 
 % Create initial parameters vector
 initPrms = [tspan];
@@ -176,6 +180,13 @@ for i = 1:numWnSets-1
 end
 
 legend(legendEntries);
+
+xFinal = xDes;
+save(sprintf('Sdata%d.mat', dataNumber), ...
+             'Opt', 'tOpt', 'yOpt', 'xTarget', 'xFinal','ctrlPoints_opt', 'wn_opt');
+
+
+
 
 %%%%%%%%%%%% FUNCTIONS %%%%%%%%%%%%%
 
