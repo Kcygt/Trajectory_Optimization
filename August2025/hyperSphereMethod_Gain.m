@@ -2,7 +2,7 @@
 close all;
 
 saveData = 1;
-dataNumber = 2;
+dataNumber = 1;
 %% ===== CONFIGURATION SECTION =====
 % ONLY CHANGE THESE TWO PARAMETERS - everything else is automatic!
 
@@ -14,14 +14,28 @@ numTargets = 1;
 
 % Define desired final configuration
 % Case 1
+% qDes = [   0.3139    0.2332    0.8081]; % [0.1, 0.1, 0.1]
+% xTarget(1,:) = [0.08, 0.05, 0.04];
+% tspan = 2;
+% wn = [12.8062449571932	7.32000096786927	3.27737554438979];
+% 
+% Gain = 5;
+% tspanG = 2 / Gain;
+% wnG = Gain * [12.8062449571932	7.32000096786927	3.27737554438979];
+% 
+% Case 2
 qDes = [   0.3139    0.2332    0.8081]; % [0.1, 0.1, 0.1]
-xTarget(1,:) = [0.08, 0.05, 0.04];
-tspan = 2;
+xTarget(1,:) = [0.0208827243478188	0.0162800519366574	0.0249648836518187];
+xTarget(2,:) = [0.0419206278166634	0.0692949060618982	0.0938418637779708];
+
+tspan = [0.5057    0.9226    1.7506 ];
 wn = [12.8062449571932	7.32000096786927	3.27737554438979];
 
 Gain = 5;
 tspanG = 2 / Gain;
 wnG = Gain * [12.8062449571932	7.32000096786927	3.27737554438979];
+
+
 
 
 % Compute final position
@@ -46,10 +60,10 @@ xlabel('X (m)'); ylabel('Y (m)'); zlabel('Z (m)');
 title(sprintf('Comparison: Optimized vs Gained Trajectories (Gain = %.1f)', Gain));
 
 % Plot optimized trajectory (original)
-plot3(CxInit, CyInit, CzInit, 'b-', 'LineWidth', 3, 'DisplayName', 'Optimized Trajectory');
+plot3(CxInit, CyInit, CzInit, 'g-', 'LineWidth', 1.4, 'DisplayName', 'Optimized Trajectory');
 
 % Plot gained trajectory (scaled)
-plot3(CxGain, CyGain, CzGain, 'r--', 'LineWidth', 2.5, 'DisplayName', 'Gained Trajectory');
+plot3(CxGain, CyGain, CzGain, 'r--', 'LineWidth', 1.5, 'DisplayName', 'Gained Trajectory');
 
 % Plot targets and final point
 plot3(xTarget(:,1), xTarget(:,2), xTarget(:,3), '*', 'MarkerSize', 12, 'Color', [0,0.4,0.8], 'DisplayName', 'Target Points');
@@ -115,6 +129,10 @@ plot(tUniG, CzGain, 'r--', 'LineWidth', 2, 'DisplayName', 'Gained Z');
 xlabel('Time (s)'); ylabel('Z Position (m)');
 legend('Location', 'best');
 grid on;
+
+
+save(sprintf('SGdata%d.mat', dataNumber), ...
+        'yInit', 'tInit', 'yGain','tGain', 'xTarget', 'xFinal','tspanG', 'wnG');
 
 
 % Dynamics Function with Prefilter

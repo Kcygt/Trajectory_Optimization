@@ -9,7 +9,7 @@ To make changes, update the MATLAB code and republish this document.
 <title>dataPlotting</title>
 <meta name="generator" content="MATLAB 24.2">
 <link rel="schema.DC" href="http://purl.org/dc/elements/1.1/">
-<meta name="DC.date" content="2025-08-13">
+<meta name="DC.date" content="2025-08-14">
 <meta name="DC.source" content="dataPlotting.m">
 <style type="text/css">
 html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
@@ -77,8 +77,8 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
 <body>
 <div class="content">
 <pre class="codeinput">close <span class="string">all</span>
-<span class="comment">% publish('plottingData.m', 'html');</span>
-<span class="keyword">for</span> i = 1:5
+<span class="comment">% publish('dataPlotting.m', 'html');</span>
+<span class="keyword">for</span> i = 1:7
     <span class="comment">% Construct filenames</span>
     PdataFile = sprintf(<span class="string">'Pdata%d.mat'</span>, i);
     SdataFile = sprintf(<span class="string">'Sdata%d.mat'</span>, i);
@@ -330,6 +330,10 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
     zlabel(<span class="string">'Z axis (m)'</span>);
     title(<span class="string">'3D Cartesian Space Position'</span>);
 
+    <span class="comment">% Save 3D trajectory figure as both PNG and FIG</span>
+    saveas(fig1, sprintf(<span class="string">'%s_3D_Trajectory.png'</span>, figPrefix));
+    saveas(fig1, sprintf(<span class="string">'%s_3D_Trajectory.fig'</span>, figPrefix));
+
 
     <span class="comment">% Joint Position Figure</span>
     <span class="keyword">if</span> hasPdata || hasSdata || hasGdata
@@ -369,8 +373,9 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
         <span class="keyword">end</span>
     <span class="keyword">end</span>
 
-    <span class="comment">% Save Joint Position figure as PDF</span>
-    <span class="comment">% saveas(fig2, sprintf('%s_Joint_Position.pdf', figPrefix));</span>
+    <span class="comment">% Save Joint Position figure as both PNG and FIG</span>
+    saveas(fig2, sprintf(<span class="string">'%s_Joint_Position.png'</span>, figPrefix));
+    saveas(fig2, sprintf(<span class="string">'%s_Joint_Position.fig'</span>, figPrefix));
 
     <span class="comment">% Joint Velocity Figure</span>
     <span class="keyword">if</span> hasPdata || hasSdata || hasGdata
@@ -410,8 +415,9 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
         <span class="keyword">end</span>
     <span class="keyword">end</span>
 
-    <span class="comment">% Save Joint Velocity figure as PDF</span>
-    <span class="comment">% saveas(fig3, sprintf('%s_Joint_Velocity.pdf', figPrefix));</span>
+    <span class="comment">% Save Joint Velocity figure as both PNG and FIG</span>
+    saveas(fig3, sprintf(<span class="string">'%s_Joint_Velocity.png'</span>, figPrefix));
+    saveas(fig3, sprintf(<span class="string">'%s_Joint_Velocity.fig'</span>, figPrefix));
 <span class="keyword">end</span>
 </pre>
 <pre class="codeoutput">Loaded: Pdata1.mat
@@ -429,8 +435,14 @@ Missing: Gdata4.mat
 Loaded: Pdata5.mat
 Loaded: Sdata5.mat
 Missing: Gdata5.mat
+Loaded: Pdata6.mat
+Loaded: Sdata6.mat
+Missing: Gdata6.mat
+Loaded: Pdata7.mat
+Loaded: Sdata7.mat
+Missing: Gdata7.mat
 </pre>
-<img vspace="5" hspace="5" src="dataPlotting_01.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_02.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_03.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_04.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_05.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_06.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_07.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_08.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_09.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_10.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_11.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_12.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_13.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_14.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_15.png" alt=""> <p class="footer">
+<img vspace="5" hspace="5" src="dataPlotting_01.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_02.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_03.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_04.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_05.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_06.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_07.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_08.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_09.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_10.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_11.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_12.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_13.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_14.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_15.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_16.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_17.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_18.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_19.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_20.png" alt=""> <img vspace="5" hspace="5" src="dataPlotting_21.png" alt=""> <p class="footer">
 <br>
 <a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2024b</a>
 <br>
@@ -439,8 +451,8 @@ Missing: Gdata5.mat
 <!--
 ##### SOURCE BEGIN #####
 close all
-% publish('plottingData.m', 'html');
-for i = 1:5
+% publish('dataPlotting.m', 'html');
+for i = 1:7
     % Construct filenames
     PdataFile = sprintf('Pdata%d.mat', i);
     SdataFile = sprintf('Sdata%d.mat', i);
@@ -691,6 +703,10 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     ylabel('Y axis (m)');
     zlabel('Z axis (m)');
     title('3D Cartesian Space Position');
+    
+    % Save 3D trajectory figure as both PNG and FIG
+    saveas(fig1, sprintf('%s_3D_Trajectory.png', figPrefix));
+    saveas(fig1, sprintf('%s_3D_Trajectory.fig', figPrefix));
 
 
     % Joint Position Figure
@@ -731,8 +747,9 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
         end
     end
     
-    % Save Joint Position figure as PDF
-    % saveas(fig2, sprintf('%s_Joint_Position.pdf', figPrefix));
+    % Save Joint Position figure as both PNG and FIG
+    saveas(fig2, sprintf('%s_Joint_Position.png', figPrefix));
+    saveas(fig2, sprintf('%s_Joint_Position.fig', figPrefix));
 
     % Joint Velocity Figure
     if hasPdata || hasSdata || hasGdata
@@ -772,8 +789,9 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
         end
     end
 
-    % Save Joint Velocity figure as PDF
-    % saveas(fig3, sprintf('%s_Joint_Velocity.pdf', figPrefix));
+    % Save Joint Velocity figure as both PNG and FIG
+    saveas(fig3, sprintf('%s_Joint_Velocity.png', figPrefix));
+    saveas(fig3, sprintf('%s_Joint_Velocity.fig', figPrefix));
 end
 
 
