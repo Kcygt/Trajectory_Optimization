@@ -1,5 +1,5 @@
 clear; clc;
-% close all;
+close all;
 
 %% ===== CONFIGURATION SECTION =====
 % Change these parameters to modify the number of targets and control points
@@ -42,7 +42,7 @@ if any(controlPointIndices < 1) || any(controlPointIndices > numTargets)
 end
 
 % Extract control points from targets
-xCtrl = xTarget(controlPointIndices, :) -0.01;
+xCtrl = xTarget(controlPointIndices, :);
 
 % Compute inverse kinematics for control points
 qCtrl = zeros(numControlPoints, 3);
@@ -76,7 +76,7 @@ t_uniform = 0:0.001:tspan;
 [CxOpt, CyOpt, CzOpt] = FK(yInit(:,7), yInit(:,8), yInit(:,9));
 
 %% ===== PLOTTING =====
-figure(1); hold on; grid on; view(3);
+figure; hold on; grid on; view(3);
 xlabel('X (m)'); ylabel('Y (m)'); zlabel('Z (m)');
 title(sprintf('Optimized Cartesian Trajectory with %d Targets and %d Control Points', numTargets, numControlPoints));
 

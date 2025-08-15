@@ -286,7 +286,7 @@ function dxdt = myTwolinkwithprefilter(t, x, qDes, tspan, wnParams, xCtrl)
     end
 
     % Phase transition logic
-    if phase <= numControlPoints && dists(phase) <= 0.02
+    if phase <= numControlPoints && dists(phase) <= 0.01
         phase = phase + 1;
     end
 
