@@ -101,10 +101,15 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     if hasSdata
         [SxDes,SyDes,SzDes] = FK(SqDes(:,1),SqDes(:,2),SqDes(:,3));
         [SxAct,SyAct,SzAct] = FK(SqAct(:,1),SqAct(:,2),SqAct(:,3));
+        SzDes = SzDes ;
+        SzAct = SzAct ;
+        
     end
     
     if hasPdata
         [PxAct,PyAct,PzAct] = FK(PqAct(:,1),PqAct(:,2),PqAct(:,3));
+        PzAct = PzAct ;
+
     end
     
     if hasGdata
@@ -169,18 +174,51 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
         hSim     = plot3(SxAct, SyAct, SzAct, 'r', 'LineWidth', 2, 'DisplayName', 'Simulation Trajectory');
         plotHandles = [plotHandles, hDesired, hSim];
         plotLabels = [plotLabels, {'Desired Position', 'Simulation Trajectory'}];
+        
+        % Add projection lines for simulation trajectory
+        % Project to XZ plane (y=0)
+        hSimXZ = plot3(SxAct, zeros(size(SyAct)), SzAct, 'r:', 'LineWidth', 1, 'DisplayName', 'Sim XZ Projection');
+        plotHandles = [plotHandles, hSimXZ];
+        plotLabels = [plotLabels, {'Sim XZ Projection'}];
+        
+        % Project to YZ plane (x=0)
+        hSimYZ = plot3(zeros(size(SxAct)), SyAct, SzAct, 'r:', 'LineWidth', 1, 'DisplayName', 'Sim YZ Projection');
+        plotHandles = [plotHandles, hSimYZ];
+        plotLabels = [plotLabels, {'Sim YZ Projection'}];
     end
     
     if hasPdata
         hPhantom = plot3(PxAct, PyAct, PzAct, 'g', 'LineWidth', 2, 'DisplayName', 'Phantom Trajectory');
         plotHandles = [plotHandles, hPhantom];
         plotLabels = [plotLabels, {'Phantom Trajectory'}];
+        
+        % Add projection lines for phantom trajectory
+        % Project to XZ plane (y=0)
+        hPhantomXZ = plot3(PxAct, zeros(size(PyAct)), PzAct, 'g:', 'LineWidth', 1, 'DisplayName', 'Phantom XZ Projection');
+        plotHandles = [plotHandles, hPhantomXZ];
+        plotLabels = [plotLabels, {'Phantom XZ Projection'}];
+        
+        % Project to YZ plane (x=0)
+        hPhantomYZ = plot3(zeros(size(PxAct)), PyAct, PzAct, 'g:', 'LineWidth', 1, 'DisplayName', 'Phantom YZ Projection');
+        plotHandles = [plotHandles, hPhantomYZ];
+        plotLabels = [plotLabels, {'Phantom YZ Projection'}];
     end
     
     if hasGdata
         hGain = plot3(GxAct, GyAct, GzAct, 'm', 'LineWidth', 2, 'DisplayName', 'Gain Trajectory');
         plotHandles = [plotHandles, hGain];
         plotLabels = [plotLabels, {'Gain Trajectory'}];
+        
+        % Add projection lines for gain trajectory
+        % Project to XZ plane (y=0)
+        hGainXZ = plot3(GxAct, zeros(size(GyAct)), GzAct, 'm:', 'LineWidth', 1, 'DisplayName', 'Gain XZ Projection');
+        plotHandles = [plotHandles, hGainXZ];
+        plotLabels = [plotLabels, {'Gain XZ Projection'}];
+        
+        % Project to YZ plane (x=0)
+        hGainYZ = plot3(zeros(size(GxAct)), GyAct, GzAct, 'm:', 'LineWidth', 1, 'DisplayName', 'Gain YZ Projection');
+        plotHandles = [plotHandles, hGainYZ];
+        plotLabels = [plotLabels, {'Gain YZ Projection'}];
     end
     
     % Target Points
@@ -198,6 +236,17 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
         end
         plotHandles = [plotHandles, targetHandles(:)'];
         plotLabels = [plotLabels, targetLabels(:)'];
+        
+        % Add target point projections to XZ plane only
+        for k = 1:nTargets
+            % Project target point to XZ plane (y=0)
+            hTargetXZ = plot3(xTarget(k,1), 0, xTarget(k,3), 'p', ...
+                'MarkerSize', 10, 'MarkerFaceColor', 'red', ...
+                'MarkerEdgeColor', 'black', 'LineWidth', 1.5, ...
+                'DisplayName', sprintf('Target %d XZ Projection', k));
+            plotHandles = [plotHandles, hTargetXZ];
+            plotLabels = [plotLabels, {sprintf('Target %d XZ Projection', k)}];
+        end
     else
         targetHandles = [];
         targetLabels = {};
@@ -251,7 +300,10 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     ylabel('Y axis (m)');
     zlabel('Z axis (m)');
     title('3D Cartesian Space Position');
-
+    
+    % Save 3D trajectory figure as both PNG and FIG
+    saveas(fig1, sprintf('%s_3D_Trajectory.png', figPrefix));
+    saveas(fig1, sprintf('%s_3D_Trajectory.fig', figPrefix));
 
     % Joint Position Figure
     if hasPdata || hasSdata || hasGdata
@@ -291,8 +343,9 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
         end
     end
     
-    % Save Joint Position figure as PDF
-    % saveas(fig2, sprintf('%s_Joint_Position.pdf', figPrefix));
+    % Save Joint Position figure as both PNG and FIG
+    saveas(fig2, sprintf('%s_Joint_Position.png', figPrefix));
+    saveas(fig2, sprintf('%s_Joint_Position.fig', figPrefix));
 
     % Joint Velocity Figure
     if hasPdata || hasSdata || hasGdata
@@ -305,8 +358,8 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
             subplotLabels = {};
             
             if hasPdata
-                plot(Ptime, PqdAct(:,i), 'r-', 'LineWidth', 1.2);    % Phantom Actual
-                subplotHandles(end+1) = plot(Ptime, PqdAct(:,i), 'r-', 'LineWidth', 1.2);
+                plot(Ptime, PqdAct(:,i), 'r.-', 'LineWidth', 1.2);    % Phantom Actual
+                subplotHandles(end+1) = plot(Ptime, PqdAct(:,i), 'r.-', 'LineWidth', 1.2);
                 subplotLabels{end+1} = 'Phantom Actual';
             end
             
@@ -332,7 +385,8 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
         end
     end
 
-    % Save Joint Velocity figure as PDF
-    % saveas(fig3, sprintf('%s_Joint_Velocity.pdf', figPrefix));
+    % Save Joint Velocity figure as both PNG and FIG
+    saveas(fig3, sprintf('%s_Joint_Velocity.png', figPrefix));
+    saveas(fig3, sprintf('%s_Joint_Velocity.fig', figPrefix));
 end
 
