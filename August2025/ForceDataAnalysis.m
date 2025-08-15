@@ -1,6 +1,6 @@
-close all
-clear
-clc
+% close all
+% clear
+% clc
 
 load('Fdata.mat')
 
