@@ -1,11 +1,11 @@
-close all
-clear 
-clc
-load('Pdata.mat')
+% close all
+% clear 
+% clc
+load('P3data.mat')
 
 time = 0:0.001:5;  % 1x5001 vector
-[x,y,z] = FK(Pdata(:,1),Pdata(:,2),Pdata(:,3));
-Fz = Pdata(:,6);
+[x,y,z] = FK(P3data(:,1),P3data(:,2),P3data(:,3));
+Fz = P3data(:,6);
 
 xTarget =[0.0100   -0.0300         0;
           0.0400   -0.0300         0;
@@ -54,5 +54,7 @@ plot3(x,y,z)
 plot3(0,0,0,'o')
 plot3(xCtrl(:,1),xCtrl(:,2),xCtrl(:,3),'*')
 plot3(xTarget(:,1),xTarget(:,2),xTarget(:,3),'*')
-plot3(xTarget(:,1), TargetAndForce(:,1),xTarget(:,3),'d')
+plot3(xTarget(:,1), TargetAndForce(:,1),xTarget(:,3),'.',MarkerSize=15)
 plot3(xTarget(:,1), Xdes,xTarget(:,3),'o')
+
+legend('Trajectory','Home','Control points','Initial Target','Minimum dist','Updated Target Points')
