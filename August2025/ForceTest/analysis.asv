@@ -1,13 +1,13 @@
 % close all
 % clear 
 % clc
-load('P20data.mat')
+load('P11data.mat')
 
-time = 0:0.001:4.4854;  % 1x5001 vector
-[xAct,yAct,zAct] = FK(P20data(:,1),P20data(:,2),P20data(:,3));
-[xDes,yDes,zDes] = FK(P20data(:,4),P20data(:,5),P20data(:,6));
+time = 0:0.001:5;  % 1x5001 vector
+[xAct,yAct,zAct] = FK(P11data(:,1),P10data(:,2),P10data(:,3));
+[xDes,yDes,zDes] = FK(P10data(:,4),P10data(:,5),P10data(:,6));
 
-Fz = P20data(:,9);
+Fz = P10data(:,9);
 
 xTarget =[0.0100   -0.0300         0;
           0.0400   -0.0300         0;
@@ -38,15 +38,15 @@ for i = 1:size(xTarget, 1)
     plot(time(min_idx_i),Fz(min_idx_i),'*','MarkerSize',10,'LineWidth',2)
 
 end
-% Force features
+
 k = 532.3389;
 constant =  0.4897;
 Fdes = -1;
 
 
-newTarget = zeros(5,1);
+Xdes = zeros(5,1);
 for i = 1:5
-    newTarget(i) = (Fdes - TargetAndForce(i,2) - constant) / k + TargetAndForce(i,1);
+    Xdes(i) = (Fdes - TargetAndForce(i,2) - constant) / k + TargetAndForce(i,1);
 end
 
 PosAvg = mean(yDes(indexx(1):indexx(5)) - yAct(indexx(1):indexx(5)));
@@ -59,9 +59,9 @@ plot3(0,0,0,'o')
 plot3(xCtrl(:,1),xCtrl(:,2),xCtrl(:,3),'*')
 plot3(xTarget(:,1),xTarget(:,2),xTarget(:,3),'*')
 plot3(xTarget(:,1), TargetAndForce(:,1),xTarget(:,3),'.',MarkerSize=15)
-plot3(xTarget(:,1), newTarget,xTarget(:,3),'o')
+plot3(xTarget(:,1), Xdes,xTarget(:,3),'o')
 
 
 legend('Desired Trajectory','Actual Trajectory','Home','Control points','Initial Target','Minimum dist','Updated Target Points')
 
-newTarget
+NewTargets = TargetAndForce(:,1)
