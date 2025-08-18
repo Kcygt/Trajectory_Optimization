@@ -1,67 +1,64 @@
 % close all
 % clear 
 % clc
-load('P11data.mat')
+load('Sdata2.mat','xTarget','x')
 
-time = 0:0.001:5;  % 1x5001 vector
-[xAct,yAct,zAct] = FK(P11data(:,1),P10data(:,2),P10data(:,3));
-[xDes,yDes,zDes] = FK(P10data(:,4),P10data(:,5),P10data(:,6));
+load('Pdata2.mat')
+time = 0:0.001:3.4852;  % 1x5001 vector
+[xAct,yAct,zAct] = FK(Pdata2(:,1),Pdata2(:,2),Pdata2(:,3));
+[xDes,yDes,zDes] = FK(Pdata2(:,4),Pdata2(:,5),Pdata2(:,6));
 
-Fz = P10data(:,9);
+Fz = Pdata2(:,9);
 
-xTarget =[0.0100   -0.0300         0;
-          0.0400   -0.0300         0;
-          0.0700   -0.0300         0;
-          0.1000   -0.0300         0;
-          0.1300   -0.0300         0];
 
-xCtrl(1,:) = [ -0.0125  ,  -0.0336   -0.0021 ];
+xCtrl(1,:) = [ -0.0125  , -0.0336   -0.0021 ];
 xCtrl(2,:) = [  0.0560 ,  -0.0280  , -0.0010 ];
 xCtrl(3,:) = [  0.1538 ,  -0.0305  ,  0.0071 ];
 
 figure; grid on; hold on;
 plot(time,Fz)
 
-
-
 % Find the index of minimum distance between trajectory and target point
-TargetAndForce = zeros(length(xTarget),2);
-indexx = zeros(5,1);
+minDist = zeros(length(xTarget),1);
+Fact = zeros(length(xTarget),1);
+
+indexing = zeros(5,1);
 for i = 1:size(xTarget, 1)
-    target_point_i = xTarget(i,:);
-    distances_i = sqrt((xAct - target_point_i(1)).^2 + (yAct - target_point_i(2)).^2 + (zAct - target_point_i(3)).^2);
-    [min_dist_i, min_idx_i] = min(distances_i);
+    distance = sqrt((xAct - xTarget(i,1)).^2 + (yAct - xTarget(i,2)).^2 + (zAct - xTarget(i,3)).^2);
+    [~, idx] = min(distance);
     
     
-    indexx(i,1) = min_idx_i;
-    TargetAndForce(i,:) = [ yAct(min_idx_i) Fz(min_idx_i)];
-    plot(time(min_idx_i),Fz(min_idx_i),'*','MarkerSize',10,'LineWidth',2)
+    indexing(i,1) = idx;
+    minDist(i) = yAct(idx);
+    Fact(i) = Fz(idx);
+    plot(time(idx),Fact(i),'*','MarkerSize',10,'LineWidth',2)
 
 end
-
+% Force features
 k = 532.3389;
-constant =  0.4897;
+
 Fdes = -1;
 
 
-Xdes = zeros(5,1);
+newTarget = zeros(5,1);
 for i = 1:5
-    Xdes(i) = (Fdes - TargetAndForce(i,2) - constant) / k + TargetAndForce(i,1);
+
+    newTarget(i) = (Fdes - Fact(i) ) / k + xTarget(i,2);
 end
 
-PosAvg = mean(yDes(indexx(1):indexx(5)) - yAct(indexx(1):indexx(5)));
+PosAvg = mean(yDes(indexing(1):indexing(5)) - yAct(indexing(1):indexing(5)));
 
 
 figure; hold on; grid on;
 plot3(xDes,yDes,zDes)
 plot3(xAct,yAct,zAct)
 plot3(0,0,0,'o')
-plot3(xCtrl(:,1),xCtrl(:,2),xCtrl(:,3),'*')
+plot3(xCtrl(:,1),xCtrl(:,2),xCtrl(:,3),'d')
 plot3(xTarget(:,1),xTarget(:,2),xTarget(:,3),'*')
-plot3(xTarget(:,1), TargetAndForce(:,1),xTarget(:,3),'.',MarkerSize=15)
-plot3(xTarget(:,1), Xdes,xTarget(:,3),'o')
+plot3(xAct(indexing),yAct(indexing),zAct(indexing),'.',MarkerSize=15)
+plot3(xTarget(:,1), newTarget,xTarget(:,3),'o')
 
 
 legend('Desired Trajectory','Actual Trajectory','Home','Control points','Initial Target','Minimum dist','Updated Target Points')
 
-NewTargets = TargetAndForce(:,1)
+newTarget

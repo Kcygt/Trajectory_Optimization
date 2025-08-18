@@ -2,6 +2,39 @@ clear; clc;
 close all;
 dataNumber = 3;
 
+
+
+load('Pdata1.mat')
+xTargetPrev = load('Sdata1.mat','xTarget','Opt');
+OptPrev = xTargetPrev.Opt;
+xTargetPrev = xTargetPrev.xTarget;
+
+[xActPrev,yActPrev,zActPrev] = FK(Pdata1(:,1),Pdata1(:,2),Pdata1(:,3));
+[xDesPrev,yDesPrev,zDesPrev] = FK(Pdata1(:,4),Pdata1(:,5),Pdata1(:,6));
+
+Fz = Pdata1(:,9);
+timePrev = linspace(0,OptPrev(1),length(Pdata1));  % 1x5001 vector
+
+minDist = zeros(length(xTargetPrev),1);
+Fact = zeros(length(xTargetPrev),1);
+
+
+figure; grid on; hold on;
+plot(timePrev,Fz)
+
+indexing = zeros(5,1);
+for i = 1:size(xTargetPrev, 1)
+    distance = sqrt((xActPrev - xTargetPrev(i,1)).^2 + (yActPrev - xTargetPrev(i,2)).^2 + (zActPrev - xTargetPrev(i,3)).^2);
+    [~, idx] = min(distance);
+    indexing(i,1) = idx;
+    minDist(i) = yActPrev(idx);
+    Fact(i) = Fz(idx);
+    plot(timePrev(idx),Fact(i),'*','MarkerSize',10,'LineWidth',2)
+
+end
+
+
+
 %% ===== CONFIGURATION SECTION =====
 % Change these parameters to modify the number of targets and control points
 
