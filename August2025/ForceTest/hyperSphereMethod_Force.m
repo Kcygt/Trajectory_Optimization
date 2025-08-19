@@ -1,6 +1,6 @@
 clear; clc;
 close all;
-dataNumber = 3;
+dataNumber = 5;
 
 
 
@@ -39,17 +39,17 @@ end
 % Change these parameters to modify the number of targets and control points
 
 % Define target points (N x 3 matrix where N is number of targets)
-xTarget = [  0.01,  -0.0319, 0;
-             0.04,  -0.0318, 0;
-              0.07, -0.0323, 0;
-              0.1,  -0.0327, 0;
-              0.13, -0.0339, 0];
+xTarget = [  0.01,  -0.0314, 0;
+             0.04,  -0.0311, 0;
+              0.07, -0.0283, 0;
+              0.1,  -0.0283, 0;
+              0.13, -0.0320, 0];
 
-   -0.0319
-   -0.0318
-   -0.0323
-   -0.0327
-   -0.0339
+   -0.0314
+   -0.0311
+   -0.0283
+   -0.0283
+   -0.0320
 
 
 % xTarget = [...

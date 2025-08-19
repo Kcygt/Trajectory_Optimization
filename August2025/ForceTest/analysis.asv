@@ -1,19 +1,20 @@
 % close all
 % clear 
 % clc
-load('Sdata2.mat','xTarget','x')
+load('Sdata6.mat','xTarget','Opt')
+load('Pdata6.mat')
 
-load('Pdata2.mat')
-time = 0:0.001:3.4852;  % 1x5001 vector
-[xAct,yAct,zAct] = FK(Pdata2(:,1),Pdata2(:,2),Pdata2(:,3));
-[xDes,yDes,zDes] = FK(Pdata2(:,4),Pdata2(:,5),Pdata2(:,6));
+time = linspace(0,Opt(1),length(Pdata6));  % 1x5001 vector
+[xAct,yAct,zAct] = FK(Pdata6(:,1),Pdata6(:,2),Pdata6(:,3));
+[xDes,yDes,zDes] = FK(Pdata5(:,4),Pdata6(:,5),Pdata5(:,6));
 
-Fz = Pdata2(:,9);
+Fz = Pdata5(:,9);
 
 
 xCtrl(1,:) = [ -0.0125  , -0.0336   -0.0021 ];
 xCtrl(2,:) = [  0.0560 ,  -0.0280  , -0.0010 ];
 xCtrl(3,:) = [  0.1538 ,  -0.0305  ,  0.0071 ];
+
 
 figure; grid on; hold on;
 plot(time,Fz)
@@ -42,7 +43,6 @@ Fdes = -1;
 
 newTarget = zeros(5,1);
 for i = 1:5
-
     newTarget(i) = (Fdes - Fact(i) ) / k + xTarget(i,2);
 end
 
@@ -62,3 +62,9 @@ plot3(xTarget(:,1), newTarget,xTarget(:,3),'o')
 legend('Desired Trajectory','Actual Trajectory','Home','Control points','Initial Target','Minimum dist','Updated Target Points')
 
 newTarget
+% % Estimate force at new target positions
+% ForceEstimation = k * (yAct(indexing) - newTarget);
+% 
+% % Display
+% disp('Estimated Force at Updated Target Positions:')
+% disp(ForceEstimation)

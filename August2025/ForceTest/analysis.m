@@ -1,14 +1,14 @@
 % close all
 % clear 
 % clc
-load('Sdata3.mat','xTarget','Opt')
-load('Pdata3.mat')
+load('Sdata7.mat','xTarget','Opt')
+load('Pdata7.mat')
 
-time = linspace(0,Opt(1),length(Pdata3));  % 1x5001 vector
-[xAct,yAct,zAct] = FK(Pdata3(:,1),Pdata3(:,2),Pdata3(:,3));
-[xDes,yDes,zDes] = FK(Pdata3(:,4),Pdata3(:,5),Pdata3(:,6));
+time = linspace(0,Opt(1),length(Pdata7));  % 1x5001 vector
+[xAct,yAct,zAct] = FK(Pdata7(:,1),Pdata7(:,2),Pdata7(:,3));
+[xDes,yDes,zDes] = FK(Pdata7(:,4),Pdata7(:,5),Pdata7(:,6));
 
-Fz = Pdata3(:,9);
+Fz = Pdata7(:,9);
 
 
 xCtrl(1,:) = [ -0.0125  , -0.0336   -0.0021 ];
@@ -62,9 +62,9 @@ plot3(xTarget(:,1), newTarget,xTarget(:,3),'o')
 legend('Desired Trajectory','Actual Trajectory','Home','Control points','Initial Target','Minimum dist','Updated Target Points')
 
 newTarget
-% Estimate force at new target positions
-ForceEstimation = k * (yAct(indexing) - newTarget);
-
-% Display
-disp('Estimated Force at Updated Target Positions:')
-disp(ForceEstimation)
+% % Estimate force at new target positions
+% ForceEstimation = k * (yAct(indexing) - newTarget);
+% 
+% % Display
+% disp('Estimated Force at Updated Target Positions:')
+% disp(ForceEstimation)
