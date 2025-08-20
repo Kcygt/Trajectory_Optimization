@@ -1,20 +1,18 @@
 % close all
 % clear 
 % clc
-load('Sdata7.mat','xTarget','Opt')
-load('Pdata7.mat')
+load('Sdata12.mat','xTarget','Opt')
+load('Pdata12.mat')
 
-time = linspace(0,Opt(1),length(Pdata7));  % 1x5001 vector
-[xAct,yAct,zAct] = FK(Pdata7(:,1),Pdata7(:,2),Pdata7(:,3));
-[xDes,yDes,zDes] = FK(Pdata7(:,4),Pdata7(:,5),Pdata7(:,6));
+time = linspace(0,Opt(1),length(Pdata12));  % 1x5001 vector
+[xAct,yAct,zAct] = FK(Pdata12(:,1),Pdata12(:,2),Pdata12(:,3));
+[xDes,yDes,zDes] = FK(Pdata12(:,4),Pdata12(:,5),Pdata12(:,6));
 
-Fz = Pdata7(:,9);
+Fz = Pdata12(:,9);
 
-
-xCtrl(1,:) = [ -0.0125  , -0.0336   -0.0021 ];
-xCtrl(2,:) = [  0.0560 ,  -0.0280  , -0.0010 ];
-xCtrl(3,:) = [  0.1538 ,  -0.0305  ,  0.0071 ];
-
+xCtrl(1,:) = [ -0.0185, -0.03886, -0.0021 ];
+xCtrl(2,:) = [ 0.0560, -0.0380, -0.0010 ];
+xCtrl(3,:) = [ 0.1538, -0.0375, 0.0071 ];
 
 figure; grid on; hold on;
 plot(time,Fz)
