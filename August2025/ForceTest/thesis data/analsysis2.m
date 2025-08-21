@@ -3,8 +3,8 @@ clear
 clc
 
 % Set the range of dataset numbers you want to analyze
-startData =1;
-endData = 2;
+startData = 1;
+endData = 3;
 
 % Spring constant and desired force
 k = 532.3389;
@@ -29,8 +29,8 @@ for dataNum = startData:endData
 
     % Continue using Pdata as before
     [xAct, yAct, zAct] = FK(Pdata(:,1), Pdata(:,2), Pdata(:,3));
-    [xDes, yDes, zDes] = FK(Pdata(:,10), Pdata(:,11), Pdata(:,12));
-    Fz = Pdata(:,6);
+    [xDes, yDes, zDes] = FK(Pdata(:,4), Pdata(:,5), Pdata(:,6));
+    Fz = Pdata(:,9);
 
     % Control points (static)
     xCtrl(1,:) = [ Opt(14) Opt(15) Opt(16) ];
@@ -54,7 +54,7 @@ for dataNum = startData:endData
         [~, idx] = min(distance);
         indexing(i) = idx;
         Fact(i) = Fz(idx);
-        newTarget(i) = (Fdes - Fact(i)) / k + yAct(idx);
+        newTarget(i) = (Fdes - Fact(i)) / k + xTarget(i,2);
 
         plot(time(idx), Fact(i), '*', 'MarkerSize', 10, 'LineWidth', 2)
     end
@@ -75,4 +75,3 @@ for dataNum = startData:endData
     ylabel('Y')
     zlabel('Z')
 end
-newTarget

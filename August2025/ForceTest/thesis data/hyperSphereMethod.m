@@ -1,18 +1,23 @@
 clear; clc;
 close all;
-dataNumber = 2 ;
+dataNumber = 7;
 
 %% ===== CONFIGURATION SECTION =====
 % Change these parameters to modify the number of targets and control points
 
 % Define target points (N x 3 matrix where N is number of targets)
-xTarget = [  0.01,  -0.030671551329848, 0;
-             0.035, -0.031551048633898, 0;
-             0.06,  -0.031820136307704, 0;
-             0.085, -0.032199480549392, 0;
-             0.11,  -0.032665584287012, 0];
+xTarget = [  0.01,  -0.0329, 0;
+             0.04,  -0.0324, 0;
+              0.07, -0.0295, 0;
+              0.1,  -0.0338, 0;
+              0.13, -0.0358, 0];
 
+  
 
+% xTarget = [...
+%     0.0, -0.03, 0.0;
+%     0.02, -0.03, 0.0;
+%     0.04, -0.03, 0.0];
 
 
 % Specify which targets to use as control points (indices)
@@ -22,7 +27,7 @@ controlPointIndices = [1,3, 5]; % Use first and last targets as control points
 qDes = [0, 0, 0];
 
 % Weights for optimization
-wt = [1200, 10, 0.0001]; % [Target, End, Time]
+wt = [1000, 10, 0.0001]; % [Target, End, Time]
 
 % Initial parameters
 tspan = 5;

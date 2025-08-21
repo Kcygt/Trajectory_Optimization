@@ -1,14 +1,14 @@
 % close all
 % clear 
 % clc
-load('Sdata8.mat','xTarget','Opt')
-load('Pdata10.mat')
+load('Sdata12.mat','xTarget','Opt')
+load('Pdata12.mat')
 
-time = linspace(0,Opt(1),length(Pdata10));  % 1x5001 vector
-[xAct,yAct,zAct] = FK(Pdata10(:,1),Pdata9(:,2),Pdata9(:,3));
-[xDes,yDes,zDes] = FK(Pdata9(:,4),Pdata9(:,5),Pdata9(:,6));
+time = linspace(0,Opt(1),length(Pdata12));  % 1x5001 vector
+[xAct,yAct,zAct] = FK(Pdata12(:,1),Pdata12(:,2),Pdata12(:,3));
+[xDes,yDes,zDes] = FK(Pdata12(:,4),Pdata12(:,5),Pdata12(:,6));
 
-Fz = Pdata9(:,9);
+Fz = Pdata12(:,9);
 
 xCtrl(1,:) = [ -0.0185, -0.03886, -0.0021 ];
 xCtrl(2,:) = [ 0.0560, -0.0380, -0.0010 ];

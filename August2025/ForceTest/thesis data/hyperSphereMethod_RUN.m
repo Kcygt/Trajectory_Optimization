@@ -16,11 +16,23 @@ wn1   = [ 2.2173, 3.3822, 1.5977 ];
 wn2   = [ 2.5729, 1.8243, 2.2975 ];
 wn3   = [ 3.5356, 1.6036, 2.2264 ];
 wn4   = [ 5.4805, 5.3693, 5.5996 ];
-xCtrl(1,:) = [ -0.0125, -0.0336, -0.0021 ];
-xCtrl(2,:) = [ 0.0560, -0.0280, -0.0010 ];
-xCtrl(3,:) = [ 0.1538, -0.0305, 0.0071 ];
+% p9
+xCtrl(1,:) = [ -0.0185, -0.03886, -0.0021 ];
+xCtrl(2,:) = [ 0.0560, -0.0380, -0.0010 ];
+xCtrl(3,:) = [ 0.1538, -0.0375, 0.0071 ];
+% 10
+xCtrl(1,:) = [ -0.0185, -0.03886, -0.0021 ];
+xCtrl(2,:) = [ 0.0560, -0.0380, -0.0010 ];
+xCtrl(3,:) = [ 0.1538, -0.0425, 0.0071 ];
+% 11
+xCtrl(1,:) = [ -0.0185, -0.03886, -0.0021 ];
+xCtrl(2,:) = [ 0.0560, -0.0380, -0.0010 ];
+xCtrl(3,:) = [ 0.1538, -0.0465, 0.0071 ];
 
-
+% 12
+xCtrl(1,:) = [ -0.0185, -0.03886, -0.0021 ];
+xCtrl(2,:) = [ 0.0560, -0.0380, -0.0010 ];
+xCtrl(3,:) = [ 0.1538, -0.0495, 0.0071 ];
 % Specify which targets to use as control points (indices)
 controlPointIndices = [1,3, 5]; % Use first and last targets as control points
 
@@ -68,15 +80,8 @@ qDes = [qCtrl; qDes];
 xFinal = [Px, Py, Pz];
 
 % Build initial parameter vector
-initPrms = [tspan];
-% Add wn parameters for each phase (numControlPoints + 1 phases total)
-for i = 1:(numControlPoints + 1)
-    initPrms = [initPrms, wn1,wn2,w];
-end
-% Add control point parameters
-for i = 1:numControlPoints
-    initPrms = [initPrms, xCtrl(i,:)];
-end
+
+initPrms = [tspan, wn1,wn2,wn3,wn4,xCtrl(1,:),xCtrl(2,:),xCtrl(3,:)];
 
 % Simulation
 t_uniform = 0:0.001:tspan;
