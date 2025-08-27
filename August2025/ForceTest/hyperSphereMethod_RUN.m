@@ -43,8 +43,14 @@ qDes = [0, 0, 0];
 wt = [1000, 10, 0.0001]; % [Target, End, Time]
 
 % Initial parameters
-tspan = 5;
-% Define wn parameters for each phase (one for each control point + one for final phase)
+tspan = 3.4877;
+wn1   = [ 2.5913, 5.7849, 2.9558 ];
+wn2   = [ 9.1684, 8.6364, 6.2232 ];
+wn3   = [ 8.1015, 9.7757, 8.9940 ];
+wn4   = [ 4.3301, 9.6705, 8.4473 ];
+xCtrl(1,:) = [ 0.0204, -0.0330, 0.0008 ];
+xCtrl(2,:) = [ 0.0550, -0.0296, -0.0006 ];
+xCtrl(3,:) = [ 0.0750, -0.0260, 0.0250 ];% Define wn parameters for each phase (one for each control point + one for final phase)
 wnValues = [2, 2, 2]; % Base wn values for each phase
 
 % Optimization parameters

@@ -3,8 +3,8 @@ clear
 clc
 
 % Set the range of dataset numbers you want to analyze
-startData = 1;
-endData = 3;
+startData = 4;
+endData = 8;
 
 % Spring constant and desired force
 k = 532.3389;

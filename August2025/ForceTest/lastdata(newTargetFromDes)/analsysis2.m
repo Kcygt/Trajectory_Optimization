@@ -3,12 +3,15 @@ clear
 clc
 
 % Set the range of dataset numbers you want to analyze
-startData =1;
-endData = 1;
+startData = 1;
+endData = 4;
 
 % Spring constant and desired force
-k = 532.3389;
-Fdes = -2;
+k = 222.9073;
+Fdes = -1;
+avg_diff = zeros(7,1);
+
+diffPos = zeros(5, endData);
 
 for dataNum = startData:endData
     % Build file and variable names
@@ -30,33 +33,38 @@ for dataNum = startData:endData
     % Continue using Pdata as before
     [xAct, yAct, zAct] = FK(Pdata(:,1), Pdata(:,2), Pdata(:,3));
     [xDes, yDes, zDes] = FK(Pdata(:,10), Pdata(:,11), Pdata(:,12));
-    Fxyz = Pdata(:,4:6);
+    Fz = Pdata(:,6);
+   
+
 
     % Control points (static)
     xCtrl(1,:) = [ Opt(14) Opt(15) Opt(16) ];
-    xCtrl(2,:) = [Opt(17) Opt(18) Opt(19)];
+    xCtrl(2,:) = [ Opt(17) Opt(18) Opt(19)];
     xCtrl(3,:) = [ Opt(20) Opt(21) Opt(22) ];
 
     % Plot force vs time
     figure; grid on; hold on;
-    plot(time, Fxyz)
+    plot(time,Fz)
     title(['Force vs Time for Dataset ', num2str(dataNum)])
     xlabel('Time [s]')
     ylabel('Fz [N]')
 
     % Process targets
     indexing = zeros(size(xTarget,1), 1);
-    FNormal = zeros(size(xTarget,1), 1);
+    Fact = zeros(size(xTarget,1), 1);
     newTarget = zeros(size(xTarget,1), 1);
-
     for i = 1:size(xTarget, 1)
         distance = sqrt((xAct - xTarget(i,1)).^2 + (yAct - xTarget(i,2)).^2 + (zAct - xTarget(i,3)).^2);
         [~, idx] = min(distance);
         indexing(i) = idx;
-        FNormal(i) =  sqrt((Fxyz(idx,1)).^2 + (Fxyz(idx,2)).^2 + (Fxyz(idx,3)).^2);
-        newTarget(i) = (Fdes - FNormal(i)) / k + xTarget(i,2);
+        Fact(i) = Fz(idx);
+        % newTarget(i) = (Fdes - Fact(i)) / k + yAct(idx);
+        % newTarget(i) = (Fdes - Fact(i)) / k + xTarget(i,2);
+        newTarget(i) = (Fdes - Fact(i)) / k + yDes(idx);
 
-        plot(time(idx), FNormal(i), '*', 'MarkerSize', 10, 'LineWidth', 2)
+        plot(time(idx), Fact(i), '*', 'MarkerSize', 10, 'LineWidth', 2)
+        diffPos(i,dataNum) = yDes(indexing(i),1) - yAct(indexing(i),1);
+        
     end
 
     % Plot 3D trajectories
@@ -74,5 +82,8 @@ for dataNum = startData:endData
     xlabel('X')
     ylabel('Y')
     zlabel('Z')
+    
+
 end
 newTarget
+

@@ -1,16 +1,16 @@
 clear; clc;
 close all;
-dataNumber = 8;
+dataNumber = 1;
 
 %% ===== CONFIGURATION SECTION =====
 % Change these parameters to modify the number of targets and control points
 
 % Define target points (N x 3 matrix where N is number of targets)
-xTarget = [  0.02, -0.028589325001923, 0;
-             0.05, -0.026427096930665, 0;
-             0.08, -0.025328177065334, 0;
-             0.11, -0.031706834113572, 0;
-             0.14, -0.034529954240469, 0];
+xTarget = [  0.01,  -0.03, 0;
+             0.02, -0.03, 0;
+             0.03,  -0.03, 0;
+             0.04, -0.03, 0;
+             0.05,   -0.03, 0];
 
 
 
@@ -62,7 +62,7 @@ qDes = [qCtrl; qDes];
 xFinal = [Px, Py, Pz];
 
 % Build initial parameter vector
-initPrms = tspan;
+initPrms = [tspan];
 % Add wn parameters for each phase (numControlPoints + 1 phases total)
 for i = 1:(numControlPoints + 1)
     initPrms = [initPrms, wnValues];
