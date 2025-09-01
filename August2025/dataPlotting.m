@@ -1,6 +1,6 @@
 close all
 % publish('plottingData.m', 'html');
-for i = 5:5
+for i = 6:7
     % Construct filenames
     PdataFile = sprintf('Pdata%d.mat', i);
     SdataFile = sprintf('Sdata%d.mat', i);
@@ -165,14 +165,14 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     
     % Desired Position and Trajectories
     if hasSdata
-        hDesired = plot3(SxDes, SyDes, SzDes, 'b', 'LineWidth', 2, 'DisplayName', 'Desired Position');
+        hDesired = plot3(SxDes, SyDes, SzDes, 'g', 'LineWidth', 2, 'DisplayName', 'Desired Position');
         hSim     = plot3(SxAct, SyAct, SzAct, 'r', 'LineWidth', 2, 'DisplayName', 'Simulation Trajectory');
         plotHandles = [plotHandles, hDesired, hSim];
         plotLabels = [plotLabels, {'Desired Position', 'Simulation Trajectory'}];
     end
     
     if hasPdata
-        hPhantom = plot3(PxAct, PyAct, PzAct, 'g', 'LineWidth', 2, 'DisplayName', 'Phantom Trajectory');
+        hPhantom = plot3(PxAct, PyAct, PzAct, 'k--', 'LineWidth', 2, 'DisplayName', 'Phantom Trajectory');
         plotHandles = [plotHandles, hPhantom];
         plotLabels = [plotLabels, {'Phantom Trajectory'}];
     end

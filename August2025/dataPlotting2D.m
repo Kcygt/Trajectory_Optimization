@@ -1,6 +1,6 @@
 close all
 % publish('plottingData.m', 'html');
-for i = 1:3
+for i = 6:7
     % Construct filenames
     PdataFile = sprintf('Pdata%d.mat', i);
     SdataFile = sprintf('Sdata%d.mat', i);
@@ -165,29 +165,29 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
                   'DisplayName', 'Start Point');
     text(0 + 0.002, 0 + 0.006, 'Start', 'FontSize', 9, 'FontWeight', 'bold', 'Color', colors(2,:));
     
-    hEnd = plot(Sdata.xFinal(1), Sdata.xFinal(3), 's', 'LineWidth', 2, 'MarkerSize', 6, ...
+    hEnd = plot(Sdata.xFinal(2), Sdata.xFinal(3), 's', 'LineWidth', 2, 'MarkerSize', 6, ...
                 'MarkerEdgeColor', colors(2,:), 'MarkerFaceColor', colors(2,:), ...
                 'DisplayName', 'End Point');
-    text(Sdata.xFinal(1) + 0.002, Sdata.xFinal(3) + 0.002, 'End', 'FontSize', 9, 'FontWeight', 'bold', 'Color', colors(2,:));
+    text(Sdata.xFinal(2) + 0.002, Sdata.xFinal(3) + 0.002, 'End', 'FontSize', 9, 'FontWeight', 'bold', 'Color', colors(2,:));
     plotHandles = [plotHandles, hStart, hEnd];
     plotLabels = [plotLabels, {'Start Point', 'End Point'}];
     
     % Desired Position and Trajectories
     if hasSdata
         % hDesired = plot(SxDes, SzDes, 'b', 'LineWidth', 1.5, 'DisplayName', 'Desired Position');
-        hSim     = plot(SxAct, SzAct, 'Color', colors(5,:),'LineWidth', 1.5, 'DisplayName', 'Simulation Trajectory');
+        hSim     = plot(SyAct, SzAct, 'Color', colors(5,:),'LineWidth', 1.5, 'DisplayName', 'Simulation Trajectory');
         plotHandles = [plotHandles,  hSim];
         plotLabels = [plotLabels, {'Simulation Trajectory'}];
     end
     
     if hasPdata
-        hPhantom = plot(PxAct, PzAct, 'k--', 'LineWidth', 1.5, 'DisplayName', 'Phantom Trajectory');
+        hPhantom = plot(PyAct, PzAct, 'k--', 'LineWidth', 1.5, 'DisplayName', 'Phantom Trajectory');
         plotHandles = [plotHandles, hPhantom];
         plotLabels = [plotLabels, {'Phantom Trajectory'}];
     end
     
     if hasGdata
-        hGain = plot(GxAct, GzAct, 'm', 'LineWidth', 2, 'DisplayName', 'Gain Trajectory');
+        hGain = plot(GyAct, GzAct, 'm', 'LineWidth', 2, 'DisplayName', 'Gain Trajectory');
         plotHandles = [plotHandles, hGain];
         plotLabels = [plotLabels, {'Gain Trajectory'}];
     end
@@ -198,12 +198,12 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
         targetLabels = cell(nTargets,1);
         for k = 1:nTargets
             % Plot target point
-            targetHandles(k) = plot(xTarget(k,1), xTarget(k,3), 'o', ...
+            targetHandles(k) = plot(xTarget(k,2), xTarget(k,3), 'o', ...
                 'MarkerSize', 6, 'MarkerEdgeColor', colors(4,:), 'MarkerFaceColor', colors(4,:), ...
                 'DisplayName', sprintf('Target Point %d', k));
             
             % Add text label next to the target
-            text(xTarget(k,1)+0.002, xTarget(k,3)+0.002, ...   % slight offset
+            text(xTarget(k,2)+0.002, xTarget(k,3)+0.002, ...   % slight offset
                  sprintf('Target %d', k), ...                        % label text
                  'FontSize', 9, ...
                  'FontWeight', 'bold', ...
@@ -218,7 +218,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     % Optional: Plot Control Points if they exist
     if hasSdata && isfield(Sdata, 'xCtrl')
         xCtrl = Sdata.xCtrl;
-        hCtrl = plot(xCtrl(:,1), xCtrl(:,3), 's', 'LineWidth', 1.5, ...
+        hCtrl = plot(xCtrl(:,2), xCtrl(:,3), 's', 'LineWidth', 1.5, ...
             'MarkerSize', 6, 'DisplayName', 'Control Points');
         ctrlLabel = {'Control Points'};
         ctrlHandles = hCtrl;
@@ -275,25 +275,19 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
             subplotLabels = {};
             
             if hasPdata
-                plot(Ptime, PqAct(:,i), 'r-', 'LineWidth', 1.2);    % Phantom Actual
-                subplotHandles(end+1) = plot(Ptime, PqAct(:,i), 'r-', 'LineWidth', 1.2);
-                subplotLabels{end+1} = 'Phantom Actual';
+                subplotHandles(end+1) = plot(Ptime, PqAct(:,i), '-', 'LineWidth', 1.2, 'Color', colors(1,:), 'DisplayName', 'Phantom Actual');
             end
             
             if hasSdata
-                plot(Stime, SqDes(:,i), 'g-', 'LineWidth', 1.2);    % Simulation Desired
-                plot(Stime, SqAct(:,i), 'b-', 'LineWidth', 1.2);    % Simulation Actual
-                subplotHandles(end+1) = plot(Stime, SqDes(:,i), 'g-', 'LineWidth', 1.2);
-                subplotHandles(end+1) = plot(Stime, SqAct(:,i), 'b-', 'LineWidth', 1.2);
-                % subplotLabels{end+1} = 'Simulation Desired';
-                subplotLabels{end+1} = 'Simulation Actual';
+                % subplotHandles(end+1) = plot(Stime, SqDes(:,i), '-', 'LineWidth', 1.2, 'Color', colors(2,:), 'DisplayName', 'Simulation Desired');
+                subplotHandles(end+1) = plot(Stime, SqAct(:,i), '-', 'LineWidth', 1.2, 'Color', colors(3,:), 'DisplayName', 'Simulation Actual');
             end
             
             if hasGdata
-                plot(Gtime, GqAct(:,i), 'm-', 'LineWidth', 1.2);    % Gain Actual
-                subplotHandles(end+1) = plot(Gtime, GqAct(:,i), 'm-', 'LineWidth', 1.2);
-                subplotLabels{end+1} = 'Gain Actual';
+                subplotHandles(end+1) = plot(Gtime, GqAct(:,i), '-', 'LineWidth', 1.2, 'Color', colors(4,:), 'DisplayName', 'Gain Actual');
             end
+
+
 
             title(sprintf('Joint %d Position', i));
             if i == 3, xlabel('Time'); end
@@ -316,25 +310,18 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
             subplotLabels = {};
             
             if hasPdata
-                plot(Ptime, PqdAct(:,i), 'r-', 'LineWidth', 1.2);    % Phantom Actual
-                subplotHandles(end+1) = plot(Ptime, PqdAct(:,i), 'r-', 'LineWidth', 1.2);
-                subplotLabels{end+1} = 'Phantom Actual';
+                subplotHandles(end+1) = plot(Ptime, PqdAct(:,i), '-', 'LineWidth', 1.2, 'Color', colors(1,:), 'DisplayName', 'Phantom Actual');
             end
             
             if hasSdata
-                plot(Stime, SqdDes(:,i), 'g-', 'LineWidth', 1.2);    % Simulation Desired
-                plot(Stime, SqdAct(:,i), 'b-', 'LineWidth', 1.2);    % Simulation Actual
-                subplotHandles(end+1) = plot(Stime, SqdDes(:,i), 'g-', 'LineWidth', 1.2);
-                subplotHandles(end+1) = plot(Stime, SqdAct(:,i), 'b-', 'LineWidth', 1.2);
-                % subplotLabels{end+1} = 'Simulation Desired';
-                subplotLabels{end+1} = 'Simulation Actual';
+                % subplotHandles(end+1) = plot(Stime, SqdDes(:,i), '-', 'LineWidth', 1.2, 'Color', colors(2,:), 'DisplayName', 'Simulation Desired');
+                subplotHandles(end+1) = plot(Stime, SqdAct(:,i), '-', 'LineWidth', 1.2, 'Color', colors(3,:), 'DisplayName', 'Simulation Actual');
             end
             
             if hasGdata
-                plot(Gtime, GqdAct(:,i), 'm-', 'LineWidth', 1.2);    % Gain Actual
-                subplotHandles(end+1) = plot(Gtime, GqdAct(:,i), 'm-', 'LineWidth', 1.2);
-                subplotLabels{end+1} = 'Gain Actual';
+                subplotHandles(end+1) = plot(Gtime, GqdAct(:,i), '-', 'LineWidth', 1.2, 'Color', colors(4,:), 'DisplayName', 'Gain Actual');
             end
+
 
             title(sprintf('Joint %d Velocity', i));
             if i == 3, xlabel('Time'); end

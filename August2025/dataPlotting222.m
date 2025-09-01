@@ -1,0 +1,692 @@
+close all
+% publish('plottingData.m', 'html');
+colors = lines(7);  % 7 default colors
+
+for i = 6:6
+    % Construct filenames
+    PdataFile = sprintf('Pdata%d.mat', i);
+    SdataFile = sprintf('Sdata%d.mat', i);
+    GdataFile = sprintf('Gdata%d.mat', i);
+    
+    % Check which files exist
+    hasPdata = exist(PdataFile, 'file');
+    hasSdata = exist(SdataFile, 'file');
+    hasGdata = exist(GdataFile, 'file');
+    
+    % Only proceed if at least one file exists
+    if hasPdata || hasSdata || hasGdata
+        % Load available data
+        if hasPdata
+            Pdata = load(PdataFile);
+            fprintf('Loaded: %s\n', PdataFile);
+        else
+            Pdata = [];
+            fprintf('Missing: %s\n', PdataFile);
+        end
+        
+        if hasSdata
+            Sdata = load(SdataFile);
+            fprintf('Loaded: %s\n', SdataFile);
+        else
+            Sdata = [];
+            fprintf('Missing: %s\n', SdataFile);
+        end
+        
+        if hasGdata
+            Gdata = load(GdataFile);
+            fprintf('Loaded: %s\n', GdataFile);
+        else
+            Gdata = [];
+            fprintf('Missing: %s\n', GdataFile);
+        end
+        
+        % Call plotting function with available data
+        plotPhantomSimulation(Pdata, Sdata, Gdata, sprintf('DataSet%d', i));
+    else
+        fprintf('Skipping dataset %d - no data files exist\n', i);
+    end
+end
+
+function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
+    colors = lines(7);     % make palette visible here
+
+    % Initialize flags for available data
+    hasPdata = ~isempty(Pdata);
+    hasSdata = ~isempty(Sdata);
+    hasGdata = ~isempty(Gdata);
+    
+    % Phantom Desired and Actual 
+    if hasPdata
+        PqDes = Pdata.Pdata(:,1:3);
+        PqdDes = Pdata.Pdata(:,4:6);
+        PqAct = Pdata.Pdata(:,7:9);
+        PqdAct = Pdata.Pdata(:,10:12);
+    end
+
+    % Extract data
+    if hasSdata
+        Stime = Sdata.tOpt;
+        if hasPdata
+            Ptime = linspace(0, Stime(end), length(PqAct));
+        end
+    end
+    
+    if hasGdata
+        Gtime = Gdata.Hys;
+    end
+
+    % Simulation Desired and Actual 
+    if hasSdata
+        SqDes = Sdata.yOpt(:,1:3);
+        SqdDes = Sdata.yOpt(:,4:6);
+        SqAct = Sdata.yOpt(:,7:9);
+        SqdAct = Sdata.yOpt(:,10:12);
+    end
+    
+    % Gain Data
+    if hasGdata
+        GqDes = Gdata.yOut1(:,1:3);
+        GqdDes = Gdata.yOut1(:,4:6);
+        GqAct = Gdata.yOut1(:,7:9);
+        GqdAct = Gdata.yOut1(:,10:12);
+    end
+
+    % Get target points if available
+    if hasSdata
+        xTarget = Sdata.xTarget;
+    else
+        xTarget = [];
+    end
+    
+    % Calculate FK for available data
+    if hasSdata
+        [SxDes,SyDes,SzDes] = FK(SqDes(:,1),SqDes(:,2),SqDes(:,3));
+        [SxAct,SyAct,SzAct] = FK(SqAct(:,1),SqAct(:,2),SqAct(:,3));
+    end
+    
+    if hasPdata
+        [PxAct,PyAct,PzAct] = FK(PqAct(:,1),PqAct(:,2),PqAct(:,3));
+    end
+    
+    if hasGdata
+        [GxDes,GyDes,GzDes] = FK(GqDes(:,1),GqDes(:,2),GqDes(:,3));
+        [GxAct,GyAct,GzAct] = FK(GqAct(:,1),GqAct(:,2),GqAct(:,3));
+    end
+
+    % --- Calculate number of target points ---
+    if ~isempty(xTarget)
+        nTargets = size(xTarget, 1);  % Number of target points
+        
+        % --- Initialize distance arrays ---
+        TargetMinSim = zeros(nTargets, 1);
+        TargetMinPthm = zeros(nTargets, 1);
+        TargetMinGain = zeros(nTargets, 1);
+        
+        % --- Compute minimum distances to each target point ---
+        for i = 1:nTargets
+            % Simulation trajectory vs target
+            if hasSdata
+                diffsSim = [SxAct, SyAct, SzAct] - xTarget(i, :);
+                TargetMinSim(i) = min(sqrt(sum(diffsSim.^2, 2)));
+            end
+        
+            % Phantom trajectory vs target
+            if hasPdata
+                diffsPthm = [PxAct, PyAct, PzAct] - xTarget(i, :);
+                TargetMinPthm(i) = min(sqrt(sum(diffsPthm.^2, 2)));
+            end
+
+            % Gain trajectory vs target
+            if hasGdata
+                diffsGain = [GxAct, GyAct, GzAct] - xTarget(i, :);
+                TargetMinGain(i) = min(sqrt(sum(diffsGain.^2, 2)));
+            end
+        end
+    else
+        nTargets = 0;
+        TargetMinSim = [];
+        TargetMinPthm = [];
+        TargetMinGain = [];
+    end
+
+
+
+
+
+
+
+
+% --- Begin Plotting ---
+fig1 = figure; hold on; grid on; view(3);
+
+% Initialize plot handles and labels
+plotHandles = gobjects(0);
+plotLabels = {};
+
+% --- Compute projection wall (Ymax for opposite wall) ---
+Ymax = 0;
+if hasSdata, Ymax = max([Ymax; SyAct]); end
+if hasPdata, Ymax = max([Ymax; PyAct]); end
+if hasGdata, Ymax = max([Ymax; GyAct]); end
+if ~isempty(xTarget), Ymax = max([Ymax; xTarget(:,2)]); end
+
+% Start and End Points
+hStart = plot3(0, 0, 0, 'o', 'LineWidth', 2, 'MarkerSize', 5, 'DisplayName', 'Start Point');
+hEnd   = plot3(Sdata.xFinal(1), Sdata.xFinal(2), Sdata.xFinal(3), 'o', 'LineWidth', 2, 'MarkerSize', 5, 'DisplayName', 'End Point');
+plotHandles = [plotHandles, hStart, hEnd];
+plotLabels = [plotLabels, {'Start Point', 'End Point'}];
+
+% --- End Point projections ---
+plot3(Sdata.xFinal(1), Sdata.xFinal(2), 0, 'o', 'MarkerSize', 5, 'Color', 'r');       % XY
+plot3(0, Sdata.xFinal(2), Sdata.xFinal(3), 'o', 'MarkerSize', 5, 'Color', 'r');       % YZ
+plot3(Sdata.xFinal(1), Ymax, Sdata.xFinal(3), 'o', 'MarkerSize', 5, 'Color', 'r');    % XZ (opposite wall)
+
+% Initial straight line
+hInitial = plot3([0 Sdata.xFinal(1)], [0 Sdata.xFinal(2)], [0 Sdata.xFinal(3)], ...
+    '--', 'Color', colors(3,:), 'LineWidth', 1.5, 'DisplayName','Initial Trajectory');
+plotHandles = [plotHandles, hInitial];
+plotLabels = [plotLabels, {'Initial Trajectory'}];
+
+% --- Simulation Actual Trajectory ---
+if hasSdata
+    hSim = plot3(SxAct, SyAct, SzAct, 'LineWidth',2, 'Color', colors(6,:), 'DisplayName','Simulation Trajectory');    
+    plotHandles = [plotHandles, hSim];
+    plotLabels = [plotLabels, {'Simulation Trajectory'}];
+
+    % Projections (XY, YZ, and XZ wall)
+    plot3(SxAct, SyAct, zeros(size(SzAct)), ':', 'Color', colors(6,:));         % XY plane
+    plot3(zeros(size(SxAct)), SyAct, SzAct, ':', 'Color', colors(6,:));        % YZ plane
+    plot3(SxAct, Ymax*ones(size(SxAct)), SzAct, ':', 'Color', colors(6,:));    % XZ plane (opposite wall)
+end
+
+% --- Phantom Actual Trajectory ---
+if hasPdata
+    hPhantom = plot3(PxAct, PyAct, PzAct, 'k--', 'LineWidth', 2, 'DisplayName', 'Phantom Trajectory');
+    plotHandles = [plotHandles, hPhantom];
+    plotLabels = [plotLabels, {'Phantom Trajectory'}];
+
+    plot3(PxAct, PyAct, zeros(size(PzAct)), 'k:');               % XY
+    plot3(zeros(size(PxAct)), PyAct, PzAct, 'k:');              % YZ
+    plot3(PxAct, Ymax*ones(size(PxAct)), PzAct, 'k:');          % XZ wall
+end
+
+% --- Gain Actual Trajectory ---
+if hasGdata
+    hGain = plot3(GxAct, GyAct, GzAct, 'm', 'LineWidth', 2, 'DisplayName', 'Gain Trajectory');
+    plotHandles = [plotHandles, hGain];
+    plotLabels = [plotLabels, {'Gain Trajectory'}];
+
+    plot3(GxAct, GyAct, zeros(size(GzAct)), 'm:');               % XY
+    plot3(zeros(size(GxAct)), GyAct, GzAct, 'm:');              % YZ
+    plot3(GxAct, Ymax*ones(size(GxAct)), GzAct, 'm:');          % XZ wall
+end
+
+% --- Target Points ---
+if ~isempty(xTarget)
+    for k = 1:nTargets
+        % 3D point
+        hTarget3D = plot3(xTarget(k,1), xTarget(k,2), xTarget(k,3), 'h', ...
+            'MarkerSize',12, 'MarkerEdgeColor', colors(7,:), 'MarkerFaceColor', colors(7,:), ...
+            'DisplayName', sprintf('Target Point %d', k));
+        
+        % XY projection
+        hTargetXY = plot3(xTarget(k,1), xTarget(k,2), 0, 'h', 'MarkerSize', 8, ...
+            'MarkerEdgeColor', colors(7,:), 'MarkerFaceColor', colors(7,:));
+        
+        % YZ projection
+        hTargetYZ = plot3(0, xTarget(k,2), xTarget(k,3), 'h', 'MarkerSize', 8, ...
+            'MarkerEdgeColor', colors(7,:), 'MarkerFaceColor', colors(7,:));
+        
+        % XZ projection (wall at Y=Ymax)
+        hTargetXZ = plot3(xTarget(k,1), Ymax, xTarget(k,3), 'h', 'MarkerSize', 8, ...
+            'MarkerEdgeColor', colors(7,:), 'MarkerFaceColor', colors(7,:));
+        
+        % Add only the 3D point to legend
+        plotHandles = [plotHandles, hTarget3D];
+        plotLabels  = [plotLabels, {sprintf('Target Point %d', k)}];
+    end
+end
+
+
+% --- Axis Labels and Title ---
+xlabel('X axis (m)');
+ylabel('Y axis (m)');
+zlabel('Z axis (m)');
+title('3D Cartesian Space Position with XY, YZ & XZ Projections');
+
+legend(plotHandles, plotLabels, 'Location', 'eastoutside');
+
+
+
+
+
+
+
+
+
+%% --- Joint Position Figure ---
+if hasPdata || hasSdata || hasGdata
+    fig2 = figure;
+    for i = 1:3
+        subplot(3,1,i); grid on; hold on;
+
+        subplotHandles = [];
+        subplotLabels = {};
+
+        if hasPdata
+            hP = plot(Ptime, PqAct(:,i), '-', 'Color', colors(1,:), 'LineWidth', 1.2);
+            subplotHandles(end+1) = hP;
+            subplotLabels{end+1} = 'Phantom Actual';
+        end
+
+        if hasSdata
+            hS = plot(Stime, SqAct(:,i), '-', 'Color', colors(2,:), 'LineWidth', 1.2);
+            subplotHandles(end+1) = hS;
+            subplotLabels{end+1} = 'Simulation Actual';
+        end
+
+        if hasGdata
+            hG = plot(Gtime, GqAct(:,i), '-', 'Color', colors(3,:), 'LineWidth', 1.2);
+            subplotHandles(end+1) = hG;
+            subplotLabels{end+1} = 'Gain Actual';
+        end
+
+        title(sprintf('Joint %d Position', i));
+        if i == 3, xlabel('Time'); end
+        ylabel('Position (rad)');
+        legend(subplotHandles, subplotLabels);
+    end
+end
+
+%% --- Joint Velocity Figure ---
+if hasPdata || hasSdata || hasGdata
+    fig3 = figure;
+    for i = 1:3
+        subplot(3,1,i); grid on; hold on;
+
+        subplotHandles = [];
+        subplotLabels = {};
+
+        if hasPdata
+            hP = plot(Ptime, PqdAct(:,i), '-', 'Color', colors(1,:), 'LineWidth', 1.2);
+            subplotHandles(end+1) = hP;
+            subplotLabels{end+1} = 'Phantom Actual';
+        end
+
+        if hasSdata
+            hS = plot(Stime, SqdAct(:,i), '-', 'Color', colors(2,:), 'LineWidth', 1.2);
+            subplotHandles(end+1) = hS;
+            subplotLabels{end+1} = 'Simulation Actual';
+        end
+
+        if hasGdata
+            hG = plot(Gtime, GqdAct(:,i), '-', 'Color', colors(3,:), 'LineWidth', 1.2);
+            subplotHandles(end+1) = hG;
+            subplotLabels{end+1} = 'Gain Actual';
+        end
+
+        title(sprintf('Joint %d Velocity', i));
+        if i == 3, xlabel('Time'); end
+        ylabel('Velocity (rad/s)');
+        legend(subplotHandles, subplotLabels);
+    end
+end
+
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+% close all
+% % publish('plottingData.m', 'html');
+% colors = lines(7);  % 7 default colors
+% 
+% for i = 1:1
+%     % Construct filenames
+%     PdataFile = sprintf('Pdata%d.mat', i);
+%     SdataFile = sprintf('Sdata%d.mat', i);
+%     GdataFile = sprintf('Gdata%d.mat', i);
+% 
+%     % Check which files exist
+%     hasPdata = exist(PdataFile, 'file');
+%     hasSdata = exist(SdataFile, 'file');
+%     hasGdata = exist(GdataFile, 'file');
+% 
+%     % Only proceed if at least one file exists
+%     if hasPdata || hasSdata || hasGdata
+%         % Load available data
+%         if hasPdata
+%             Pdata = load(PdataFile);
+%             fprintf('Loaded: %s\n', PdataFile);
+%         else
+%             Pdata = [];
+%             fprintf('Missing: %s\n', PdataFile);
+%         end
+% 
+%         if hasSdata
+%             Sdata = load(SdataFile);
+%             fprintf('Loaded: %s\n', SdataFile);
+%         else
+%             Sdata = [];
+%             fprintf('Missing: %s\n', SdataFile);
+%         end
+% 
+%         if hasGdata
+%             Gdata = load(GdataFile);
+%             fprintf('Loaded: %s\n', GdataFile);
+%         else
+%             Gdata = [];
+%             fprintf('Missing: %s\n', GdataFile);
+%         end
+% 
+%         % Call plotting function with available data
+%         plotPhantomSimulation(Pdata, Sdata, Gdata, sprintf('DataSet%d', i));
+%     else
+%         fprintf('Skipping dataset %d - no data files exist\n', i);
+%     end
+% end
+% 
+% function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
+%     colors = lines(7);     % <— make palette visible here
+% 
+%     % Initialize flags for available data
+%     hasPdata = ~isempty(Pdata);
+%     hasSdata = ~isempty(Sdata);
+%     hasGdata = ~isempty(Gdata);
+% 
+%     % Phantom Desired and Actual 
+%     if hasPdata
+%         PqDes = Pdata.Pdata(:,1:3);
+%         PqdDes = Pdata.Pdata(:,4:6);
+%         PqAct = Pdata.Pdata(:,7:9);
+%         PqdAct = Pdata.Pdata(:,10:12);
+%     end
+% 
+%     % Extract data
+%     if hasSdata
+%         Stime = Sdata.tOpt;
+%         if hasPdata
+%             Ptime = linspace(0, Stime(end), length(PqAct));
+%         end
+%     end
+% 
+%     if hasGdata
+%         Gtime = Gdata.Hys;
+%     end
+% 
+%     % Simulation Desired and Actual 
+%     if hasSdata
+%         SqDes = Sdata.yOpt(:,1:3);
+%         SqdDes = Sdata.yOpt(:,4:6);
+%         SqAct = Sdata.yOpt(:,7:9);
+%         SqdAct = Sdata.yOpt(:,10:12);
+%     end
+% 
+%     % Gain Data
+%     if hasGdata
+%         GqDes = Gdata.yOut1(:,1:3);
+%         GqdDes = Gdata.yOut1(:,4:6);
+%         GqAct = Gdata.yOut1(:,7:9);
+%         GqdAct = Gdata.yOut1(:,10:12);
+%     end
+% 
+% 
+% 
+%     % Get target points if available
+%     if hasSdata
+%         xTarget = Sdata.xTarget;
+%     else
+%         xTarget = [];
+%     end
+% 
+%     % Calculate FK for available data
+%     if hasSdata
+%         [SxDes,SyDes,SzDes] = FK(SqDes(:,1),SqDes(:,2),SqDes(:,3));
+%         [SxAct,SyAct,SzAct] = FK(SqAct(:,1),SqAct(:,2),SqAct(:,3));
+%     end
+% 
+%     if hasPdata
+%         [PxAct,PyAct,PzAct] = FK(PqAct(:,1),PqAct(:,2),PqAct(:,3));
+%     end
+% 
+%     if hasGdata
+%         [GxDes,GyDes,GzDes] = FK(GqDes(:,1),GqDes(:,2),GqDes(:,3));
+%         [GxAct,GyAct,GzAct] = FK(GqAct(:,1),GqAct(:,2),GqAct(:,3));
+%     end
+% 
+% 
+% 
+%     % --- Calculate number of target points ---
+%     if ~isempty(xTarget)
+%         nTargets = size(xTarget, 1);  % Number of target points
+% 
+%         % --- Initialize distance arrays ---
+%         TargetMinSim = zeros(nTargets, 1);
+%         TargetMinPthm = zeros(nTargets, 1);
+%         TargetMinGain = zeros(nTargets, 1);
+% 
+%         % --- Compute minimum distances to each target point ---
+%         for i = 1:nTargets
+%             % Simulation trajectory vs target
+%             if hasSdata
+%                 diffsSim = [SxAct, SyAct, SzAct] - xTarget(i, :);
+%                 TargetMinSim(i) = min(sqrt(sum(diffsSim.^2, 2)));
+%             end
+% 
+%             % Phantom trajectory vs target
+%             if hasPdata
+%                 diffsPthm = [PxAct, PyAct, PzAct] - xTarget(i, :);
+%                 TargetMinPthm(i) = min(sqrt(sum(diffsPthm.^2, 2)));
+%             end
+% 
+%             % Gain trajectory vs target
+%             if hasGdata
+%                 diffsGain = [GxAct, GyAct, GzAct] - xTarget(i, :);
+%                 TargetMinGain(i) = min(sqrt(sum(diffsGain.^2, 2)));
+%             end
+%         end
+%     else
+%         nTargets = 0;
+%         TargetMinSim = [];
+%         TargetMinPthm = [];
+%         TargetMinGain = [];
+%     end
+%    % --- Begin Plotting ---
+% fig1 = figure; hold on; grid on; view(3);
+% 
+% % Initialize plot handles
+% plotHandles = [];
+% plotLabels = {};
+% 
+% % Start and End Points
+% hStart = plot3(0, 0, 0, 'o', 'LineWidth', 2, 'MarkerSize', 5, 'DisplayName', 'Start Point');
+% hEnd   = plot3(Sdata.xFinal(1), Sdata.xFinal(2), Sdata.xFinal(3), 'o', 'LineWidth', 2, 'MarkerSize', 5, 'DisplayName', 'End Point');
+% plotHandles = [plotHandles, hStart, hEnd];
+% plotLabels = [plotLabels, {'Start Point', 'End Point'}];
+% 
+% % Initial straight-line trajectory (Start to End)
+% % Initial straight line
+% hInitial = plot3([0 Sdata.xFinal(1)], [0 Sdata.xFinal(2)], [0 Sdata.xFinal(3)], ...
+%     '--', 'Color', colors(3,:), 'LineWidth', 1.5, 'DisplayName','Initial Trajectory');
+% 
+% 
+% plotHandles = [plotHandles, hInitial];
+% plotLabels = [plotLabels, {'Initial Trajectory'}];
+% 
+% % Simulation Actual Trajectory
+% if hasSdata
+%    hSim = plot3(SxAct, SyAct, SzAct, ...
+%         'LineWidth',2, 'Color', colors(6,:), 'DisplayName','Simulation Trajectory');    plotHandles = [plotHandles, hSim];
+%     plotLabels = [plotLabels, {'Simulation Trajectory'}];
+% end
+% 
+% % Phantom Actual Trajectory
+% if hasPdata
+%     hPhantom = plot3(PxAct, PyAct, PzAct, 'k--', 'LineWidth', 2, 'DisplayName', 'Phantom Trajectory');
+%     plotHandles = [plotHandles, hPhantom];
+%     plotLabels = [plotLabels, {'Phantom Trajectory'}];
+% end
+% 
+% % Gain Actual Trajectory
+% if hasGdata
+%     hGain = plot3(GxAct, GyAct, GzAct, 'm', 'LineWidth', 2, 'DisplayName', 'Gain Trajectory');
+%     plotHandles = [plotHandles, hGain];
+%     plotLabels = [plotLabels, {'Gain Trajectory'}];
+% end
+% 
+% % Target Points
+% if ~isempty(xTarget)
+%     targetHandles = gobjects(nTargets,1);
+%     targetLabels = cell(nTargets,1);
+%     for k = 1:nTargets
+%         % Plot target point
+%         targetHandles(k) = plot3(xTarget(k,1), xTarget(k,2), xTarget(k,3), 'p', ...
+%             'MarkerSize',12, 'MarkerEdgeColor', colors(7,:), 'MarkerFaceColor', colors(7,:), ...
+%             'DisplayName', sprintf('Target Point %d', k));
+% 
+%         % Create target labels
+%         targetLabels{k} = sprintf('Target Point %d', k);
+%     end
+%     plotHandles = [plotHandles, targetHandles(:)'];
+%     plotLabels = [plotLabels, targetLabels(:)'];
+% else
+%     targetHandles = [];
+%     targetLabels = {};
+% end
+% 
+% % Control Points (Optional)
+% if hasSdata && isfield(Sdata, 'xCtrl')
+%     xCtrl = Sdata.xCtrl;
+%     hCtrl = plot3(xCtrl(:,1), xCtrl(:,2), xCtrl(:,3), 'd', 'LineWidth', 1.5, ...
+%         'MarkerSize', 6, 'DisplayName', 'Control Points');
+%     ctrlLabel = {'Control Points'};
+%     ctrlHandles = hCtrl;
+%     plotHandles = [plotHandles, ctrlHandles];
+%     plotLabels = [plotLabels, ctrlLabel];
+% else
+%     ctrlLabel = {};
+%     ctrlHandles = [];
+% end
+% 
+% % --- Create Dummy Handles for Error Info ---
+% errorHandles = [];
+% errorLabels = {};
+% 
+% if ~isempty(xTarget)
+%     for k = 1:nTargets
+%         if hasSdata
+%             errorHandles(end+1) = plot(nan, nan, 'w');  % Invisible handle for Sim error
+%             errorLabels{end+1} = sprintf('Target %d Sim Err: %.6f', k, TargetMinSim(k));
+%         end
+% 
+%         if hasPdata
+%             errorHandles(end+1) = plot(nan, nan, 'w');    % Invisible handle for Pthm error
+%             errorLabels{end+1} = sprintf('Target %d Pthm Err: %.6f', k, TargetMinPthm(k));
+%         end
+% 
+%         if hasGdata
+%             errorHandles(end+1) = plot(nan, nan, 'w');    % Invisible handle for Gain error
+%             errorLabels{end+1} = sprintf('Target %d Gain Err: %.6f', k, TargetMinGain(k));
+%         end
+%     end
+% end
+% 
+% 
+% % --- Build Full Legend ---
+% allHandles = [plotHandles, errorHandles];
+% allLabels = [plotLabels, errorLabels];
+% 
+% legend(allHandles, allLabels, 'Location', 'eastoutside');
+% 
+% % --- Axis Labels and Title ---
+% xlabel('X axis (m)');
+% ylabel('Y axis (m)');
+% zlabel('Z axis (m)');
+% title('3D Cartesian Space Position');
+% 
+% 
+%     % --- Joint Position Figure ---
+% if hasPdata || hasSdata || hasGdata
+%     fig2 = figure;
+%     for i = 1:3
+%         subplot(3,1,i); grid on; hold on;
+% 
+%         % Initialize legend entries for this subplot
+%         subplotHandles = [];
+%         subplotLabels = {};
+% 
+%         if hasPdata
+%             hP = plot(Ptime, PqAct(:,i), 'r-', 'LineWidth', 1.2);    % Phantom Actual
+%             subplotHandles(end+1) = hP;
+%             subplotLabels{end+1} = 'Phantom Actual';
+%         end
+% 
+%         if hasSdata
+%             hS = plot(Stime, SqAct(:,i), 'b-', 'LineWidth', 1.2);    % Simulation Actual
+%             subplotHandles(end+1) = hS;
+%             subplotLabels{end+1} = 'Simulation Actual';
+%         end
+% 
+%         if hasGdata
+%             hG = plot(Gtime, GqAct(:,i), 'm-', 'LineWidth', 1.2);    % Gain Actual
+%             subplotHandles(end+1) = hG;
+%             subplotLabels{end+1} = 'Gain Actual';
+%         end
+% 
+%         title(sprintf('Joint %d Position', i));
+%         if i == 3, xlabel('Time'); end
+%         ylabel('Position (rad)');
+%         legend(subplotHandles, subplotLabels);
+%     end
+% end
+% 
+% % --- Joint Velocity Figure ---
+% if hasPdata || hasSdata || hasGdata
+%     fig3 = figure;
+%     for i = 1:3
+%         subplot(3,1,i); grid on; hold on;
+% 
+%         % Initialize legend entries for this subplot
+%         subplotHandles = [];
+%         subplotLabels = {};
+% 
+%         if hasPdata
+%             hP = plot(Ptime, PqdAct(:,i), 'r-', 'LineWidth', 1.2);    % Phantom Actual
+%             subplotHandles(end+1) = hP;
+%             subplotLabels{end+1} = 'Phantom Actual';
+%         end
+% 
+%         if hasSdata
+%             hS = plot(Stime, SqdAct(:,i), 'b-', 'LineWidth', 1.2);    % Simulation Actual
+%             subplotHandles(end+1) = hS;
+%             subplotLabels{end+1} = 'Simulation Actual';
+%         end
+% 
+%         if hasGdata
+%             hG = plot(Gtime, GqdAct(:,i), 'm-', 'LineWidth', 1.2);    % Gain Actual
+%             subplotHandles(end+1) = hG;
+%             subplotLabels{end+1} = 'Gain Actual';
+%         end
+% 
+%         title(sprintf('Joint %d Velocity', i));
+%         if i == 3, xlabel('Time'); end
+%         ylabel('Velocity (rad/s)');
+%         legend(subplotHandles, subplotLabels);
+%     end
+% end
+% 
+%     % Save Joint Velocity figure as PDF
+%     % saveas(fig3, sprintf('%s_Joint_Velocity.pdf', figPrefix));
+% end
+% 
