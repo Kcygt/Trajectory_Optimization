@@ -1,18 +1,20 @@
+close all
+clear
 
-saveData = 1;
-dataNumber = 2;
+
+saveData = 1;   % Set to 1 if you want to save figures
+dataNumber = 2; % Used in filenames
+
 %% ===== CONFIGURATION SECTION =====
 numPhases = 3;  % Change this to 2, 3, 4, 5, etc.
 
 % List of baseWn cases
 baseWnCases = {
-    2.5 * [1 1 1];
-    2.5 * [1 1 2];
-    2.5 * [1 1 3];
-    2.5 * [1 1 4];
-    2.5 * [1 2 1];
-    2.5 * [1 3 1];
-    2.5 * [1 4 1];
+     [1 4 12];
+     [1 6 10];
+     [1 8 8];
+     [1 10 6];
+     [1 12 4];
 };
 
 %% ===== AUTOMATIC SETUP =====
@@ -23,7 +25,7 @@ numTargets = size(xTarget, 1);
 %% ===== PLOTTING (YZ plane with all cases) =====
 figure(1); hold on; grid on;
 xlabel('Y (m)'); ylabel('Z (m)');
-title('Comparison of Trajectories for Different Natural Frequency');
+title('Trajectories for Different Natural Frequencies');
 
 colors = lines(length(baseWnCases)); % distinct colors
 legendEntries = {};
@@ -32,7 +34,7 @@ for c = 1:length(baseWnCases)
     baseWn = baseWnCases{c};
 
     % Automatically generate tspan and wn based on numPhases
-    baseTspan = 5;
+    baseTspan = 0.7;
     if numPhases <= length(baseTspan)
         tspan = baseTspan(1:numPhases);
         wn = baseWn(1:(3*numPhases));
@@ -53,21 +55,40 @@ for c = 1:length(baseWnCases)
 
     % Extract trajectory
     [~, CyInit, CzInit] = FKnew(yInit(:,7), yInit(:,8), yInit(:,9));
-
+    
+    figure(1); hold on; grid on;
     % Plot trajectory (YZ)
     plot(CyInit, CzInit, 'LineWidth', 1.5, 'Color', colors(c,:));
-    legendEntries{end+1} = sprintf('baseWn = [%.1f %.1f]', baseWn(2:3)/2.5);
+    legendEntries{end+1} = sprintf('Wn = [%.1f %.1f]', baseWn(2:3));
+
+    %% ===== JOINT POSITION PLOTTING =====
+    q1 = yInit(:,7);
+    q2 = yInit(:,8);
+    q3 = yInit(:,9);
+    
+    figure(2);hold on; grid on;
+    % subplot(3,1,1); hold on; grid on;
+    % plot(tUni, q1, 'Color', colors(c,:), 'LineWidth', 1.2);
+    % ylabel('q1 (rad)');
+    % title('Joint Position Evolution for Different Natural Frequencies');
+
+    subplot(2,1,1); hold on; grid on;
+    plot(tUni, q2, 'Color', colors(c,:), 'LineWidth', 1.2);
+    ylabel('q2 (rad)');
+
+    subplot(2,1,2); hold on; grid on;
+    plot(tUni, q3, 'Color', colors(c,:), 'LineWidth', 1.2);
+    ylabel('q3 (rad)'); xlabel('Time (s)');
 end
-% plot(xTarget(:,2), xTarget(:,3), 'bd', 'MarkerSize', 10, 'MarkerFaceColor', 'b');
-% Get color palette (distinct colors)
+
+%% ===== FINAL POINTS AND LEGENDS =====
 palette = lines(3);  
-cTarget = palette(1,:); % first color from palette
-cFinal  = palette(2,:); % second color
-cStart  = palette(3,:); % third color
+cTarget = palette(1,:); 
+cFinal  = palette(2,:); 
+cStart  = palette(3,:); 
 
-
-
-% Plot starting point (YZ = (0,0))
+% Plot starting point
+figure(1); hold on; grid on;
 plot(0, 0, 'o', 'MarkerSize', 8, ...
     'MarkerFaceColor', cStart, 'MarkerEdgeColor', 'k');
 
@@ -75,12 +96,30 @@ plot(0, 0, 'o', 'MarkerSize', 8, ...
 plot(xFinal(2), xFinal(3), 's', 'MarkerSize', 10, ...
     'MarkerFaceColor', cFinal, 'MarkerEdgeColor', 'k');
 
-% legendEntries{end+1} = 'Target Point';
 legendEntries{end+1} = 'Starting Point';
 legendEntries{end+1} = 'Final Point';
+legendEntries{end+1} = 'Desired Joint Position';
 
 legend(legendEntries, 'Location', 'northeastoutside');
 
+t = linspace(0,2,500);   % Example: from 0 to 2 sec
+
+% Add legends to joint plots
+figure(2); hold on; grid on;
+subplot(2,1,1); yline(qDes(2), '--k', 'LineWidth', 2);
+stairs(t, [0; qDes(2)*ones(length(t)-1,1)], '--k', 'LineWidth', 2);
+xlim([0 2])
+title('Joint 2 Position ')
+
+subplot(2,1,2); yline(qDes(3), '--k', 'LineWidth', 2);
+stairs(t, [0 ; qDes(3)*ones(length(t)-1,1)], '--k', 'LineWidth', 2);
+
+legend(legendEntries([1:5,8]), 'Location', 'northeastoutside');
+xlim([0 2])
+title('Joint 3 Position ')
+sgtitle('Joint Position for Different Natural Frequency', ...
+        'FontWeight', 'bold', 'FontSize', 12);
+% 
 
 
 
