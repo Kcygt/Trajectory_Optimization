@@ -1,32 +1,51 @@
-% clear; clc;
-% close all;
+clear; clc;
+close all;
 
 saveData = 1;
-dataNumber = 2;
+dataNumber = 1;
 %% ===== CONFIGURATION SECTION =====
-% ONLY CHANGE THESE TWO PARAMETERS - everything else is automatic!
 
 % Define number of phases (this determines tspan and wn)
-numPhases = 3;  % Change this to 2, 3, 4, 5, etc.
+numPhases = 1;  % Change this to 2, 3, 4, 5, etc.
 
 %% ===== AUTOMATIC SETUP (Don't modify below this line) =====
+qDes = [   0.3139    0.2332    0.8081]; % [0.1, 0.1, 0.1]
+
+% Case 1
+qTarget = [      0.3120    0.1945    0.3430];
 
 
-% Define desired final configuration
-qDes = [  0.4532    0.3238    1.0460];
-qDes = [           0    0.1987    0.3278];
-xTarget(1,:) = [0.0,0.0, 0.02];
-% xTarget(2,:) = [0.1, 0.1, 0.0];
+% Case 2
+% qTarget = [    0.0894    0.0683    0.1577;
+%                0.1380    0.1756    0.6371];
+
+% Case 3
+% qTarget = [         0.1815    0.1412    0.0936;
+%                       0.2751    0.1992    0.3260];
+
+
+% Preallocate result
+xTarget = zeros(size(qTarget,1),3 );  % 3 rows (x,y,z), N columns
+
+for i = 1:size(qTarget, 1)
+    q1 = qTarget(i, 1);
+    q2 = qTarget(i, 2);
+    q3 = qTarget(i, 3);
+    [x, y, z] = FK(q1, q2, q3);
+    xTarget(i,:) = [x; y; z];
+end
 
 
 % Get number of targets
 numTargets = size(xTarget, 1);
 
 
+% Weights for optimization
+wt = [400, 1, 0.0001]; % [Target, End, Time]
 
 % Base parameters (will be automatically adjusted)
-baseTspan = 5;
-baseWn =2.5*[1 1 1 ];
+baseTspan = [0.5, 1, 1.5 ];
+baseWn = [1 1 1 1 1 1 1 1 1];
 
 % Automatically generate tspan and wn based on numPhases
 if numPhases <= length(baseTspan)
@@ -39,6 +58,13 @@ else
     additionalWn = repmat([2.0, 2.0, 2.0], 1, numPhases - length(baseWn)/3);
     wn = [baseWn, additionalWn];
 end
+
+fprintf('=== Automatic Configuration ===\n');
+fprintf('Number of targets: %d\n', numTargets);
+fprintf('Number of phases: %d\n', numPhases);
+fprintf('Number of switching times: %d\n', length(tspan));
+fprintf('Number of wn parameters: %d\n', length(wn));
+fprintf('Total optimization parameters: %d\n\n', length(tspan) + length(wn));
 
 % Compute final position
 [Px, Py, Pz] = FKnew(qDes(1), qDes(2), qDes(3));
@@ -54,96 +80,157 @@ tUni = 0:0.01:tspan(end);
 % Extract initial trajectory
 [CxInit, CyInit, CzInit] = FKnew(yInit(:,7), yInit(:,8), yInit(:,9));
 
+% Build bounds
+lb = zeros(1, length(initPrms));
+ub = zeros(1, length(initPrms));
+
+% Time bounds (switching times)
+lb(1:length(tspan)) = 0.1;
+ub(1:length(tspan)) = 2;
+
+% Wn bounds
+startIdx = length(tspan) + 1;
+for i = 1:numPhases
+    idx = startIdx + (i-1)*3;
+    lb(idx:idx+2) = 0.1;
+    ub(idx:idx+2) = 15;
+end
+
+% Optimization
+objectiveFunc = @(params) objectiveFunction(params, qDes, wt, xTarget, xFinal, numTargets);
+
+options = optimoptions('fmincon', ...
+    'Display', 'none', ...
+    'TolCon', 1e-10, ...
+    'OptimalityTolerance', 1e-10, ...
+    'StepTolerance', 1e-10, ...
+    'MaxIterations', 60);
+
+problem = createOptimProblem('fmincon', ...
+    'objective', objectiveFunc, ...
+    'x0', initPrms, ...
+    'lb', lb, ...
+    'ub', ub, ...
+    'options', options, ...
+    'nonlcon', @(prms) trajConstraint(prms, qDes, xTarget, xFinal, numTargets));
+
+% MultiStart setup
+ms = MultiStart('UseParallel', false, 'Display', 'iter');
+numStarts = 5;
+
+fprintf('=== Starting MultiStart Optimization ===\n');
+fprintf('Number of targets: %d\n', numTargets);
+fprintf('Number of phases: %d\n', numPhases);
+fprintf('Number of switching times: %d\n', length(tspan));
+fprintf('Number of wn parameters: %d\n', length(wn));
+fprintf('Number of optimization runs: %d\n\n', numStarts);
+
+[Opt, fval] = run(ms, problem, numStarts);
+
+% Extract optimal parameters
+optimalTimes = Opt(1:length(tspan));
+optimalWn = Opt(length(tspan)+1:end);
+
+% Simulate with optimal parameters
+tUni = 0:0.01:optimalTimes(end);
+[tOpt, yOpt] = ode45(@(t, x) myTwolinkwithprefilter(t, x, qDes, optimalTimes, optimalWn), ...
+                     tUni, zeros(12, 1));
+
+% Extract optimized trajectory
+[CxOpt, CyOpt, CzOpt] = FKnew(yOpt(:,7), yOpt(:,8), yOpt(:,9));
+
 % %% ===== PLOTTING =====
 
+plotting
 
-% Plot segmented trajectory
-figure(1); hold on; grid on; view(3);
-xlabel('X (m)'); ylabel('Y (m)'); zlabel('Z (m)');
-title(sprintf('Optimized Cartesian Trajectory with %d Targets, %d Phases', numTargets, numPhases));
+%%
+% Save results
+if saveData==1
+    save(sprintf('Sdata%d.mat', dataNumber), ...
+        'Opt', 'tOpt', 'yOpt', 'xTarget', 'xFinal','optimalTimes', 'optimalWn');
+    print('Data not saved')
 
-
-% === Find switching time indices ===
-switchIndices = zeros(1, length(tspan));
-for i = 1:length(tspan)
-    [~, switchIndices(i)] = min(abs(tUni - tspan(i)));
-end
-
-% === Plot trajectory segments in different colors ===
-colors = {'r', 'g', 'b', 'm', 'c', 'y'};
-for i = 1:length(switchIndices)
-    if i == 1
-        startIdx = 1;
-    else
-        startIdx = switchIndices(i-1) + 1;
-    end
-    endIdx = switchIndices(i);
-
-    colorIdx = mod(i-1, length(colors)) + 1;
-    plot3(CxInit(startIdx:endIdx), CyInit(startIdx:endIdx), CzInit(startIdx:endIdx), ...
-          'Color', colors{colorIdx}, 'LineWidth', 2);
-end
-
-% === Plot final segment ===
-if length(switchIndices) > 0
-    plot3(CxInit(switchIndices(end)+1:end), CyInit(switchIndices(end)+1:end), CzInit(switchIndices(end)+1:end), ...
-          'Color', 'k', 'LineStyle', '--', 'LineWidth', 1.5);
-end
-
-% === Plot targets and final point ===
-plot3(xTarget(:,1), xTarget(:,2), xTarget(:,3), '*', 'MarkerSize', 10, 'Color', [0,0.4,0.8]);
-plot3(xFinal(1), xFinal(2), xFinal(3), 'o', 'MarkerSize', 10, 'Color', [1,0.5,0.05]);
-
-% === Build legend with distance errors ===
-% === Build legend with distance errors ===
-legendEntries = {};
-
-% Add phase names only if more than one phase
-if length(switchIndices) ~= 1
-    for i = 1:length(switchIndices)
-        legendEntries{end+1} = sprintf('Phase %d', i);
-    end
-    legendEntries{end+1} = 'Final Phase';  % Only add if multiple phases
 else
-    legendEntries{end+1} = 'Phase 1';  % Single phase
+    print('Data not saved')
 end
 
-legendEntries{end+1} = 'Target Points';
-legendEntries{end+1} = 'Final Point';
+%% ===== HELPER FUNCTIONS =====
 
-% distanceErrors = zeros(size(xTarget,1), 1);
-% % Add distance error information to legend
-% for i = 1:length(distanceErrors)
-%     legendEntries{end+1} = sprintf('Distance Error %d: %.4f m', i, distanceErrors(i));
-% end
-% % === Calculate minimum distances to targets first ===
-% for i = 1:size(xTarget,1)
-%     % Compute distances from trajectory to this target
-%     diffs = [CxInit, CyInit, CzInit] - xTarget(i,:);
-%     dists = vecnorm(diffs, 2, 2);  % Euclidean distance
-% 
-%     % Find minimum distance and index
-%     [minDist, idxMin] = min(dists);
-%     distanceErrors(i) = minDist;
-% 
-%     % Closest trajectory point
-%     closestPoint = [CxInit(idxMin), CyInit(idxMin), CzInit(idxMin)];
-% 
-%     % Vector from closest point to target
-%     arrowVec = xTarget(i,:) - closestPoint;
-% 
-%     % Plot the arrow
-%     quiver3(closestPoint(1), closestPoint(2), closestPoint(3), ...
-%             arrowVec(1), arrowVec(2), arrowVec(3), ...
-%             0, 'k', 'LineWidth', 1.5, 'MaxHeadSize', 0.5);
-% end
-legend(legendEntries, 'Location', 'northeastoutside');
+% Objective Function
+function error = objectiveFunction(prms, qDes, wt, xTarget, xFinal, numTargets)
+    % Extract parameters dynamically
+    numPhases = length(prms) / 4; % Total parameters / 4 (3 wn per phase + 1 time per phase)
+    numTimes = numPhases;
+    tspan = prms(1:numTimes);
+    wn = prms(numTimes+1:end);
+    
+    x0 = zeros(12, 1);
+    x0(1:3) = qDes;
+    tUni = 0:0.01:tspan(end);
+    
+    % Simulate the system
+    [~, y] = ode45(@(t,x) myTwolinkwithprefilter(t,x,qDes,tspan,wn), tUni, x0);
+    
+    [x,y,z] = FKnew(y(:,7),y(:,8),y(:,9));
+    xOut = [x,y,z];
+    
+    % Calculate minimum distance to each target
+    distMid = 0;
+    for i = 1:size(xTarget,1)
+        distMid = distMid + min(sqrt(sum((xOut - xTarget(i,:)).^2,2)));
+    end
+    
+    % End point error
+    distEndErr = min(sqrt(sum((xOut - xFinal).^2,2)));
+    
+    % Time penalty
+    timePenalty = tspan(end);
+    
+    % Composite error
+    error = wt(1)*distMid + wt(2)*distEndErr + wt(3)*timePenalty;
+end
 
-
-
-
-
-
+% Constraint Function
+function [c, ceq] = trajConstraint(prms, qDes, xTarget, xFinal, numTargets)
+    ceq = [];
+    % Extract parameters dynamically
+    numPhases = length(prms) / 4; % Total parameters / 4
+    numTimes = numPhases;
+    tspan = prms(1:numTimes);
+    wn = prms(numTimes+1:end);
+    
+    tUni = 0:0.01:tspan(end);
+    
+    % Simulate trajectory
+    [~, yy] = ode23s(@(t,x) myTwolinkwithprefilter(t,x,qDes,tspan,wn), tUni, zeros(12, 1));
+    [x,y,z] = FKnew(yy(:,7),yy(:,8),yy(:,9));
+    xOut = [x,y,z];
+    
+    % Calculate distances to each target
+    dists = zeros(size(xTarget,1), 1);
+    for i = 1:size(xTarget,1)
+        dists(i) = min(sqrt(sum((xOut - xTarget(i,:)).^2,2)));
+    end
+    
+    % End point error
+    distEndErr = min(sqrt(sum((xOut - xFinal).^2,2)));
+    
+    % Nonlinear inequality constraints
+    c = [];
+    
+    % Target proximity constraints
+    for i = 1:length(dists)
+        c(end+1) = dists(i) - 1e-10;
+    end
+    
+    % End point constraint
+    c(end+1) = distEndErr - 1e-10;
+    
+    % Time ordering constraints
+    for i = 1:length(tspan)-1
+        c(end+1) = tspan(i) - tspan(i+1);
+    end
+end
 
 % Dynamics Function with Prefilter
 function dxdt = myTwolinkwithprefilter(t, x, qDes, t_st, wn)

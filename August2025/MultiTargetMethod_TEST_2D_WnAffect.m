@@ -1,144 +1,85 @@
-% clear; clc;
-% close all;
 
 saveData = 1;
 dataNumber = 2;
 %% ===== CONFIGURATION SECTION =====
-% ONLY CHANGE THESE TWO PARAMETERS - everything else is automatic!
-
-% Define number of phases (this determines tspan and wn)
 numPhases = 3;  % Change this to 2, 3, 4, 5, etc.
 
-%% ===== AUTOMATIC SETUP (Don't modify below this line) =====
+% List of baseWn cases
+baseWnCases = {
+    2.5 * [1 1 1];
+    2.5 * [1 1 2];
+    2.5 * [1 1 3];
+    2.5 * [1 1 4];
+    2.5 * [1 2 1];
+    2.5 * [1 3 1];
+    2.5 * [1 4 1];
+};
 
-
-% Define desired final configuration
-qDes = [  0.4532    0.3238    1.0460];
-qDes = [           0    0.1987    0.3278];
-xTarget(1,:) = [0.0,0.0, 0.02];
-% xTarget(2,:) = [0.1, 0.1, 0.0];
-
-
-% Get number of targets
+%% ===== AUTOMATIC SETUP =====
+qDes = [0, 0.1987, 0.3278];
+xTarget(1,:) = [0.0,0.0,0.02];
 numTargets = size(xTarget, 1);
 
+%% ===== PLOTTING (YZ plane with all cases) =====
+figure(1); hold on; grid on;
+xlabel('Y (m)'); ylabel('Z (m)');
+title('Comparison of Trajectories for Different Natural Frequency');
 
-
-% Base parameters (will be automatically adjusted)
-baseTspan = 5;
-baseWn =2.5*[1 1 1 ];
-
-% Automatically generate tspan and wn based on numPhases
-if numPhases <= length(baseTspan)
-    % Use existing base parameters if we have enough
-    tspan = baseTspan(1:numPhases);
-    wn = baseWn(1:(3*numPhases));
-else
-    % Extend parameters if we need more phases
-    tspan = [baseTspan, baseTspan(end) + (1:(numPhases-length(baseTspan)))];
-    additionalWn = repmat([2.0, 2.0, 2.0], 1, numPhases - length(baseWn)/3);
-    wn = [baseWn, additionalWn];
-end
-
-% Compute final position
-[Px, Py, Pz] = FKnew(qDes(1), qDes(2), qDes(3));
-xFinal = [Px, Py, Pz];
-
-% Build initial parameter vector
-initPrms = [tspan, wn];
-
-% Initial simulation
-tUni = 0:0.01:tspan(end);
-[tInit, yInit] = ode45(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan, wn), tUni, zeros(12, 1));
-
-% Extract initial trajectory
-[CxInit, CyInit, CzInit] = FKnew(yInit(:,7), yInit(:,8), yInit(:,9));
-
-% %% ===== PLOTTING =====
-
-
-% Plot segmented trajectory
-figure(1); hold on; grid on; view(3);
-xlabel('X (m)'); ylabel('Y (m)'); zlabel('Z (m)');
-title(sprintf('Optimized Cartesian Trajectory with %d Targets, %d Phases', numTargets, numPhases));
-
-
-% === Find switching time indices ===
-switchIndices = zeros(1, length(tspan));
-for i = 1:length(tspan)
-    [~, switchIndices(i)] = min(abs(tUni - tspan(i)));
-end
-
-% === Plot trajectory segments in different colors ===
-colors = {'r', 'g', 'b', 'm', 'c', 'y'};
-for i = 1:length(switchIndices)
-    if i == 1
-        startIdx = 1;
-    else
-        startIdx = switchIndices(i-1) + 1;
-    end
-    endIdx = switchIndices(i);
-
-    colorIdx = mod(i-1, length(colors)) + 1;
-    plot3(CxInit(startIdx:endIdx), CyInit(startIdx:endIdx), CzInit(startIdx:endIdx), ...
-          'Color', colors{colorIdx}, 'LineWidth', 2);
-end
-
-% === Plot final segment ===
-if length(switchIndices) > 0
-    plot3(CxInit(switchIndices(end)+1:end), CyInit(switchIndices(end)+1:end), CzInit(switchIndices(end)+1:end), ...
-          'Color', 'k', 'LineStyle', '--', 'LineWidth', 1.5);
-end
-
-% === Plot targets and final point ===
-plot3(xTarget(:,1), xTarget(:,2), xTarget(:,3), '*', 'MarkerSize', 10, 'Color', [0,0.4,0.8]);
-plot3(xFinal(1), xFinal(2), xFinal(3), 'o', 'MarkerSize', 10, 'Color', [1,0.5,0.05]);
-
-% === Build legend with distance errors ===
-% === Build legend with distance errors ===
+colors = lines(length(baseWnCases)); % distinct colors
 legendEntries = {};
 
-% Add phase names only if more than one phase
-if length(switchIndices) ~= 1
-    for i = 1:length(switchIndices)
-        legendEntries{end+1} = sprintf('Phase %d', i);
-    end
-    legendEntries{end+1} = 'Final Phase';  % Only add if multiple phases
-else
-    legendEntries{end+1} = 'Phase 1';  % Single phase
-end
+for c = 1:length(baseWnCases)
+    baseWn = baseWnCases{c};
 
-legendEntries{end+1} = 'Target Points';
+    % Automatically generate tspan and wn based on numPhases
+    baseTspan = 5;
+    if numPhases <= length(baseTspan)
+        tspan = baseTspan(1:numPhases);
+        wn = baseWn(1:(3*numPhases));
+    else
+        tspan = [baseTspan, baseTspan(end) + (1:(numPhases-length(baseTspan)))];
+        additionalWn = repmat([2.0, 2.0, 2.0], 1, numPhases - length(baseWn)/3);
+        wn = [baseWn, additionalWn];
+    end
+
+    % Compute final position
+    [Px, Py, Pz] = FKnew(qDes(1), qDes(2), qDes(3));
+    xFinal = [Px, Py, Pz];
+
+    % Run simulation
+    tUni = 0:0.01:tspan(end);
+    [~, yInit] = ode45(@(t, x) myTwolinkwithprefilter(t, x, qDes, tspan, wn), ...
+                       tUni, zeros(12, 1));
+
+    % Extract trajectory
+    [~, CyInit, CzInit] = FKnew(yInit(:,7), yInit(:,8), yInit(:,9));
+
+    % Plot trajectory (YZ)
+    plot(CyInit, CzInit, 'LineWidth', 1.5, 'Color', colors(c,:));
+    legendEntries{end+1} = sprintf('baseWn = [%.1f %.1f]', baseWn(2:3)/2.5);
+end
+% plot(xTarget(:,2), xTarget(:,3), 'bd', 'MarkerSize', 10, 'MarkerFaceColor', 'b');
+% Get color palette (distinct colors)
+palette = lines(3);  
+cTarget = palette(1,:); % first color from palette
+cFinal  = palette(2,:); % second color
+cStart  = palette(3,:); % third color
+
+
+
+% Plot starting point (YZ = (0,0))
+plot(0, 0, 'o', 'MarkerSize', 8, ...
+    'MarkerFaceColor', cStart, 'MarkerEdgeColor', 'k');
+
+% Plot final point
+plot(xFinal(2), xFinal(3), 's', 'MarkerSize', 10, ...
+    'MarkerFaceColor', cFinal, 'MarkerEdgeColor', 'k');
+
+% legendEntries{end+1} = 'Target Point';
+legendEntries{end+1} = 'Starting Point';
 legendEntries{end+1} = 'Final Point';
 
-% distanceErrors = zeros(size(xTarget,1), 1);
-% % Add distance error information to legend
-% for i = 1:length(distanceErrors)
-%     legendEntries{end+1} = sprintf('Distance Error %d: %.4f m', i, distanceErrors(i));
-% end
-% % === Calculate minimum distances to targets first ===
-% for i = 1:size(xTarget,1)
-%     % Compute distances from trajectory to this target
-%     diffs = [CxInit, CyInit, CzInit] - xTarget(i,:);
-%     dists = vecnorm(diffs, 2, 2);  % Euclidean distance
-% 
-%     % Find minimum distance and index
-%     [minDist, idxMin] = min(dists);
-%     distanceErrors(i) = minDist;
-% 
-%     % Closest trajectory point
-%     closestPoint = [CxInit(idxMin), CyInit(idxMin), CzInit(idxMin)];
-% 
-%     % Vector from closest point to target
-%     arrowVec = xTarget(i,:) - closestPoint;
-% 
-%     % Plot the arrow
-%     quiver3(closestPoint(1), closestPoint(2), closestPoint(3), ...
-%             arrowVec(1), arrowVec(2), arrowVec(3), ...
-%             0, 'k', 'LineWidth', 1.5, 'MaxHeadSize', 0.5);
-% end
 legend(legendEntries, 'Location', 'northeastoutside');
-
 
 
 

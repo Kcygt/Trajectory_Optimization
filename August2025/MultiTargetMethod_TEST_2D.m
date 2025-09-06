@@ -1,5 +1,3 @@
-% clear; clc;
-% close all;
 
 saveData = 1;
 dataNumber = 2;
@@ -11,22 +9,17 @@ numPhases = 3;  % Change this to 2, 3, 4, 5, etc.
 
 %% ===== AUTOMATIC SETUP (Don't modify below this line) =====
 
-
 % Define desired final configuration
 qDes = [  0.4532    0.3238    1.0460];
-qDes = [           0    0.1987    0.3278];
-xTarget(1,:) = [0.0,0.0, 0.02];
-% xTarget(2,:) = [0.1, 0.1, 0.0];
-
+qDes = [     0    0.1987    0.3278];
+xTarget(1,:) = [0.0,0.02, 0.02];
 
 % Get number of targets
 numTargets = size(xTarget, 1);
 
-
-
 % Base parameters (will be automatically adjusted)
 baseTspan = 5;
-baseWn =2.5*[1 1 1 ];
+baseWn =2.5 * [ 1 1 4 ];
 
 % Automatically generate tspan and wn based on numPhases
 if numPhases <= length(baseTspan)
@@ -54,14 +47,10 @@ tUni = 0:0.01:tspan(end);
 % Extract initial trajectory
 [CxInit, CyInit, CzInit] = FKnew(yInit(:,7), yInit(:,8), yInit(:,9));
 
-% %% ===== PLOTTING =====
-
-
-% Plot segmented trajectory
-figure(1); hold on; grid on; view(3);
-xlabel('X (m)'); ylabel('Y (m)'); zlabel('Z (m)');
-title(sprintf('Optimized Cartesian Trajectory with %d Targets, %d Phases', numTargets, numPhases));
-
+%% ===== PLOTTING (YZ plane only) =====
+figure(1); hold on; grid on;
+xlabel('Y (m)'); ylabel('Z (m)');
+title(sprintf('Optimized Cartesian Trajectory (YZ plane) with %d Targets, %d Phases', numTargets, numPhases));
 
 % === Find switching time indices ===
 switchIndices = zeros(1, length(tspan));
@@ -69,7 +58,7 @@ for i = 1:length(tspan)
     [~, switchIndices(i)] = min(abs(tUni - tspan(i)));
 end
 
-% === Plot trajectory segments in different colors ===
+% === Plot trajectory segments in different colors (YZ) ===
 colors = {'r', 'g', 'b', 'm', 'c', 'y'};
 for i = 1:length(switchIndices)
     if i == 1
@@ -80,67 +69,37 @@ for i = 1:length(switchIndices)
     endIdx = switchIndices(i);
 
     colorIdx = mod(i-1, length(colors)) + 1;
-    plot3(CxInit(startIdx:endIdx), CyInit(startIdx:endIdx), CzInit(startIdx:endIdx), ...
+    plot(CyInit(startIdx:endIdx), CzInit(startIdx:endIdx), ...
           'Color', colors{colorIdx}, 'LineWidth', 2);
 end
 
 % === Plot final segment ===
 if length(switchIndices) > 0
-    plot3(CxInit(switchIndices(end)+1:end), CyInit(switchIndices(end)+1:end), CzInit(switchIndices(end)+1:end), ...
+    plot(CyInit(switchIndices(end)+1:end), CzInit(switchIndices(end)+1:end), ...
           'Color', 'k', 'LineStyle', '--', 'LineWidth', 1.5);
 end
 
 % === Plot targets and final point ===
-plot3(xTarget(:,1), xTarget(:,2), xTarget(:,3), '*', 'MarkerSize', 10, 'Color', [0,0.4,0.8]);
-plot3(xFinal(1), xFinal(2), xFinal(3), 'o', 'MarkerSize', 10, 'Color', [1,0.5,0.05]);
+plot(xTarget(:,2), xTarget(:,3), '*', 'MarkerSize', 10, 'Color', [0,0.4,0.8]);
+plot(xFinal(2), xFinal(3), 'o', 'MarkerSize', 10, 'Color', [1,0.5,0.05]);
 
-% === Build legend with distance errors ===
 % === Build legend with distance errors ===
 legendEntries = {};
 
 % Add phase names only if more than one phase
-if length(switchIndices) ~= 1
-    for i = 1:length(switchIndices)
-        legendEntries{end+1} = sprintf('Phase %d', i);
-    end
-    legendEntries{end+1} = 'Final Phase';  % Only add if multiple phases
-else
-    legendEntries{end+1} = 'Phase 1';  % Single phase
-end
-
+% if length(switchIndices) ~= 1
+%     for i = 1:length(switchIndices)
+%         legendEntries{end+1} = sprintf('Phase %d', i);
+%     end
+%     legendEntries{end+1} = 'Final Phase';
+% else
+%     legendEntries{end+1} = 'Phase 1';
+% end
+legendEntries{end+1} = 'Phase 1';
 legendEntries{end+1} = 'Target Points';
 legendEntries{end+1} = 'Final Point';
 
-% distanceErrors = zeros(size(xTarget,1), 1);
-% % Add distance error information to legend
-% for i = 1:length(distanceErrors)
-%     legendEntries{end+1} = sprintf('Distance Error %d: %.4f m', i, distanceErrors(i));
-% end
-% % === Calculate minimum distances to targets first ===
-% for i = 1:size(xTarget,1)
-%     % Compute distances from trajectory to this target
-%     diffs = [CxInit, CyInit, CzInit] - xTarget(i,:);
-%     dists = vecnorm(diffs, 2, 2);  % Euclidean distance
-% 
-%     % Find minimum distance and index
-%     [minDist, idxMin] = min(dists);
-%     distanceErrors(i) = minDist;
-% 
-%     % Closest trajectory point
-%     closestPoint = [CxInit(idxMin), CyInit(idxMin), CzInit(idxMin)];
-% 
-%     % Vector from closest point to target
-%     arrowVec = xTarget(i,:) - closestPoint;
-% 
-%     % Plot the arrow
-%     quiver3(closestPoint(1), closestPoint(2), closestPoint(3), ...
-%             arrowVec(1), arrowVec(2), arrowVec(3), ...
-%             0, 'k', 'LineWidth', 1.5, 'MaxHeadSize', 0.5);
-% end
 legend(legendEntries, 'Location', 'northeastoutside');
-
-
-
 
 
 
