@@ -14,6 +14,7 @@ wn = [1 2 4];
 zetaCases = {
     [0.1 0.3 0.2];
     [0.3 0.2 0.5];
+    [0.4 1 1 ]
     [0.5 3 5];
 };
 
@@ -101,7 +102,7 @@ stairs(t, [0 ; qDes(3)*ones(length(t)-1,1)], '--k', 'LineWidth', 2);
 xlim([0 5])
 title('Joint 3 Position')
 sgtitle('Joint Position for Different Damping Ratios', 'FontWeight', 'bold', 'FontSize', 12);
-legend(legendEntries([1:3,6]), 'Location', 'northeastoutside');
+legend(legendEntries([1:4,6]), 'Location', 'northeastoutside');
 
 %% ===== DYNAMICS FUNCTION WITH PREFILTER =====
 function dxdt = myTwolinkwithprefilter(t, x, qDes, t_st, wn, zeta)
