@@ -1,0 +1,37 @@
+% Define start, target, and final points
+x_start = 0;       
+y_start = 0;       
+
+x_target = .4;      
+y_target = .15;    
+
+x_final = .5;       
+y_final = .5;       
+
+% Define a color palette (RGB)
+colors = [0.121, 0.466, 0.705;   % Start: blue
+          1.000, 0.498, 0.054;   % Target: orange
+          0.172, 0.627, 0.172];  % Final: green
+
+% Plot points with different markers and palette colors
+figure;
+hold on;
+
+h1 = scatter(x_start, y_start, 100, colors(1,:), 'o', 'filled');   % Start: circle
+h2 = scatter(x_target, y_target, 100, colors(2,:), 's', 'filled'); % Target: square
+h3 = scatter(x_final, y_final, 100, colors(3,:), '^', 'filled');   % Final: triangle
+
+% Add labels to each point
+text(x_start, y_start, '  Start', 'FontSize', 12);
+text(x_target, y_target, '  Target', 'FontSize', 12);
+text(x_final, y_final, '  Final', 'FontSize', 12);
+
+% Set labels, title, grid, and aspect ratio
+xlabel('x axis (m)');
+ylabel('y axis (m)');
+title('Cartesian Space Position');
+grid on;
+axis equal;
+
+% Add legend
+legend([h1, h2, h3], {'Start Point', 'Target Point', 'Final Point'}, 'Location', 'best');
