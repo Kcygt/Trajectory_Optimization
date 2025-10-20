@@ -1,8 +1,8 @@
 % clear; clc;
 % close all;
 
-saveData = 1;
-dataNumber = 1;
+saveData = 1; % 0 dont save data
+dataNumber = 2;
 %% ===== CONFIGURATION SECTION =====
 
 % Define number of phases (this determines tspan and wn)
@@ -12,12 +12,12 @@ numPhases = 1;  % Change this to 2, 3, 4, 5, etc.
 qDes = [   0.3139    0.2332    0.8081]; % [0.1, 0.1, 0.1]
 
 % Case 1
-qTarget = [ 0.3120  0.1945    0.3430];
+% qTarget = [ 0.3120  0.1945    0.3430];
 
 
 % Case 2
-% qTarget = [    0.0894    0.0683    0.1577;
-%                0.1380    0.1756    0.6371];
+qTarget = [0.0745, 0.2254, 0.4038];
+
 
 % Case 3
 % qTarget = [         0.1815    0.1412    0.0936;
@@ -41,7 +41,7 @@ numTargets = size(xTarget, 1);
 
 
 % Weights for optimization
-wt = [400, 1, 0.0001]; % [Target, End, Time]
+wt = [600, 1, 0.001]; % [Target, End, Time]
 
 % Base parameters (will be automatically adjusted)
 baseTspan = [6,10, 16 ];
