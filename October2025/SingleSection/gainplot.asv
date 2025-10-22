@@ -1,0 +1,119 @@
+%% plot_actuals_cartesian_minDist.m
+clear; clc; close all
+
+% ---------- Target ----------
+target = [0.0799879603018894, 0.0499874114364253, 0.0399984290058902];
+
+% ---------- Link lengths ----------
+l1 = 0.208; 
+l2 = 0.168;
+
+% ---------- Load data ----------
+S  = load('Sdata1.mat');    % simulation (actual only)
+G1 = load('SG1data1.mat');  % gain = 1
+G2 = load('SG2data1.mat');  % gain = 2
+G4 = load('SG4data1.mat');  % gain = 4
+
+% ---------- Extract joints (actual only) ----------
+q_sim  = S.yOpt(:,7:9);  qd_sim = S.yOpt(:,10:12);
+q_g1   = G1.yInit(:,7:9); qd_g1 = G1.yInit(:,10:12);
+q_g2   = G2.yInit(:,7:9); qd_g2 = G2.yInit(:,10:12);
+q_g4   = G4.yInit(:,7:9); qd_g4 = G4.yInit(:,10:12);
+
+% ---------- Time vectors (keep all data, just scale duration) ----------
+if isfield(S,'tOpt')
+    tS = S.tOpt(:);
+else
+    tS = (0:size(q_sim,1)-1)'; % fallback to index
+end
+
+% Compress duration (no resampling)
+tG1 = tS/ 1.5;   % 1.5× faster
+tG2 = tS/ 2;     % 2× faster
+tG4 = tS(1:length(q_g4)) / 4;     % 4× faster
+
+% ---------- Colors ----------
+col_sim = [0.2 0.6 1.0];  % blue
+col_g1  = [0 0.8 0];      % green
+col_g2  = [1 0.5 0];      % orange
+col_g4  = [0.7 0 0.7];    % purple
+
+% ==========================================================
+%  JOINT POSITION
+% ==========================================================
+figure('Name','Joint Position');
+for j = 1:3
+    subplot(3,1,j); hold on; grid on;
+    plot(tS,  q_sim(:,j), '-', 'Color', col_sim, 'LineWidth', 1.8);
+    plot(tG1, q_g1(:,j),  '-', 'Color', col_g1,  'LineWidth', 1.5);
+    plot(tG2, q_g2(:,j),  '-', 'Color', col_g2,  'LineWidth', 1.5);
+    plot(tG4, q_g4(:,j),  '-', 'Color', col_g4,  'LineWidth', 1.5);
+    ylabel(sprintf('q_%d (rad)', j));
+    if j==3, xlabel('Time (s)'); end
+    title(sprintf('Joint %d Position', j));
+end
+legend({'Sim Actual','Gain 1 Actual','Gain 2 Actual','Gain 4 Actual'}, 'Location','bestoutside');
+
+% ==========================================================
+%  JOINT VELOCITY
+% ==========================================================
+figure('Name','Joint Velocity');
+for j = 1:3
+    subplot(3,1,j); hold on; grid on;
+    plot(tS,  qd_sim(:,j), '-', 'Color', col_sim, 'LineWidth', 1.8);
+    plot(tG1, qd_g1(:,j),  '-', 'Color', col_g1,  'LineWidth', 1.5);
+    plot(tG2, qd_g2(:,j),  '-', 'Color', col_g2,  'LineWidth', 1.5);
+    plot(tG4, qd_g4(:,j),  '-', 'Color', col_g4,  'LineWidth', 1.5);
+    ylabel(sprintf('dq_%d/dt (rad/s)', j));
+    if j==3, xlabel('Time (s)'); end
+    title(sprintf('Joint %d Velocity', j));
+end
+legend({'Sim Actual','Gain 1 Actual','Gain 2 Actual','Gain 4 Actual'}, 'Location','bestoutside');
+
+% ==========================================================
+%  CARTESIAN (FK inline) + MIN DIST TO TARGET
+% ==========================================================
+% Inline FK
+toXYZ = @(q) [ ...
+    sin(q(:,1)).*(l1*cos(q(:,2)) + l2*sin(q(:,3))), ...
+    l2 - l2*cos(q(:,3)) + l1*sin(q(:,2)), ...
+    -l1 + cos(q(:,1)).*(l1*cos(q(:,2)) + l2*sin(q(:,3))) ];
+
+% Convert joint to Cartesian
+XYZ_sim = toXYZ(q_sim);
+XYZ_g1  = toXYZ(q_g1);
+XYZ_g2  = toXYZ(q_g2);
+XYZ_g4  = toXYZ(q_g4);
+
+% Distances to target
+d_sim = sqrt(sum((XYZ_sim - target).^2, 2)); [dmin_sim, i_sim] = min(d_sim);
+d_g1  = sqrt(sum((XYZ_g1  - target).^2, 2)); [dmin_g1,  i_g1]  = min(d_g1);
+d_g2  = sqrt(sum((XYZ_g2  - target).^2, 2)); [dmin_g2,  i_g2]  = min(d_g2);
+d_g4  = sqrt(sum((XYZ_g4  - target).^2, 2)); [dmin_g4,  i_g4]  = min(d_g4);
+
+% 3D plot
+figure('Name','Cartesian Trajectories (Actual)');
+hold on; grid on; axis equal; view(3)
+plot3(XYZ_sim(:,1),XYZ_sim(:,2),XYZ_sim(:,3),'-','Color',col_sim,'LineWidth',2,'DisplayName','Sim Actual');
+plot3(XYZ_g1(:,1), XYZ_g1(:,2), XYZ_g1(:,3), '-','Color',col_g1,'LineWidth',1.8,'DisplayName','Gain 1 Actual');
+plot3(XYZ_g2(:,1), XYZ_g2(:,2), XYZ_g2(:,3), '-','Color',col_g2,'LineWidth',1.8,'DisplayName','Gain 2 Actual');
+plot3(XYZ_g4(:,1), XYZ_g4(:,2), XYZ_g4(:,3), '-','Color',col_g4,'LineWidth',1.8,'DisplayName','Gain 4 Actual');
+plot3(target(1), target(2), target(3), 'p', 'MarkerSize', 13, ...
+      'MarkerFaceColor', [0.95 0.7 0.2], 'MarkerEdgeColor','k', 'DisplayName','Target');
+
+% Mark closest points
+plot3(XYZ_sim(i_sim,1),XYZ_sim(i_sim,2),XYZ_sim(i_sim,3),'o','MarkerFaceColor',col_sim,'MarkerEdgeColor','k','DisplayName','Sim closest');
+plot3(XYZ_g1(i_g1,1), XYZ_g1(i_g1,2), XYZ_g1(i_g1,3), 'o','MarkerFaceColor',col_g1, 'MarkerEdgeColor','k','DisplayName','G1 closest');
+plot3(XYZ_g2(i_g2,1), XYZ_g2(i_g2,2), XYZ_g2(i_g2,3), 'o','MarkerFaceColor',col_g2, 'MarkerEdgeColor','k','DisplayName','G2 closest');
+plot3(XYZ_g4(i_g4,1), XYZ_g4(i_g4,2), XYZ_g4(i_g4,3), 'o','MarkerFaceColor',col_g4, 'MarkerEdgeColor','k','DisplayName','G4 closest');
+
+xlabel('X (m)'); ylabel('Y (m)'); zlabel('Z (m)');
+title('Cartesian Space Trajectories (Actual Only)');
+legend('Location','bestoutside');
+
+% Print summary
+fprintf('\nMinimum Cartesian distance to TARGET:\n');
+fprintf('  Sim Actual : %.6g (at index %d)\n', dmin_sim, i_sim);
+fprintf('  Gain 1 Act : %.6g (at index %d)\n', dmin_g1,  i_g1);
+fprintf('  Gain 2 Act : %.6g (at index %d)\n', dmin_g2,  i_g2);
+fprintf('  Gain 4 Act : %.6g (at index %d)\n', dmin_g4,  i_g4);
