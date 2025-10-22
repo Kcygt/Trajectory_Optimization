@@ -1,5 +1,6 @@
 close all
 % publish('plottingData.m', 'html');
+
 for i = 1:2
     % Construct filenames
     PdataFile = sprintf('Pdata%d.mat', i);
@@ -52,7 +53,31 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     hasPdata = ~isempty(Pdata);
     hasSdata = ~isempty(Sdata);
     hasGdata = ~isempty(Gdata);
+
+    % ------------------- Color scheme (GLOBAL for this function) -------------------
+    gem = [
+        0.9961    0.5469         0;  % Emerald
+        0.00 0.35 0.70;  % Sapphire
+        0.55 0.00 0.55;  % Amethyst
+        0.80 0.00 0.20;  % Ruby
+        0.20 0.60 0.90;  % Blue topaz
+        0.90 0.75 0.10;  % Citrine
+        0.8594    0.0781    0.2344;  % Turquoise
+        0.85 0.40 0.40;  % Garnet
+        0    0.8047    0.8164;  % Tanzanite
+        0.5430         0    0.5430;  % Rose quartz
+        ];
+
     
+    % Assign colors similar to your original intent
+    palette      = gem;
+    colorSim     = palette(7,:);   % Simulation -> turquoise
+    colorPhantom = palette(9,:);   % Phantom    -> tanzanite
+    colorRef     = [0 0 0];        % Reference  -> black
+    colorGain    = [1 0 1];        % Gain       -> magenta
+    startColor   = palette(1,:);   % Start point -> emerald
+    finalColor   = palette(10,:);  % Final point -> rose quartz
+
     % ---------------- Phantom Actual ----------------
     if hasPdata
         PqAct  = Pdata.Pdata(:,7:9);
@@ -106,6 +131,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     end
     
     % ---------------- Forward kinematics ----------------
+    % NOTE: Requires FK(q1,q2,q3) on path.
     if hasSdata && ~isempty(SqAct)
         [SxAct,SyAct,SzAct] = FK(SqAct(:,1),SqAct(:,2),SqAct(:,3));
     else
@@ -124,12 +150,20 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
         GxAct=[];GyAct=[];GzAct=[];
     end
 
+    % --------- NEW: Forward kinematics for Reference (SqDes) ----------
+    if hasSdata && ~isempty(SqDes)
+        [SxDes, SyDes, SzDes] = FK(SqDes(:,1), SqDes(:,2), SqDes(:,3));
+    else
+        SxDes = []; SyDes = []; SzDes = [];
+    end
+
     % ---------------- Distances to targets (optional legend text) ----------------
     if ~isempty(xTarget)
         nTargets = size(xTarget, 1);
         TargetMinSim  = zeros(nTargets, 1);
         TargetMinPthm = zeros(nTargets, 1);
         TargetMinGain = zeros(nTargets, 1);
+        TargetMinRef  = zeros(nTargets, 1);
         
         for k = 1:nTargets
             if ~isempty(SxAct)
@@ -144,12 +178,17 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
                 diffsGain = [GxAct, GyAct, GzAct] - xTarget(k, :);
                 TargetMinGain(k) = min(sqrt(sum(diffsGain.^2, 2)));
             end
+            if ~isempty(SxDes)
+                diffsRef = [SxDes, SyDes, SzDes] - xTarget(k, :);
+                TargetMinRef(k) = min(sqrt(sum(diffsRef.^2, 2)));
+            end
         end
     else
         nTargets = 0;
         TargetMinSim  = [];
         TargetMinPthm = [];
         TargetMinGain = [];
+        TargetMinRef  = [];
     end
     
     % ==================== 3D Cartesian Plot (FIGURE 1) ====================
@@ -159,16 +198,13 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     xlabel('$X$ (m)','Interpreter','latex');
     ylabel('$Y$ (m)','Interpreter','latex');
     zlabel('$Z$ (m)','Interpreter','latex');
-    title('3D Cartesian Space Position');
+    title('Cartesian Space Position');
 
     % Collect legend handles/labels
     plotHandles = gobjects(0);
     plotLabels  = {};
 
-    % Start point (origin) — choose a base color
-    palette = parula(10);      % get 10 colors from the parula colormap
-
-    startColor = palette(8, :);  % use first palette color instead of black
+    % Start point (origin)
     hStart = plot3(0, 0, 0, 'o', 'LineWidth', 1.5, 'MarkerSize', 7, ...
         'MarkerFaceColor', startColor, 'MarkerEdgeColor', startColor, ...
         'DisplayName', 'Start Point');
@@ -177,9 +213,6 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
 
     % End/Final point (only if Sdata available)
     if hasSdata && isfield(Sdata,'xFinal') && numel(Sdata.xFinal) >= 3
-        palette = parula(10);      % get 10 colors from the parula colormap
-
-        finalColor = palette(5, :);  % use first palette color instead of black
         hEnd = plot3(Sdata.xFinal(1),Sdata.xFinal(2),Sdata.xFinal(3), ...
             'o', 'LineWidth', 1.5, 'MarkerSize', 7, ...
             'MarkerFaceColor', finalColor, 'MarkerEdgeColor', finalColor, ...
@@ -188,36 +221,45 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
         plotLabels{end+1}  = 'Final Point';
     else
         hEnd = [];
-        finalColor = [];
     end
     
-    % Trajectories (no reference projection required)
+    % Trajectories with standardized colors
     if ~isempty(SxAct)
-        hSim = plot3(SxAct, SyAct, SzAct, 'r-', 'LineWidth', 2, ...
-            'DisplayName', 'Simulation ($q_{\mathrm{sim}}$)');
+        hSim = plot3(SxAct, SyAct, SzAct, '-', 'LineWidth', 2, ...
+            'Color', colorSim, 'DisplayName', 'Simulation ($X_{\mathrm{sim}}$)');
         plotHandles(end+1) = hSim;
-        plotLabels{end+1}  = 'Simulation ($q_{\mathrm{sim}}$)';
+        plotLabels{end+1}  = 'Simulation ($X_{\mathrm{sim}}$)';
     else
         hSim = [];
     end
     if ~isempty(PxAct)
-        hPhantom = plot3(PxAct, PyAct, PzAct, 'g-', 'LineWidth', 2, ...
-            'DisplayName', 'Phantom ($q_{\mathrm{ph}}$)');
+        hPhantom = plot3(PxAct, PyAct, PzAct, '-', 'LineWidth', 2, ...
+            'Color', colorPhantom, 'DisplayName', 'Phantom ($X_{\mathrm{ph}}$)');
         plotHandles(end+1) = hPhantom;
-        plotLabels{end+1}  = 'Phantom ($q_{\mathrm{ph}}$)';
+        plotLabels{end+1}  = 'Phantom ($X_{\mathrm{ph}}$)';
     else
         hPhantom = [];
     end
     if ~isempty(GxAct)
-        hGain = plot3(GxAct, GyAct, GzAct, 'm-', 'LineWidth', 2, ...
-            'DisplayName', 'Gain');
+        hGain = plot3(GxAct, GyAct, GzAct, '-', 'LineWidth', 2, ...
+            'Color', colorGain, 'DisplayName', 'Gain');
         plotHandles(end+1) = hGain;
         plotLabels{end+1}  = 'Gain';
     else
         hGain = [];
     end
+
+    % Reference (desired) trajectory
+    if ~isempty(SxDes)
+        hRef = plot3(SxDes, SyDes, SzDes, '--', 'LineWidth', 1.8, ...
+            'Color', colorRef, 'DisplayName', 'Reference ($X_{ref}$)');
+        plotHandles(end+1) = hRef;
+        plotLabels{end+1}  = 'Reference ($q_{ref}$)';
+    else
+        hRef = [];
+    end
     
-    % Target points (plotted as filled pentagrams)
+    % Target points (filled pentagrams)
     if ~isempty(xTarget)
         targetHandles = gobjects(nTargets,1);
         targetLabels  = cell(nTargets,1);
@@ -231,26 +273,10 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
         plotLabels  = [plotLabels,  targetLabels(:)'];
     end
 
-    % Dummy handles for target error lines (legend only)
+    % Dummy handles for target error lines (legend only) - optional
     errorHandles = gobjects(0);
     errorLabels  = {};
-    if ~isempty(xTarget)
-        for k = 1:nTargets
-            if ~isempty(SxAct)
-                errorHandles(end+1) = plot(nan, nan, 'w');
-                errorLabels{end+1}  = sprintf('Target %d Sim Err: %.6f', k, TargetMinSim(k));
-            end
-            if ~isempty(PxAct)
-                errorHandles(end+1) = plot(nan, nan, 'w');
-                errorLabels{end+1}  = sprintf('Target %d Pthm Err: %.6f', k, TargetMinPthm(k));
-            end
-            if ~isempty(GxAct)
-                errorHandles(end+1) = plot(nan, nan, 'w');
-                errorLabels{end+1}  = sprintf('Target %d Gain Err: %.6f', k, TargetMinGain(k));
-            end
-        end
-    end
-    
+
     % ---------- Projections on XY / XZ / YZ planes (same axes) ----------
     ax = gca;
 
@@ -260,8 +286,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     % Offset distance: 1 cm (meters)
     offset = 0.01;
 
-    % Keep XY at z = zmin, keep XZ at y = ymin (UNCHANGED),
-    % move YZ to the "other side": x = xmax + 1 cm
+    % Keep XY at z = zmin, keep XZ at y = ymin, move YZ to x = xmax + 1 cm
     planes.z = zl(1);          % XY @ zmin
     planes.y = yl(1);          % XZ @ ymin
     planes.x = xl(2) + offset; % YZ shifted
@@ -271,16 +296,20 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     ylim(yl);
     zlim(zl);
 
-    % Trajectory projections (reference path not projected)
+    % Trajectory projections (use the same standardized colors)
     if ~isempty(SxAct)
-        add3DProjections(ax, SxAct, SyAct, SzAct, planes, get(plotHandles(strcmp(plotLabels,'Simulation ($q_{\mathrm{sim}}$)')),'Color'));
+        add3DProjections(ax, SxAct, SyAct, SzAct, planes, colorSim);
     end
     if ~isempty(PxAct)
-        add3DProjections(ax, PxAct, PyAct, PzAct, planes, get(plotHandles(strcmp(plotLabels,'Phantom ($q_{\mathrm{ph}}$)')),'Color'));
+        add3DProjections(ax, PxAct, PyAct, PzAct, planes, colorPhantom);
     end
     if ~isempty(GxAct)
-        add3DProjections(ax, GxAct, GyAct, GzAct, planes, get(plotHandles(strcmp(plotLabels,'Gain')),'Color'));
+        add3DProjections(ax, GxAct, GyAct, GzAct, planes, colorGain);
     end
+    % (Optional) also project the reference path:
+    % if ~isempty(SxDes)
+    %     add3DProjections(ax, SxDes, SyDes, SzDes, planes, colorRef);
+    % end
 
     % Project TARGET POINTS too (no legend entries to avoid clutter)
     if ~isempty(xTarget)
@@ -297,6 +326,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     % Legend with LaTeX interpreter (includes trajectories + targets + errors)
     allHandles = [plotHandles, errorHandles];
     allLabels  = [plotLabels,  errorLabels];
+    [allHandles, allLabels] = orderLegend(allHandles, allLabels); % <<< enforce order
     legend(allHandles, allLabels, 'Location', 'eastoutside', 'Interpreter', 'latex');
 
     % ==================== Joint Position Figure (FIGURE 2) ====================
@@ -309,24 +339,24 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
             subplotLabels  = {};
             
             if hasPdata && ~isempty(PqAct)
-                hP = plot(Ptime, PqAct(:,j), 'r-', 'LineWidth', 1.2);
+                hP = plot(Ptime, PqAct(:,j), '-', 'LineWidth', 1.2, 'Color', colorPhantom);
                 subplotHandles(end+1) = hP;
-                subplotLabels{end+1}  = 'Phantom Actual';
+                subplotLabels{end+1}  = 'Phantom ($q_{ph}$)';
             end
             
             if hasSdata && ~isempty(SqDes)
-                hSd = plot(Stime, SqDes(:,j), 'k--', 'LineWidth', 1.2);
+                hSd = plot(Stime, SqDes(:,j), '--', 'LineWidth', 1.2, 'Color', colorRef);
                 subplotHandles(end+1) = hSd;
-                subplotLabels{end+1}  = sprintf('Reference ($q_{d,%d}$)', j);
+                subplotLabels{end+1}  = sprintf('Reference ($q_{ref}$)', j);
             end
             if hasSdata && ~isempty(SqAct)
-                hSa = plot(Stime, SqAct(:,j), 'b-', 'LineWidth', 1.2);
+                hSa = plot(Stime, SqAct(:,j), '-', 'LineWidth', 1.2, 'Color', colorSim);
                 subplotHandles(end+1) = hSa;
-                subplotLabels{end+1}  = sprintf('Simulation ($q_{%d}$)', j);
+                subplotLabels{end+1}  = sprintf('Simulation ($q_{sim}$)');
             end
             
             if hasGdata && ~isempty(GqAct)
-                hG = plot(Gtime, GqAct(:,j), 'm-', 'LineWidth', 1.2);
+                hG = plot(Gtime, GqAct(:,j), '-', 'LineWidth', 1.2, 'Color', colorGain);
                 subplotHandles(end+1) = hG;
                 subplotLabels{end+1}  = 'Gain Actual';
             end
@@ -334,6 +364,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
             title(sprintf('Joint %d Position', j));
             if j == 3, xlabel('Time (s)'); end
             ylabel('Position (rad)');
+            [subplotHandles, subplotLabels] = orderLegend(subplotHandles, subplotLabels); % <<< enforce order
             legend(subplotHandles, subplotLabels, 'Interpreter', 'latex', 'Location', 'best');
         end
     end
@@ -348,24 +379,24 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
             subplotLabels  = {};
             
             if hasPdata && ~isempty(PqdAct)
-                hP = plot(Ptime, PqdAct(:,j), 'r-', 'LineWidth', 1.2);
+                hP = plot(Ptime, PqdAct(:,j), '-', 'LineWidth', 1.2, 'Color', colorPhantom);
                 subplotHandles(end+1) = hP;
-                subplotLabels{end+1}  = 'Phantom Actual';
+                subplotLabels{end+1}  = sprintf('Phantom ($\\dot{q}_{ph}$)');
             end
             
             if hasSdata && ~isempty(SqdDes)
-                hSd = plot(Stime, SqdDes(:,j), 'k--', 'LineWidth', 1.2);
+                hSd = plot(Stime, SqdDes(:,j), '--', 'LineWidth', 1.2, 'Color', colorRef);
                 subplotHandles(end+1) = hSd;
-                subplotLabels{end+1}  = sprintf('Reference ($\\dot{q}_{d,%d}$)', j);
+                subplotLabels{end+1}  = sprintf('Reference ($\\dot{q}_{ref}$)');
             end
             if hasSdata && ~isempty(SqdAct)
-                hSa = plot(Stime, SqdAct(:,j), 'b-', 'LineWidth', 1.2);
+                hSa = plot(Stime, SqdAct(:,j), '-', 'LineWidth', 1.2, 'Color', colorSim);
                 subplotHandles(end+1) = hSa;
-                subplotLabels{end+1}  = sprintf('Simulation ($\\dot{q}_{%d}$)', j);
+                subplotLabels{end+1}  = sprintf('Simulation ($\\dot{q}_{sim}$)');
             end
             
             if hasGdata && ~isempty(GqdAct)
-                hG = plot(Gtime, GqdAct(:,j), 'm-', 'LineWidth', 1.2);
+                hG = plot(Gtime, GqdAct(:,j), '-', 'LineWidth', 1.2, 'Color', colorGain);
                 subplotHandles(end+1) = hG;
                 subplotLabels{end+1}  = 'Gain Actual';
             end
@@ -373,6 +404,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
             title(sprintf('Joint %d Velocity', j));
             if j == 3, xlabel('Time (s)'); end
             ylabel('Velocity (rad/s)');
+            [subplotHandles, subplotLabels] = orderLegend(subplotHandles, subplotLabels); % <<< enforce order
             legend(subplotHandles, subplotLabels, 'Interpreter', 'latex', 'Location', 'best');
         end
     end
@@ -427,4 +459,21 @@ function addPointProjections(ax, pt, planes, color)
     % YZ projection (shifted +1 cm)
     plot3(ax, planes.x, y, z, 'o', 'MarkerSize', 8, ...
         'MarkerFaceColor', color, 'MarkerEdgeColor', color, 'HandleVisibility','off');
+end
+
+% ---------- Helper: order legend entries (Simulation, Phantom, Reference first) ----------
+function [hOrdered, lOrdered] = orderLegend(h, l)
+    % h: array of handles; l: cell array of labels
+    % Ensures legends start with Simulation, then Phantom, then Reference (if present).
+    desired = {'Simulation','Phantom','Reference'};
+    idx = [];
+    for k = 1:numel(desired)
+        m = find(contains(l, desired{k}), 1, 'first');
+        if ~isempty(m), idx(end+1) = m; end %#ok<AGROW>
+    end
+    % Keep remaining entries in original order
+    rest = setdiff(1:numel(l), idx, 'stable');
+    idx = [idx, rest];
+    hOrdered = h(idx);
+    lOrdered = l(idx);
 end
