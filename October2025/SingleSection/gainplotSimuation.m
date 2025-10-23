@@ -2,17 +2,18 @@
 clear; clc; close all
 
 % ---------- Target ----------
-target = [0.0799879603018894, 0.0499874114364253, 0.0399984290058902];
+target = [0.08, 0.05, 0.04];
+target = [0.02, 0.06, 0.06];
 
 % ---------- Link lengths ----------
 l1 = 0.208; 
 l2 = 0.168;
 
 % ---------- Load data ----------
-S  = load('Sdata1.mat');    % simulation (actual only)
-G1 = load('SG1data1.mat');  % gain = 1
-G2 = load('SG2data1.mat');  % gain = 2
-G4 = load('SG4data1.mat');  % gain = 4
+S  = load('Sdata2.mat');    % simulation (actual only)
+G1 = load('SG1data2.mat');  % gain = 1
+G2 = load('SG2data2.mat');  % gain = 2
+G4 = load('SG4data2.mat');  % gain = 4
 
 % ---------- Extract joints (actual only) ----------
 q_sim  = S.yOpt(:,7:9);  qd_sim = S.yOpt(:,10:12);

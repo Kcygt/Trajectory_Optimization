@@ -2,8 +2,8 @@
 % close all;
 
 saveData = 1; % 0 dont save data
-dataNumber = 1;
-Gain=1.5;
+dataNumber = 2;
+Gain=4;
 %% ===== CONFIGURATION SECTION =====
 
 % Define number of phases (this determines tspan and wn)
@@ -13,11 +13,11 @@ numPhases = 1;  % Change this to 2, 3, 4, 5, etc.
 qDes = [   0.3139    0.2332    0.8081]; % [0.1, 0.1, 0.1]
 
 % Case 1
-qTarget = [ 0.3120  0.1945    0.3430];
+% qTarget = [ 0.3120  0.1945    0.3430];
 
 % 
 % % Case 2
-% qTarget = [0.0745, 0.2254, 0.4038];
+qTarget = [0.0745, 0.2254, 0.4038];
 
 
 % Case 3
@@ -42,8 +42,8 @@ numTargets = size(xTarget, 1);
 
 
 % Base parameters (will be automatically adjusted)
-baseTspan = 1.9835 / Gain;
-baseWn = Gain * [14.9999999941797	8.38005045048169	3.77958189424054];
+baseTspan = 1.9204 / Gain;
+baseWn = Gain * [3.3104   15.0000    5.9583];
 
 % Automatically generate tspan and wn based on numPhases
 if numPhases <= length(baseTspan)

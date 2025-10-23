@@ -2,23 +2,24 @@
 clear; clc; close all
 
 % ---------- Target ----------
-target = [0.0799879603018894, 0.0499874114364253, 0.0399984290058902];
+target = [0.08, 0.05, 0.04];
+target = [0.02, 0.06, 0.06];
 
 % ---------- Link lengths ----------
 l1 = 0.208; 
 l2 = 0.168;
 
 % ---------- Load data ----------
-S  = load('Pdata1.mat');    % simulation (actual only)
-G1 = load('G1p5data1.mat');  % gain = 1
-G2 = load('G2data1.mat');  % gain = 2
-G4 = load('G4data1.mat');  % gain = 4
+S  = load('Pdata2.mat');    % simulation (actual only)
+G1 = load('G1p5data2.mat');  % gain = 1
+G2 = load('G2data2.mat');  % gain = 2
+G4 = load('G4data2.mat');  % gain = 4
 
 % ---------- Extract joints (actual only) ----------
 q_sim  = S.Pdata(:,7:9);  qd_sim = S.Pdata(:,10:12);
-q_g1   = G1.G1p5data1(:,7:9); qd_g1 = G1.G1p5data1(:,10:12);
-q_g2   = G2.G2data1(:,7:9); qd_g2 = G2.G2data1(:,10:12);
-q_g4   = G4.G4data1(:,7:9); qd_g4 = G4.G4data1(:,10:12);
+q_g1   = G1.G1p5data2(:,7:9); qd_g1 = G1.G1p5data2(:,10:12);
+q_g2   = G2.G2data2(:,7:9); qd_g2 = G2.G2data2(:,10:12);
+q_g4   = G4.G4data2(:,7:9); qd_g4 = G4.G4data2(:,10:12);
 
 % ---------- Time vectors ----------
 if isfield(S,'tOpt')
