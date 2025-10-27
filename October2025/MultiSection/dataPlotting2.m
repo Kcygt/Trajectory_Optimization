@@ -57,29 +57,27 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     % ------------------- Color scheme (GLOBAL for this function) -------------------
     gem = [
         0.9961    0.5469         0;  % Emerald
-        0.00 0.35 0.70;  % Sapphire
-        0.55 0.00 0.55;  % Amethyst
-        0.80 0.00 0.20;  % Ruby
-        0.20 0.60 0.90;  % Blue topaz
-        0.90 0.75 0.10;  % Citrine
+        0.00 0.35 0.70;              % Sapphire
+        0.55 0.00 0.55;              % Amethyst
+        0.80 0.00 0.20;              % Ruby
+        0.20 0.60 0.90;              % Blue topaz
+        0.90 0.75 0.10;              % Citrine
         0.8594    0.0781    0.2344;  % Turquoise
-        0.85 0.40 0.40;  % Garnet
-        0    0.8047    0.8164;  % Tanzanite
+        0.85 0.40 0.40;              % Garnet
+        0    0.8047    0.8164;       % Tanzanite
         0.5430         0    0.5430;  % Rose quartz
         ];
 
-    
-    % Assign colors similar to your original intent
     palette      = gem;
-    colorSim     = palette(7,:);   % Simulation -> turquoise
-    colorPhantom = palette(9,:);   % Phantom    -> tanzanite
-    colorRef     = [0 0 0];        % Reference  -> black
-    colorGain    = [1 0 1];        % Gain       -> magenta
-    startColor   = palette(1,:);   % Start point -> emerald
-    finalColor   = palette(10,:);  % Final point -> rose quartz
+    colorSim     = palette(7,:);    % Simulation -> turquoise
+    colorPhantom = palette(9,:);    % Phantom    -> tanzanite
+    colorRef     = [0 0 0];         % Reference  -> black
+    colorGain    = [1 0 1];         % Gain       -> magenta
+    startColor   = palette(1,:);    % Start point -> emerald
+    finalColor   = palette(10,:);   % Final point -> rose quartz
 
     % ---------------- Phantom Actual ----------------
-    if hasPdata
+    if hasPdata && isfield(Pdata,'Pdata')
         PqAct  = Pdata.Pdata(:,7:9);
         PqdAct = Pdata.Pdata(:,10:12);
     else
@@ -87,10 +85,10 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     end
 
     % ---------------- Extract times ----------------
-    if hasSdata
+    if hasSdata && isfield(Sdata,'tOpt')
         Stime = Sdata.tOpt;
-        if hasPdata
-            Ptime = linspace(0, Stime(end), length(PqAct));
+        if ~isempty(PqAct)
+            Ptime = linspace(0, Stime(end), size(PqAct,1));
         else
             Ptime = [];
         end
@@ -99,14 +97,14 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
         Ptime = [];
     end
     
-    if hasGdata
+    if hasGdata && isfield(Gdata,'Hys')
         Gtime = Gdata.Hys;
     else
         Gtime = [];
     end
 
     % ---------------- Simulation Desired and Actual ----------------
-    if hasSdata
+    if hasSdata && isfield(Sdata,'yOpt')
         SqDes  = Sdata.yOpt(:,1:3);
         SqdDes = Sdata.yOpt(:,4:6);
         SqAct  = Sdata.yOpt(:,7:9);
@@ -116,7 +114,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     end
     
     % ---------------- Gain Data (Actual) ----------------
-    if hasGdata
+    if hasGdata && isfield(Gdata,'yOut1')
         GqAct  = Gdata.yOut1(:,7:9);
         GqdAct = Gdata.yOut1(:,10:12);
     else
@@ -132,32 +130,32 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     
     % ---------------- Forward kinematics ----------------
     % NOTE: Requires FK(q1,q2,q3) on path.
-    if hasSdata && ~isempty(SqAct)
+    if ~isempty(SqAct)
         [SxAct,SyAct,SzAct] = FK(SqAct(:,1),SqAct(:,2),SqAct(:,3));
     else
         SxAct=[];SyAct=[];SzAct=[];
     end
     
-    if hasPdata && ~isempty(PqAct)
+    if ~isempty(PqAct)
         [PxAct,PyAct,PzAct] = FK(PqAct(:,1),PqAct(:,2),PqAct(:,3));
     else
         PxAct=[];PyAct=[];PzAct=[];
     end
     
-    if hasGdata && ~isempty(GqAct)
+    if ~isempty(GqAct)
         [GxAct,GyAct,GzAct] = FK(GqAct(:,1),GqAct(:,2),GqAct(:,3));
     else
         GxAct=[];GyAct=[];GzAct=[];
     end
 
-    % --------- NEW: Forward kinematics for Reference (SqDes) ----------
-    if hasSdata && ~isempty(SqDes)
+    % --------- Forward kinematics for Reference (SqDes) ----------
+    if ~isempty(SqDes)
         [SxDes, SyDes, SzDes] = FK(SqDes(:,1), SqDes(:,2), SqDes(:,3));
     else
         SxDes = []; SyDes = []; SzDes = [];
     end
 
-    % ---------------- Distances to targets (optional legend text) ----------------
+    % ---------------- Distances to targets ----------------
     if ~isempty(xTarget)
         nTargets = size(xTarget, 1);
         TargetMinSim  = zeros(nTargets, 1);
@@ -169,18 +167,26 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
             if ~isempty(SxAct)
                 diffsSim = [SxAct, SyAct, SzAct] - xTarget(k, :);
                 TargetMinSim(k) = min(sqrt(sum(diffsSim.^2, 2)));
+            else
+                TargetMinSim(k) = NaN;
             end
             if ~isempty(PxAct)
                 diffsPthm = [PxAct, PyAct, PzAct] - xTarget(k, :);
                 TargetMinPthm(k) = min(sqrt(sum(diffsPthm.^2, 2)));
+            else
+                TargetMinPthm(k) = NaN;
             end
             if ~isempty(GxAct)
                 diffsGain = [GxAct, GyAct, GzAct] - xTarget(k, :);
                 TargetMinGain(k) = min(sqrt(sum(diffsGain.^2, 2)));
+            else
+                TargetMinGain(k) = NaN;
             end
             if ~isempty(SxDes)
                 diffsRef = [SxDes, SyDes, SzDes] - xTarget(k, :);
                 TargetMinRef(k) = min(sqrt(sum(diffsRef.^2, 2)));
+            else
+                TargetMinRef(k) = NaN;
             end
         end
     else
@@ -189,6 +195,46 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
         TargetMinPthm = [];
         TargetMinGain = [];
         TargetMinRef  = [];
+    end
+
+    % ---------------- Print target errors as text ----------------
+    if nTargets > 0
+        if isempty(TargetMinRef),  TargetMinRef  = nan(nTargets,1); end
+        if isempty(TargetMinSim),  TargetMinSim  = nan(nTargets,1); end
+        if isempty(TargetMinPthm), TargetMinPthm = nan(nTargets,1); end
+
+        fprintf('\n===== Minimum Distance to Target(s) =====\n');
+        fprintf('Units: meters (and millimeters in parentheses)\n\n');
+
+        fprintf('%-10s | %-20s | %-20s | %-20s\n', ...
+            'Target', 'Reference', 'Simulation', 'Phantom');
+        fprintf('%s\n', repmat('-',1,80));
+
+        for k = 1:nTargets
+            r  = TargetMinRef(k);
+            s  = TargetMinSim(k);
+            p  = TargetMinPthm(k);
+
+            if ~isnan(r), rStr = sprintf('%.6f m (%.1f mm)', r, 1e3*r); else, rStr = 'N/A'; end
+            if ~isnan(s), sStr = sprintf('%.6f m (%.1f mm)', s, 1e3*s); else, sStr = 'N/A'; end
+            if ~isnan(p), pStr = sprintf('%.6f m (%.1f mm)', p, 1e3*p); else, pStr = 'N/A'; end
+
+            fprintf('%-10s | %-20s | %-20s | %-20s\n', ...
+                sprintf('Target %d',k), rStr, sStr, pStr);
+        end
+
+        rMin = min(TargetMinRef,  [], 'omitnan');
+        sMin = min(TargetMinSim,  [], 'omitnan');
+        pMin = min(TargetMinPthm, [], 'omitnan');
+
+        fprintf('\nOverall best (min across targets):\n');
+        if ~isnan(rMin), fprintf('  Reference: %.6f m (%.1f mm)\n', rMin, 1e3*rMin); else, fprintf('  Reference: N/A\n'); end
+        if ~isnan(sMin), fprintf('  Simulation: %.6f m (%.1f mm)\n', sMin, 1e3*sMin); else, fprintf('  Simulation: N/A\n'); end
+        if ~isnan(pMin), fprintf('  Phantom: %.6f m (%.1f mm)\n', pMin, 1e3*pMin); else, fprintf('  Phantom: N/A\n'); end
+
+        fprintf('=========================================\n\n');
+    else
+        fprintf('\n(No target points found in Sdata.xTarget — skipping error printout.)\n\n');
     end
     
     % ==================== 3D Cartesian Plot (FIGURE 1) ====================
@@ -261,6 +307,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     
     % Target points (filled pentagrams)
     if ~isempty(xTarget)
+        nTargets = size(xTarget, 1);
         targetHandles = gobjects(nTargets,1);
         targetLabels  = cell(nTargets,1);
         for k = 1:nTargets
@@ -326,7 +373,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     % Legend with LaTeX interpreter (includes trajectories + targets + errors)
     allHandles = [plotHandles, errorHandles];
     allLabels  = [plotLabels,  errorLabels];
-    [allHandles, allLabels] = orderLegend(allHandles, allLabels); % <<< enforce order
+    [allHandles, allLabels] = orderLegend(allHandles, allLabels); % enforce order
     legend(allHandles, allLabels, 'Location', 'eastoutside', 'Interpreter', 'latex');
 
     % ==================== Joint Position Figure (FIGURE 2) ====================
@@ -338,24 +385,24 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
             subplotHandles = gobjects(0);
             subplotLabels  = {};
             
-            if hasPdata && ~isempty(PqAct)
+            if ~isempty(PqAct)
                 hP = plot(Ptime, PqAct(:,j), '-', 'LineWidth', 1.2, 'Color', colorPhantom);
                 subplotHandles(end+1) = hP;
                 subplotLabels{end+1}  = 'Phantom ($q_{ph}$)';
             end
             
-            if hasSdata && ~isempty(SqDes)
+            if ~isempty(SqDes)
                 hSd = plot(Stime, SqDes(:,j), '--', 'LineWidth', 1.2, 'Color', colorRef);
                 subplotHandles(end+1) = hSd;
-                subplotLabels{end+1}  = sprintf('Reference ($q_{ref}$)', j);
+                subplotLabels{end+1}  = 'Reference ($q_{ref}$)';
             end
-            if hasSdata && ~isempty(SqAct)
+            if ~isempty(SqAct)
                 hSa = plot(Stime, SqAct(:,j), '-', 'LineWidth', 1.2, 'Color', colorSim);
                 subplotHandles(end+1) = hSa;
-                subplotLabels{end+1}  = sprintf('Simulation ($q_{sim}$)');
+                subplotLabels{end+1}  = 'Simulation ($q_{sim}$)';
             end
             
-            if hasGdata && ~isempty(GqAct)
+            if ~isempty(GqAct)
                 hG = plot(Gtime, GqAct(:,j), '-', 'LineWidth', 1.2, 'Color', colorGain);
                 subplotHandles(end+1) = hG;
                 subplotLabels{end+1}  = 'Gain Actual';
@@ -364,7 +411,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
             title(sprintf('Joint %d Position', j));
             if j == 3, xlabel('Time (s)'); end
             ylabel('Position (rad)');
-            [subplotHandles, subplotLabels] = orderLegend(subplotHandles, subplotLabels); % <<< enforce order
+            [subplotHandles, subplotLabels] = orderLegend(subplotHandles, subplotLabels);
             legend(subplotHandles, subplotLabels, 'Interpreter', 'latex', 'Location', 'best');
         end
     end
@@ -378,24 +425,24 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
             subplotHandles = gobjects(0);
             subplotLabels  = {};
             
-            if hasPdata && ~isempty(PqdAct)
+            if ~isempty(PqdAct)
                 hP = plot(Ptime, PqdAct(:,j), '-', 'LineWidth', 1.2, 'Color', colorPhantom);
                 subplotHandles(end+1) = hP;
-                subplotLabels{end+1}  = sprintf('Phantom ($\\dot{q}_{ph}$)');
+                subplotLabels{end+1}  = 'Phantom ($\dot{q}_{ph}$)';
             end
             
-            if hasSdata && ~isempty(SqdDes)
+            if ~isempty(SqdDes)
                 hSd = plot(Stime, SqdDes(:,j), '--', 'LineWidth', 1.2, 'Color', colorRef);
                 subplotHandles(end+1) = hSd;
-                subplotLabels{end+1}  = sprintf('Reference ($\\dot{q}_{ref}$)');
+                subplotLabels{end+1}  = 'Reference ($\dot{q}_{ref}$)';
             end
-            if hasSdata && ~isempty(SqdAct)
+            if ~isempty(SqdAct)
                 hSa = plot(Stime, SqdAct(:,j), '-', 'LineWidth', 1.2, 'Color', colorSim);
                 subplotHandles(end+1) = hSa;
-                subplotLabels{end+1}  = sprintf('Simulation ($\\dot{q}_{sim}$)');
+                subplotLabels{end+1}  = 'Simulation ($\dot{q}_{sim}$)';
             end
             
-            if hasGdata && ~isempty(GqdAct)
+            if ~isempty(GqdAct)
                 hG = plot(Gtime, GqdAct(:,j), '-', 'LineWidth', 1.2, 'Color', colorGain);
                 subplotHandles(end+1) = hG;
                 subplotLabels{end+1}  = 'Gain Actual';
@@ -404,7 +451,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
             title(sprintf('Joint %d Velocity', j));
             if j == 3, xlabel('Time (s)'); end
             ylabel('Velocity (rad/s)');
-            [subplotHandles, subplotLabels] = orderLegend(subplotHandles, subplotLabels); % <<< enforce order
+            [subplotHandles, subplotLabels] = orderLegend(subplotHandles, subplotLabels);
             legend(subplotHandles, subplotLabels, 'Interpreter', 'latex', 'Location', 'best');
         end
     end
