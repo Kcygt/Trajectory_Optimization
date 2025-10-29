@@ -1,7 +1,7 @@
 close all
 % publish('plottingData.m', 'html');
 
-for i = 4:4
+for i = 4:5
     % Construct filenames
     PdataFile = sprintf('Pdata%d.mat', i);
     SdataFile = sprintf('Sdata%d.mat', i);
