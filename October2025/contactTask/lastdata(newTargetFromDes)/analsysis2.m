@@ -3,8 +3,8 @@ clear
 clc
 
 % Set the range of dataset numbers you want to analyze
-startData = 5;
-endData = 8;
+startData = 1;
+endData = 1;
 
 % Spring constant and desired force
 k = 222.9073;
@@ -28,7 +28,7 @@ for dataNum = startData:endData
     Pdata = tmp.(pdataVarName);  % Access the correct field dynamically
 
     % Time vector
-    time = linspace(0, Opt(1)/4, length(Pdata));
+    time = linspace(0, Opt(1), length(Pdata));
 
     % Forward kinematics
     [xAct, yAct, zAct] = FK(Pdata(:,1), Pdata(:,2), Pdata(:,3));
@@ -50,7 +50,7 @@ for dataNum = startData:endData
     newTarget = zeros(size(xTarget,1), 1);
 
     % Marker color for target points
-    markerColor = [0.85 0.1 0.1]; % reddish color (can adjust if you want)
+    markerColor = [0.85 0.1 0.1]; % reddish color
     
     for i = 1:size(xTarget, 1)
         distance = sqrt((xAct - xTarget(i,1)).^2 + ...
@@ -70,7 +70,7 @@ for dataNum = startData:endData
 
     % Add legend (one entry for all markers)
     h2 = plot(nan, nan, '*', 'Color', markerColor, 'MarkerSize', 10, 'LineWidth', 2); 
-    legend([h1, h2], {'Measured Force ', 'Force at Target Points'}, 'Location', 'best');
+    legend([h1, h2], {'Measured Force', 'Force at Target Points'}, 'Location', 'best');
 
     title('Force vs Time')
     xlabel('Time [s]')
@@ -83,7 +83,12 @@ for dataNum = startData:endData
     plot3(0, 0, 0, 'ko', 'MarkerFaceColor', 'k')
     plot3(xCtrl(:,1), xCtrl(:,2), xCtrl(:,3), 'gd', 'MarkerFaceColor', 'g')
     plot3(xTarget(:,1), xTarget(:,2), xTarget(:,3), 'k*')
-    plot3(xAct(indexing), yAct(indexing), zAct(indexing), 'm.', 'MarkerSize', 15)
+
+    % Highlight measurement points — bright yellow with black edges
+    plot3(xAct(indexing), yAct(indexing), zAct(indexing), 'o', ...
+          'MarkerSize', 10, 'MarkerEdgeColor', 'k', 'MarkerFaceColor', [1 0.8 0]);
+
+    % Updated target points
     plot3(xTarget(:,1), newTarget, xTarget(:,3), 'co', 'MarkerFaceColor', 'c')
 
     title(['3D Trajectory for Dataset ', num2str(dataNum)])
