@@ -217,13 +217,12 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
                 end
             end
 
-            % Phantom (Pdata actual) — semi-transparent yellow
+            % Phantom (Pdata actual) — semi-transparent
             if hasPdata && exist('Ptime','var') && ~isempty(PqAct)
-                hP = plot(ax, Ptime, PqAct(:,j), ':', 'LineWidth', 2, ...
-                          'Color', [0 1 0 1], 'DisplayName','Phantom'); % Yellow, 50% opacity
+                hP = plot(ax, Ptime, PqAct(:,j), '.-', 'LineWidth', lw, ...
+                          'Color', [0 0 0 0.5], 'DisplayName','Phantom');
                 if j == 1
-                    posHandles = [posHandles, hP]; 
-                    posLabels = [posLabels, {'Phantom'}];
+                    posHandles = [posHandles, hP]; posLabels = [posLabels, {'Phantom'}];
                 end
             end
 
@@ -269,16 +268,14 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
                 end
             end
 
-            % Phantom (Pdata actual) — semi-transparent yellow
+            % Phantom (Pdata actual) — semi-transparent
             if hasPdata && exist('Ptime','var') && ~isempty(PqdAct)
-                hP = plot(ax, Ptime, PqdAct(:,j), ':', 'LineWidth', 1, ...
-                          'Color', [0 1 0 0.4], 'DisplayName','Phantom'); % Yellow, 50% opacity
+                hP = plot(ax, Ptime, PqdAct(:,j), '.-', 'LineWidth', lw, ...
+                          'Color', [0 0 0 0.5], 'DisplayName','Phantom'); % 50% opacity
                 if j == 1
-                    velHandles = [velHandles, hP]; 
-                    velLabels = [velLabels, {'Phantom'}];
+                    velHandles = [velHandles, hP]; velLabels = [velLabels, {'Phantom'}];
                 end
             end
-
 
             % Gain (optional)
             if hasGdata && exist('Gtime','var') && ~isempty(GqdAct)

@@ -1,5 +1,5 @@
 clear; clc; close all;
-dataNumber = 8;
+dataNumber = 10;
 
 %%%%% Configuration - Choose control point indices %%%%%
 indexControlPoint = [1, 3];   % choose directly from xTarget rows
@@ -9,30 +9,30 @@ qDes = [0, 0, 0];
 [xStart, y, z] = FK(qDes(1), qDes(2), qDes(3));
 xDes = [xStart, y, z];
 
-xTarget = [ -0.025, -0.02, 0;
-            0.0,    -0.04,  0;
-            0.025,  -0.02, 0 ];
+xTarget = [ -0.025, -0.02, 0.0;
+            0.0,    -0.04, 0;
+            0.025,  -0.02, 0. ];
 
-Gain = 2;
+Gain = 4;
 numControlPoints = numel(indexControlPoint);
-tOpt = 8.73914910024956/Gain;
+tOpt = 3.43/Gain;
 
 % Initialize wn parameters
 numWnSets = numControlPoints + 1;
 wn = cell(numWnSets, 1);
 for i = 1:numWnSets
-    wn{i} = [1 1 1];mat
+    wn{i} = [1 1 1];
 end
 
 
 
 % Optimized parameters
 Opt = [tOpt, ...
-       0.54265465869543 0.74500245479823 0.4041549846575, ...
-       1.291549580544353   0.588600790350165   0.899720271351260, ...
-       0.530407636217632  1.119714064852254   2.085093134460414, ...
-       -0.100792879495735, -0.041846054140405, 0.0024602513732, ...
-       0.08369453639168,   -0.1199777273287158, -0.001215467863];
+       1.3566   1.8625   1.0103, ...
+       4.1975   1.9129   2.9240, ...
+       1.8260   2.7992   5.2127, ...
+       -0.1007, -0.0418, 0.0024, ...
+       0.0836,   -0.1199, -0.0012];
 
 
 
@@ -137,7 +137,7 @@ zlim([-0.3 0.2]);
 
 disp(['Optimal Parameter: ', mat2str(Opt,4)]);
 
-save('Sdata8.mat', 'tOpt', 'wnOpt', 'xTarget', 'yOpt', 'ctrlPoints','xFinal','xStart');
+save(sprintf('Sdata%d.mat', dataNumber), 'tOpt', 'wnOpt', 'xTarget', 'yOpt', 'ctrlPoints', 'xFinal', 'xStart');
 
 %% ------------ Joint Position Plot ------------
 t = tOpt;
