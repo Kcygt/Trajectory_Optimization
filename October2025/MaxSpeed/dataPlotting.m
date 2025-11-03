@@ -147,7 +147,8 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     end
     
     % =================== Begin Plotting ===================
-    fig1 = figure('Name',[figPrefix ' - 3D Trajectory']); hold on; grid on; view(3);
+    fig1 = figure('Name',[figPrefix ' - 3D Trajectory']); %#ok<NASGU>
+    hold on; grid on; view(3);
     
     % ---- Fix aspect ratio and limits ----
     axis vis3d;
@@ -165,7 +166,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
         plot3(SxAct, SyAct, SzAct, 'r', 'LineWidth', 2, 'DisplayName', 'Simulation Actual');
     end
     if hasPdata
-        plot3(PxAct, PyAct, PzAct, 'k--', 'LineWidth', 2, 'DisplayName', 'Phantom Trajectory');
+        plot3(PxAct, PyAct, PzAct, '--', 'LineWidth', 2, 'Color',[0.929 0.694 0.125], 'DisplayName', 'Phantom Trajectory'); % yellow-ish
     end
     if hasGdata
         plot3(GxAct, GyAct, GzAct, 'm', 'LineWidth', 2, 'DisplayName', 'Gain Trajectory');
@@ -200,9 +201,9 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
         figure('Name',[figPrefix ' - Joint Positions']);
         tiledlayout(3,1,'Padding','compact','TileSpacing','compact');
 
-        posHandles = gobjects(0);   % ensure variable exists
+        posHandles = gobjects(0);
         posLabels  = {};
-        axPos = gobjects(1,3);      % keep axes refs to place the legend
+        axPos = gobjects(1,3);
 
         for j = 1:3
             ax = nexttile; axPos(j) = ax; hold(ax,'on'); grid(ax,'on');
@@ -212,18 +213,18 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
                 hDes = plot(ax, Stime, SqDes(:,j), '-', 'LineWidth', lw, 'DisplayName','Desired');
                 hSim = plot(ax, Stime, SqAct(:,j), '-', 'LineWidth', lw, 'DisplayName','Simulation');
                 if j == 1
-                    posHandles = [posHandles, hDes, hSim];
-                    posLabels  = [posLabels,  {'Desired','Simulation'}];
+                    posHandles = [posHandles, hDes, hSim]; %#ok<AGROW>
+                    posLabels  = [posLabels,  {'Desired','Simulation'}]; %#ok<AGROW>
                 end
             end
 
-            % Phantom (Pdata actual) — semi-transparent yellow
+            % Phantom (Pdata actual)
             if hasPdata && exist('Ptime','var') && ~isempty(PqAct)
-                hP = plot(ax, Ptime, PqAct(:,j), ':', 'LineWidth', 2, ...
-                          'Color', [0 1 0 1], 'DisplayName','Phantom'); % Yellow, 50% opacity
+                hP = plot(ax, Ptime, PqAct(:,j), '--', 'LineWidth', 1.8, ...
+                          'Color', [0.929 0.694 0.125], 'DisplayName','Phantom');
                 if j == 1
-                    posHandles = [posHandles, hP]; 
-                    posLabels = [posLabels, {'Phantom'}];
+                    posHandles = [posHandles, hP];  %#ok<AGROW>
+                    posLabels = [posLabels, {'Phantom'}]; %#ok<AGROW>
                 end
             end
 
@@ -231,7 +232,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
             if hasGdata && exist('Gtime','var') && ~isempty(GqAct)
                 hG = plot(ax, Gtime, GqAct(:,j), ':', 'LineWidth', lw, 'DisplayName','Gain');
                 if j == 1
-                    posHandles = [posHandles, hG]; posLabels = [posLabels, {'Gain'}];
+                    posHandles = [posHandles, hG]; posLabels = [posLabels, {'Gain'}]; %#ok<AGROW>
                 end
             end
 
@@ -240,7 +241,6 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
             if j == 3, xlabel(ax,'Time (s)'); end
         end
 
-        % One legend for the whole figure — only if we have handles
         if ~isempty(posHandles)
             legend(axPos(end), posHandles, posLabels, 'Location','bestoutside');
         end
@@ -251,9 +251,9 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
         figure('Name',[figPrefix ' - Joint Velocities']);
         tiledlayout(3,1,'Padding','compact','TileSpacing','compact');
 
-        velHandles = gobjects(0);   % ensure variable exists
+        velHandles = gobjects(0);
         velLabels  = {};
-        axVel = gobjects(1,3);      % keep axes refs to place the legend
+        axVel = gobjects(1,3);
         hasWn = hasSdata && isfield(Sdata,'wnOpt') && numel(Sdata.wnOpt) >= 3;
 
         for j = 1:3
@@ -264,27 +264,26 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
                 hDes = plot(ax, Stime, SqdDes(:,j), '-', 'LineWidth', lw, 'DisplayName','Desired');
                 hSim = plot(ax, Stime, SqdAct(:,j), '-', 'LineWidth', lw, 'DisplayName','Simulation');
                 if j == 1
-                    velHandles = [velHandles, hDes, hSim];
-                    velLabels  = [velLabels,  {'Desired','Simulation'}];
+                    velHandles = [velHandles, hDes, hSim]; %#ok<AGROW>
+                    velLabels  = [velLabels,  {'Desired','Simulation'}]; %#ok<AGROW>
                 end
             end
 
-            % Phantom (Pdata actual) — semi-transparent yellow
+            % Phantom (Pdata actual)
             if hasPdata && exist('Ptime','var') && ~isempty(PqdAct)
-                hP = plot(ax, Ptime, PqdAct(:,j), ':', 'LineWidth', 1, ...
-                          'Color', [0 1 0 0.4], 'DisplayName','Phantom'); % Yellow, 50% opacity
+                hP = plot(ax, Ptime, PqdAct(:,j), '--', 'LineWidth', 1.2, ...
+                          'Color', [0.929 0.694 0.125], 'DisplayName','Phantom');
                 if j == 1
-                    velHandles = [velHandles, hP]; 
-                    velLabels = [velLabels, {'Phantom'}];
+                    velHandles = [velHandles, hP];  %#ok<AGROW>
+                    velLabels = [velLabels, {'Phantom'}]; %#ok<AGROW>
                 end
             end
-
 
             % Gain (optional)
             if hasGdata && exist('Gtime','var') && ~isempty(GqdAct)
                 hG = plot(ax, Gtime, GqdAct(:,j), ':', 'LineWidth', lw, 'DisplayName','Gain');
                 if j == 1
-                    velHandles = [velHandles, hG]; velLabels = [velLabels, {'Gain'}];
+                    velHandles = [velHandles, hG]; velLabels = [velLabels, {'Gain'}]; %#ok<AGROW>
                 end
             end
 
@@ -293,10 +292,10 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
                 % Each cell holds a 1x3 vector, index by joint j
                 w1 = Sdata.wnOpt{1}(j);
                 w2 = Sdata.wnOpt{2}(j);
-                w3 = Sdata.wnOpt{3}(j);
+                w3 = Sdata.wnOpt{3}(j); %#ok<NASGU>
 
-                if all(isfinite([w1 w2 w3])) && all([w1 w2 w3] > 0)
-                    d1 = 1./w1; d2 = 1./w2; % d3 = 1./w3; % not needed for t1/t2
+                if all(isfinite([w1 w2])) && all([w1 w2] > 0)
+                    d1 = 1./w1; d2 = 1./w2;
                     t1 = d1;           % first switching time
                     t2 = d1 + d2;      % second switching time
                     xEnd = Stime(end);
@@ -330,13 +329,62 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
             if j == 3, xlabel(ax,'Time (s)'); end
         end
 
-        % One legend for the whole figure — only if we have handles
         if ~isempty(velHandles)
             legend(axVel(end), velHandles, velLabels, 'Location','bestoutside');
         end
     end
 
-    % ---- Display errors in Command Window ----
+    % ---- Compute RMSE for Joint Positions and Velocities ----
+    fprintf('\n==== RMSE Summary (rad and rad/s) ====\n');
+
+    rmse = @(a,b) sqrt(mean((a(:)-b(:)).^2));
+    nJoints = 3;
+
+    if hasSdata
+        % Simulation vs Desired
+        posRMSE_Sim = zeros(1,nJoints);
+        velRMSE_Sim = zeros(1,nJoints);
+        for j = 1:nJoints
+            posRMSE_Sim(j) = rmse(SqAct(:,j), SqDes(:,j));
+            velRMSE_Sim(j) = rmse(SqdAct(:,j), SqdDes(:,j));
+        end
+        fprintf('Simulation vs Desired:\n');
+        fprintf('  Position RMSE (q1–q3): %s\n', mat2str(posRMSE_Sim,6));
+        fprintf('  Velocity RMSE (dq1–dq3): %s\n\n', mat2str(velRMSE_Sim,6));
+    end
+
+    if hasPdata && hasSdata
+        % Phantom vs Desired (interpolated onto Phantom time)
+        SqDes_i  = interp1(Stime, SqDes,  Ptime, 'linear', 'extrap');
+        SqdDes_i = interp1(Stime, SqdDes, Ptime, 'linear', 'extrap');
+        posRMSE_Pthm = zeros(1,nJoints);
+        velRMSE_Pthm = zeros(1,nJoints);
+        for j = 1:nJoints
+            posRMSE_Pthm(j) = rmse(PqAct(:,j),  SqDes_i(:,j));
+            velRMSE_Pthm(j) = rmse(PqdAct(:,j), SqdDes_i(:,j));
+        end
+        fprintf('Phantom vs Desired:\n');
+        fprintf('  Position RMSE (q1–q3): %s\n', mat2str(posRMSE_Pthm,6));
+        fprintf('  Velocity RMSE (dq1–dq3): %s\n\n', mat2str(velRMSE_Pthm,6));
+    end
+
+    if hasGdata && hasSdata
+        % Gain vs Desired (interpolated onto Gain time)
+        SqDes_iG  = interp1(Stime, SqDes,  Gtime, 'linear', 'extrap');
+        SqdDes_iG = interp1(Stime, SqdDes, Gtime, 'linear', 'extrap');
+        posRMSE_Gain = zeros(1,nJoints);
+        velRMSE_Gain = zeros(1,nJoints);
+        for j = 1:nJoints
+            posRMSE_Gain(j) = rmse(GqAct(:,j),  SqDes_iG(:,j));
+            velRMSE_Gain(j) = rmse(GqdAct(:,j), SqdDes_iG(:,j));
+        end
+        fprintf('Gain vs Desired:\n');
+        fprintf('  Position RMSE (q1–q3): %s\n', mat2str(posRMSE_Gain,6));
+        fprintf('  Velocity RMSE (dq1–dq3): %s\n\n', mat2str(velRMSE_Gain,6));
+    end
+    fprintf('=====================================\n');
+
+    % ---- Display target-distance errors in Command Window ----
     if ~isempty(xTarget)
         fprintf('\n==== Target Point Error Summary ====\n');
         for k = 1:nTargets
