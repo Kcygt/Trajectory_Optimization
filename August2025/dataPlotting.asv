@@ -1,0 +1,30 @@
+%% dataPlotting.m
+clear; clc; close all;
+
+%% ------------------ Load data (FIXED) ------------------
+% Expects Sdata5.mat containing Sd.Sdata, and Pdata5.mat containing Pd.Pdata
+Sd = load('Sdata5.mat');             % -> Sd.Sdata
+Pd = load('Pdata5.mat');             % -> Pd.Pdata
+
+SqDes = Sd.yOpt(:,1:3);
+SqdDes = Sd.yOpt(:,4:6);
+SqAct = Sd.yOpt(:,7:9);
+SqdAct = Sd.yOpt(:,10:12);
+
+PqDes = Pd.Pdata(:,1:3);
+PqdDes = Pd.Pdata(:,4:6);
+PqAct = Pd.Pdata(:,7:9);
+PqdAct = Pd.Pdata(:,10:12);
+
+[SxDes,SyDes,SzDes]=FK(SqDes(:,1),SqDes(:,2),SqDes(:,3));
+[SxAct,SyAct,SzAct]=FK(SqAct(:,1),SqAct(:,2),SqAct(:,3));
+[PxAct,PyAct,PzAct]=FK(PqAct(:,1),PqAct(:,2),PqAct(:,3));
+
+
+figure; hold on; grid on;
+plot3(SxDes,SyDes,SzDes)
+plot3(SxAct,SyAct,SzAct)
+plot3(PxAct,PyAct,PzAct)
+plot3(0,0,0,)
+
+
