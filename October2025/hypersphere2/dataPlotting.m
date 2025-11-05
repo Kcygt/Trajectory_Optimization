@@ -96,7 +96,8 @@ legend([hRef, hSim, hPhn, hHome, hTgt, hCtrl], ...
 % Use sample indices by default; replace with Sd.t / Pd.t if available.
 tS = 1:size(SqDes,1);
 tP = 1:size(PqDes,1);
-
+tS = tS/1000;
+tP = tP/1000;
 % -------- Positions (Reference, Simulation, Phantom) --------
 figure('Name','Joint Positions: Reference vs Simulation vs Phantom','Color','w');
 tiledlayout(3,1,'TileSpacing','compact','Padding','compact');
@@ -120,13 +121,13 @@ tiledlayout(3,1,'TileSpacing','compact','Padding','compact');
 
 for j = 1:3
     nexttile; hold on; grid on;
+    plot(tP, PqdAct(:,j),  '-','LineWidth', 2.2, 'Color', [1 0.8 0 0.6]);  % Phantom actual
     plot(tS, SqdDes(:,j), 'k-',  'LineWidth', 1.6);  % Reference (desired)
     plot(tS, SqdAct(:,j), 'b--', 'LineWidth', 1.4);  % Simulation actual
-    plot(tP, PqdAct(:,j),  '-','LineWidth', 2.2, 'Color', [0 0.8 0 0.05]);  % Phantom actual
     title(sprintf('Joint %d Velocity', j));
     ylabel('dq/dt [rad/s]');
     if j == 1
-        legend({'Reference','Simulation','Phantom'}, 'Location','best');
+        legend({'Phantom','Reference','Simulation'}, 'Location','best');
     end
 end
 xlabel('Sample');  % change to 'Time [s]' if using time vectors
