@@ -1,7 +1,8 @@
+%% plotAllPhantomSimulations.m
 close all
 % publish('plottingData.m', 'html');
 
-for i = 1:2
+for i = 1:1
     % Construct filenames
     PdataFile = sprintf('Pdata%d.mat', i);
     SdataFile = sprintf('Sdata%d.mat', i);
@@ -75,7 +76,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     colorPhantom = palette(9,:);   % Phantom    -> tanzanite
     colorRef     = [0 0 0];        % Reference  -> black
     colorGain    = [1 0 1];        % Gain       -> magenta
-    startColor   = palette(1,:);   % Start point -> emerald
+    startColor = [0 0.8 0];      % clean vivid green
     finalColor   = palette(10,:);  % Final point -> rose quartz
 
     % ---------------- Phantom Actual ----------------
@@ -214,7 +215,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     % End/Final point (only if Sdata available)
     if hasSdata && isfield(Sdata,'xFinal') && numel(Sdata.xFinal) >= 3
         hEnd = plot3(Sdata.xFinal(1),Sdata.xFinal(2),Sdata.xFinal(3), ...
-            'o', 'LineWidth', 1.5, 'MarkerSize', 7, ...
+            's', 'LineWidth', 1.5, 'MarkerSize', 7, ...
             'MarkerFaceColor', finalColor, 'MarkerEdgeColor', finalColor, ...
             'DisplayName', 'Final Point');
         plotHandles(end+1) = hEnd;
@@ -317,9 +318,11 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     end
 
     % Project START and FINAL points; projections use the SAME color as the points
-    addPointProjections(ax, [0 0 0], planes, get(hStart,'MarkerFaceColor'));
+    % Note: pass isFinal flag (false for start, true for final) so projection markers
+    % match your requested markers ('o' for start, 's' for final).
+    addPointProjections(ax, [0 0 0], planes, get(hStart,'MarkerFaceColor'), false);
     if ~isempty(hEnd)
-        addPointProjections(ax, Sdata.xFinal(1:3), planes, get(hEnd,'MarkerFaceColor'));
+        addPointProjections(ax, Sdata.xFinal(1:3), planes, get(hEnd,'MarkerFaceColor'), true);
     end
     % --------------------------------------------------------------------
 
@@ -446,18 +449,36 @@ function addTargetProjections(ax, xTarget, planes)
 end
 
 % ---------- Helper: project single points (Start/Final) ----------
-function addPointProjections(ax, pt, planes, color)
+function addPointProjections(ax, pt, planes, color, isFinal)
     % Projects a single 3D point onto XY (z=planes.z), XZ (y=planes.y),
     % and YZ (x=planes.x) using the SAME color as the original point.
+    % The marker shape depends on whether the point is the Final point.
+    %
+    % Inputs:
+    %   ax      - axis handle
+    %   pt      - 1x3 point [x y z]
+    %   planes  - struct with fields x, y, z (projection plane coordinates)
+    %   color   - RGB triplet for marker face and edge
+    %   isFinal - logical; true => use 's' markers (final), false => 'o' markers (start)
+
     x = pt(1); y = pt(2); z = pt(3);
+
+    if isFinal
+        markerXY = 's'; markerXZ = 's'; markerYZ = 's';
+    else
+        markerXY = 'o'; markerXZ = 'o'; markerYZ = 'o';
+    end
+
     % XY projection
-    plot3(ax, x, y, planes.z, 'o', 'MarkerSize', 8, ...
+    plot3(ax, x, y, planes.z, markerXY, 'MarkerSize', 8, ...
         'MarkerFaceColor', color, 'MarkerEdgeColor', color, 'HandleVisibility','off');
+
     % XZ projection (unchanged)
-    plot3(ax, x, planes.y, z, 'o', 'MarkerSize', 8, ...
+    plot3(ax, x, planes.y, z, markerXZ, 'MarkerSize', 8, ...
         'MarkerFaceColor', color, 'MarkerEdgeColor', color, 'HandleVisibility','off');
+
     % YZ projection (shifted +1 cm)
-    plot3(ax, planes.x, y, z, 'o', 'MarkerSize', 8, ...
+    plot3(ax, planes.x, y, z, markerYZ, 'MarkerSize', 8, ...
         'MarkerFaceColor', color, 'MarkerEdgeColor', color, 'HandleVisibility','off');
 end
 
