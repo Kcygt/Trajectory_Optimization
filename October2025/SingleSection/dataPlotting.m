@@ -71,13 +71,22 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
 
     
     % Assign colors similar to your original intent
+    % palette      = gem;
+    % colorSim     = palette(7,:);   % Simulation -> turquoise
+    % colorPhantom = palette(9,:);   % Phantom    -> tanzanite
+    % colorRef     = [0 0 0];        % Reference  -> black
+    % colorGain    = [1 0 1];        % Gain       -> magenta
+    % startColor = [0 0.8 0];      % clean vivid green
+    % finalColor = [1 0 0];   % Final point -> RED (RGB format)
+    % 
+    
     palette      = gem;
-    colorSim     = palette(7,:);   % Simulation -> turquoise
-    colorPhantom = palette(9,:);   % Phantom    -> tanzanite
+    colorSim     = [0 1 0];   % Simulation -> turquoise
+    colorPhantom = [1 0 1];   % Phantom    -> tanzanite
     colorRef     = [0 0 0];        % Reference  -> black
     colorGain    = [1 0 1];        % Gain       -> magenta
-    startColor = [0 0.8 0];      % clean vivid green
-    finalColor   = palette(10,:);  % Final point -> rose quartz
+    startColor = [0 0 1];      % clean vivid green
+    finalColor = [1 0 0];   % Final point -> RED (RGB format)
 
     % ---------------- Phantom Actual ----------------
     if hasPdata
