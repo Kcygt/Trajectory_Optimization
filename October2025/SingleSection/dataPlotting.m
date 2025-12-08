@@ -2,7 +2,7 @@
 close all
 % publish('plottingData.m', 'html');
 
-for i = 1:1
+for i = 1:2
     % Construct filenames
     PdataFile = sprintf('Pdata%d.mat', i);
     SdataFile = sprintf('Sdata%d.mat', i);
@@ -82,7 +82,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     
     palette      = gem;
     colorSim     = [0 1 0];   % Simulation -> turquoise
-    colorPhantom = [1 0 1];   % Phantom    -> tanzanite
+    colorPhantom =[1.0 0.4 0.0] ;   % Phantom    -> tanzanite
     colorRef     = [0 0 0];        % Reference  -> black
     colorGain    = [1 0 1];        % Gain       -> magenta
     startColor = [0 0 1];      % clean vivid green
