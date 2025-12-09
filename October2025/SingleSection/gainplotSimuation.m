@@ -1,140 +1,146 @@
-%% plot_actuals_cartesian_minDist_1000samples.m
-clear; clc; close all
+%% =========================
+% Full analysis: joint plots + 3D trajectories
+%% =========================
+clear; clc; close all;
 
-% ---------- Target ----------
-target = [0.08, 0.05, 0.04];
-target = [0.02, 0.06, 0.06];
+%% ------------------------
+% Load data
+%% ------------------------
+S  = load('Sdata1.mat');   % Simulation
+G1 = load('SG1data1.mat'); % 1.5x faster
+G2 = load('SG2data1.mat'); % 2x faster
+G4 = load('SG4data1.mat'); % 4x faster
 
-% ---------- Link lengths ----------
-l1 = 0.208; 
-l2 = 0.168;
+%% ------------------------
+% Joint positions / velocities
+%% ------------------------
+qS  = S.yOpt(:,7:9);  qdS  = S.yOpt(:,10:12);
+qG1 = G1.yInit(:,7:9); qdG1 = G1.yInit(:,10:12);
+qG2 = G2.yInit(:,7:9); qdG2 = G2.yInit(:,10:12);
+qG4 = G4.yInit(:,7:9); qdG4 = G4.yInit(:,10:12);
 
-% ---------- Load data ----------
-S  = load('Sdata2.mat');    % simulation (actual only)
-G1 = load('SG1data2.mat');  % gain = 1
-G2 = load('SG2data2.mat');  % gain = 2
-G4 = load('SG4data2.mat');  % gain = 4
+% Time vectors
+if isfield(S,'tOpt'), tS = S.tOpt(:); else tS = (0:size(qS,1)-1)'; end
+tG1 = linspace(0, tS(end)/1.5, size(qG1,1))';
+tG2 = linspace(0, tS(end)/2,   size(qG2,1))';
+tG4 = linspace(0, tS(end)/4,   size(qG4,1))';
 
-% ---------- Extract joints (actual only) ----------
-q_sim  = S.yOpt(:,7:9);  qd_sim = S.yOpt(:,10:12);
-q_g1   = G1.yInit(:,7:9); qd_g1 = G1.yInit(:,10:12);
-q_g2   = G2.yInit(:,7:9); qd_g2 = G2.yInit(:,10:12);
-q_g4   = G4.yInit(:,7:9); qd_g4 = G4.yInit(:,10:12);
+% Interpolate to 1000 samples
+tUni  = linspace(0,tS(end),1000)';
+qS    = interp1(tS, qS, tUni, 'linear');  qdS  = interp1(tS, qdS, tUni, 'linear');
+qG1   = interp1(tG1,qG1,tUni,'linear');   qdG1 = interp1(tG1,qdG1,tUni,'linear');
+qG2   = interp1(tG2,qG2,tUni,'linear');   qdG2 = interp1(tG2,qdG2,tUni,'linear');
+qG4   = interp1(tG4,qG4,tUni,'linear');   qdG4 = interp1(tG4,qdG4,tUni,'linear');
 
-% ---------- Time vectors ----------
-if isfield(S,'tOpt')
-    tS = S.tOpt(:);
-else
-    tS = (0:size(q_sim,1)-1)'; % fallback
-end
+%% ------------------------
+% 3D Cartesian Trajectories
+%% ------------------------
+colors = {[0 0.6 0],[255 128 0]/255,[0 0.8 0.8],[255 50 152]/255}; % Sim,G1,G2,G4
+labels = {'Simulation','1.5x faster','2x faster','4x faster'};
 
-% scale durations (faster)
-tG1 = linspace(0, tS(end)/1.5, length(q_g1))';
-tG2 = linspace(0, tS(end)/2,   length(q_g2))';
-tG4 = linspace(0, tS(end)/4,   length(q_g4))';
-
-% ---------- Create uniform 1000-sample time grids ----------
-tSimUni = linspace(0, tS(end), 1000)';
-tG1Uni  = linspace(0, tS(end)/1.5, 1000)';
-tG2Uni  = linspace(0, tS(end)/2,   1000)';
-tG4Uni  = linspace(0, tS(end)/4,   1000)';
-
-% ---------- Interpolate all data to 1000 samples ----------
-q_sim  = interp1(tS,  q_sim,  tSimUni, 'linear');
-qd_sim = interp1(tS,  qd_sim, tSimUni, 'linear');
-q_g1   = interp1(tG1, q_g1,   tG1Uni,  'linear');
-qd_g1  = interp1(tG1, qd_g1,  tG1Uni,  'linear');
-q_g2   = interp1(tG2, q_g2,   tG2Uni,  'linear');
-qd_g2  = interp1(tG2, qd_g2,  tG2Uni,  'linear');
-q_g4   = interp1(tG4, q_g4,   tG4Uni,  'linear');
-qd_g4  = interp1(tG4, qd_g4,  tG4Uni,  'linear');
-
-% ---------- Colors ----------
-col_sim = [0.2 0.6 1.0];  % blue
-col_g1  = [0 0.8 0];      % green
-col_g2  = [1 0.5 0];      % orange
-col_g4  = [0.7 0 0.7];    % purple
-
-% ==========================================================
-%  JOINT POSITION
-% ==========================================================
-figure('Name','Joint Position');
-for j = 1:3
-    subplot(3,1,j); hold on; grid on;
-    plot(tSimUni, q_sim(:,j), '-', 'Color', col_sim, 'LineWidth', 1.8);
-    plot(tG1Uni,  q_g1(:,j),  '-', 'Color', col_g1,  'LineWidth', 1.5);
-    plot(tG2Uni,  q_g2(:,j),  '-', 'Color', col_g2,  'LineWidth', 1.5);
-    plot(tG4Uni,  q_g4(:,j),  '-', 'Color', col_g4,  'LineWidth', 1.5);
-    ylabel(sprintf('$\\mathbf{q_{%d} (rad)}$', j), 'Interpreter', 'latex');
-    if j==3, xlabel('Time (s)'); end
-    title(sprintf('Joint %d Position', j));
-end
-legend({'Simulation Trajectory','1.5x faster','2x faster','4x faster'}, 'Location','bestoutside');
-
-% ==========================================================
-%  JOINT VELOCITY
-% ==========================================================
-figure('Name','Joint Velocity');
-for j = 1:3
-    subplot(3,1,j); hold on; grid on;
-    plot(tSimUni, qd_sim(:,j), '-', 'Color', col_sim, 'LineWidth', 1.8);
-    plot(tG1Uni,  qd_g1(:,j),  '-', 'Color', col_g1,  'LineWidth', 1.5);
-    plot(tG2Uni,  qd_g2(:,j),  '-', 'Color', col_g2,  'LineWidth', 1.5);
-    plot(tG4Uni,  qd_g4(:,j),  '-', 'Color', col_g4,  'LineWidth', 1.5);
-    ylabel(sprintf('$\\mathbf{\\dot{q}_{%d} (rad/s)}$', j), 'Interpreter', 'latex');
-    if j==3, xlabel('Time (s)'); end
-    title(sprintf('Joint %d Velocity', j));
-end
-legend({'Simulation Trajectory','1.5x faster','2x faster','4x faster'}, 'Location','bestoutside');
-
-% ==========================================================
-%  CARTESIAN + MIN DISTANCE
-% ==========================================================
+l1 = 0.208; l2 = 0.168;
 FK = @(q) [ ...
     sin(q(:,1)).*(l1*cos(q(:,2)) + l2*sin(q(:,3))), ...
     l2 - l2*cos(q(:,3)) + l1*sin(q(:,2)), ...
     -l1 + cos(q(:,1)).*(l1*cos(q(:,2)) + l2*sin(q(:,3))) ];
 
-% Cartesian coords
-XYZ_sim = FK(q_sim);
-XYZ_g1  = FK(q_g1);
-XYZ_g2  = FK(q_g2);
-XYZ_g4  = FK(q_g4);
+XYZ_S  = FK(qS);
+XYZ_G1 = FK(qG1);
+XYZ_G2 = FK(qG2);
+XYZ_G4 = FK(qG4);
 
-% Compute min distances
-d_sim = vecnorm(XYZ_sim - target, 2, 2); [dmin_sim, i_sim] = min(d_sim);
-d_g1  = vecnorm(XYZ_g1  - target, 2, 2); [dmin_g1,  i_g1]  = min(d_g1);
-d_g2  = vecnorm(XYZ_g2  - target, 2, 2); [dmin_g2,  i_g2]  = min(d_g2);
-d_g4  = vecnorm(XYZ_g4  - target, 2, 2); [dmin_g4,  i_g4]  = min(d_g4);
+startPt = [0 0 0];
+finalPt = [0.1 0.1 0.1];
+target  = [0.08 0.05 0.04];
 
-% 3D plot
-figure('Name','Cartesian Trajectories (Actual)');
-hold on; grid on; axis equal; view(3)
-plot3(XYZ_sim(:,1),XYZ_sim(:,2),XYZ_sim(:,3),'-','Color',col_sim,'LineWidth',2,'DisplayName','Simulation Trajectory');
-plot3(XYZ_g1(:,1), XYZ_g1(:,2), XYZ_g1(:,3), '-','Color',col_g1,'LineWidth',1.8,'DisplayName','1.5x faster');
-plot3(XYZ_g2(:,1), XYZ_g2(:,2), XYZ_g2(:,3), '-','Color',col_g2,'LineWidth',1.8,'DisplayName','2x faster');
-plot3(XYZ_g4(:,1), XYZ_g4(:,2), XYZ_g4(:,3), '-','Color',col_g4,'LineWidth',1.8,'DisplayName','4x faster');
-plot3(target(1), target(2), target(3), 'p', 'MarkerSize', 13, ...
-      'MarkerFaceColor', [0.95 0.7 0.2], 'MarkerEdgeColor','k', 'DisplayName','Target');
-plot3(0, 0, 0, 'o', 'MarkerSize', 10, 'MarkerFaceColor', 'g', ...
-      'MarkerEdgeColor', 'k', 'DisplayName', 'Start Point');
-
-plot3(0.1, 0.1, 0.1, 's', 'MarkerSize', 10, 'MarkerFaceColor', 'r', ...
-      'MarkerEdgeColor', 'k', 'DisplayName', 'Final Point');
-
-% Mark closest points
-% plot3(XYZ_sim(i_sim,1),XYZ_sim(i_sim,2),XYZ_sim(i_sim,3),'o','MarkerFaceColor',col_sim,'MarkerEdgeColor','k','DisplayName','Sim closest');
-% plot3(XYZ_g1(i_g1,1), XYZ_g1(i_g1,2), XYZ_g1(i_g1,3),'o','MarkerFaceColor',col_g1,'MarkerEdgeColor','k','DisplayName','1.5x closest');
-% plot3(XYZ_g2(i_g2,1), XYZ_g2(i_g2,2), XYZ_g2(i_g2,3),'o','MarkerFaceColor',col_g2,'MarkerEdgeColor','k','DisplayName','2x closest');
-% plot3(XYZ_g4(i_g4,1), XYZ_g4(i_g4,2), XYZ_g4(i_g4,3),'o','MarkerFaceColor',col_g4,'MarkerEdgeColor','k','DisplayName','4x closest');
-
-xlabel('X (m)'); ylabel('Y (m)'); zlabel('Z (m)');
+figure('Name','3D Cartesian Trajectories');
+ax = axes; hold on; grid on; view(3); axis equal;
+xlabel('$X$ (m)','Interpreter','latex'); ylabel('$Y$ (m)','Interpreter','latex'); zlabel('$Z$ (m)','Interpreter','latex');
 title('Cartesian Space Trajectories');
-legend({'Simulation Trajectory','1.5x faster','2x faster','4x faster','Target','Start Point','Final Point'}, 'Location','bestoutside');
 
-% Print summary
-fprintf('\nMinimum Cartesian distance to TARGET:\n');
-fprintf('  Simulation Trajectory : %.6g (at idx %d)\n', dmin_sim, i_sim);
-fprintf('  1.5x faster           : %.6g (at idx %d)\n', dmin_g1,  i_g1);
-fprintf('  2x faster             : %.6g (at idx %d)\n', dmin_g2,  i_g2);
-fprintf('  4x faster             : %.6g (at idx %d)\n', dmin_g4,  i_g4);
+% Trajectories
+hS  = plot3(XYZ_S(:,1), XYZ_S(:,2), XYZ_S(:,3), '-', 'LineWidth',2, 'Color', colors{1}, 'DisplayName',labels{1});
+hG1 = plot3(XYZ_G1(:,1), XYZ_G1(:,2), XYZ_G1(:,3), '-', 'LineWidth',2, 'Color', colors{2}, 'DisplayName',labels{2});
+hG2 = plot3(XYZ_G2(:,1), XYZ_G2(:,2), XYZ_G2(:,3), '-', 'LineWidth',2, 'Color', colors{3}, 'DisplayName',labels{3});
+hG4 = plot3(XYZ_G4(:,1), XYZ_G4(:,2), XYZ_G4(:,3), '-', 'LineWidth',2, 'Color', colors{4}, 'DisplayName',labels{4});
+
+% Start / Final points
+startColor = [0 0 1]; finalColor = [1 0 0]; targetColor = [0 0 0];
+plot3(startPt(1), startPt(2), startPt(3), 'o', 'MarkerFaceColor',startColor, 'MarkerEdgeColor','k','MarkerSize',7,'DisplayName','Start Point');
+plot3(finalPt(1), finalPt(2), finalPt(3), 's', 'MarkerFaceColor',finalColor, 'MarkerEdgeColor','k','MarkerSize',7,'DisplayName','Final Point');
+plot3(target(1), target(2), target(3), 'p','MarkerFaceColor',targetColor, 'MarkerEdgeColor','k','MarkerSize',12,'DisplayName','Target');
+
+% Projection planes
+drawnow;
+xl = xlim; yl = ylim; zl = zlim;
+offset = 0.01; planes.z = zl(1); planes.y = yl(1); planes.x = xl(2)+offset;
+xlim([xl(1),planes.x+0.01]);
+
+% Add projections for all trajectories
+add3DProjections(ax, XYZ_S(:,1), XYZ_S(:,2), XYZ_S(:,3), planes, colors{1});
+add3DProjections(ax, XYZ_G1(:,1), XYZ_G1(:,2), XYZ_G1(:,3), planes, colors{2});
+add3DProjections(ax, XYZ_G2(:,1), XYZ_G2(:,2), XYZ_G2(:,3), planes, colors{3});
+add3DProjections(ax, XYZ_G4(:,1), XYZ_G4(:,2), XYZ_G4(:,3), planes, colors{4});
+
+% Project start/final/target points with same colors
+addPointProjections(ax, startPt, planes, startColor, false);
+addPointProjections(ax, finalPt, planes, finalColor, true);
+addTargetProjections(ax, target, planes, targetColor);
+
+legend('Location','eastoutside','Interpreter','latex');
+
+%% ------------------------
+% Plot Joint Positions
+%% ------------------------
+figure('Name','Joint Positions');
+for j=1:3
+    subplot(3,1,j); hold on; grid on;
+    plot(tUni,qS(:,j),'-','Color',colors{1},'LineWidth',1.8);
+    plot(tUni,qG1(:,j),'-','Color',colors{2},'LineWidth',1.5);
+    plot(tUni,qG2(:,j),'-','Color',colors{3},'LineWidth',1.5);
+    plot(tUni,qG4(:,j),'-','Color',colors{4},'LineWidth',1.5);
+    ylabel(sprintf('$q_{%d}$ (rad)',j),'Interpreter','latex');
+    if j==3, xlabel('Time (s)'); end
+    title(sprintf('Joint %d Position',j));
+end
+legend(labels,'Location','bestoutside');
+
+%% ------------------------
+% Plot Joint Velocities
+%% ------------------------
+figure('Name','Joint Velocities');
+for j=1:3
+    subplot(3,1,j); hold on; grid on;
+    plot(tUni,qdS(:,j),'-','Color',colors{1},'LineWidth',1.8);
+    plot(tUni,qdG1(:,j),'-','Color',colors{2},'LineWidth',1.5);
+    plot(tUni,qdG2(:,j),'-','Color',colors{3},'LineWidth',1.5);
+    plot(tUni,qdG4(:,j),'-','Color',colors{4},'LineWidth',1.5);
+    ylabel(sprintf('$\\dot{q}_{%d}$ (rad/s)',j),'Interpreter','latex');
+    if j==3, xlabel('Time (s)'); end
+    title(sprintf('Joint %d Velocity',j));
+end
+legend(labels,'Location','bestoutside');
+
+%% ------------------------
+% Subfunctions
+%% ------------------------
+function add3DProjections(ax,X,Y,Z,planes,color)
+    plot3(ax,X,Y,planes.z*ones(size(X)),':','Color',color,'HandleVisibility','off'); % XY
+    plot3(ax,X,planes.y*ones(size(X)),Z,':','Color',color,'HandleVisibility','off'); % XZ
+    plot3(ax,planes.x*ones(size(X)),Y,Z,':','Color',color,'HandleVisibility','off'); % YZ
+    plot3(ax,X(1),Y(1),planes.z,'o','MarkerFaceColor',color,'MarkerEdgeColor','k','HandleVisibility','off');
+    plot3(ax,X(end),Y(end),planes.z,'s','MarkerFaceColor',color,'MarkerEdgeColor','k','HandleVisibility','off');
+end
+
+function addTargetProjections(ax,pt,planes,color)
+    plot3(ax,pt(1),pt(2),planes.z,'p','MarkerFaceColor',color,'MarkerEdgeColor','k','HandleVisibility','off');
+    plot3(ax,pt(1),planes.y,pt(3),'p','MarkerFaceColor',color,'MarkerEdgeColor','k','HandleVisibility','off');
+    plot3(ax,planes.x,pt(2),pt(3),'p','MarkerFaceColor',color,'MarkerEdgeColor','k','HandleVisibility','off');
+end
+
+function addPointProjections(ax,pt,planes,color,isFinal)
+    mrk='o'; if isFinal, mrk='s'; end
+    plot3(ax,pt(1),pt(2),planes.z,mrk,'MarkerFaceColor',color,'MarkerEdgeColor','k','HandleVisibility','off');
+    plot3(ax,pt(1),planes.y,pt(3),mrk,'MarkerFaceColor',color,'MarkerEdgeColor','k','HandleVisibility','off');
+    plot3(ax,planes.x,pt(2),pt(3),mrk,'MarkerFaceColor',color,'MarkerEdgeColor','k','HandleVisibility','off');
+end
