@@ -47,7 +47,7 @@ qd_g4  = interp1(tG4, qd_g4,  tUni, 'linear');
 %% ---------- Colors ----------
 colors = {[0.2 0.6 1.0], [0 0.8 0], [1 0.5 0], [0.7 0 0.7]}; % sim, g1, g2, g4
 startColor = [0 0 1]; finalColor = [1 0 0]; targetColor = [0 0 0];
-labels = {'Simulation','1.5x faster','2x faster','4x faster'};
+labels = {'Hardware','1.5x faster','2x faster','4x faster'};
 
 %% ==========================================================
 %  JOINT POSITIONS

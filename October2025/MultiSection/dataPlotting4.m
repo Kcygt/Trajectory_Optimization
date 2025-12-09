@@ -1,7 +1,7 @@
 close all
 % publish('plottingData.m', 'html');
 
-for i = 2:3
+for i = 2:2
     % Construct filenames
     PdataFile = sprintf('Pdata%d.mat', i);
     SdataFile = sprintf('Sdata%d.mat', i);
@@ -68,13 +68,14 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
         0.5430         0    0.5430;  % Rose quartz
         ];
 
+    
     palette      = gem;
-    colorSim     = palette(7,:);    % Simulation -> turquoise
-    colorPhantom = palette(9,:);    % Phantom    -> tanzanite
-    colorRef     = [0 0 0];         % Reference  -> black
-    colorGain    = [1 0 1];         % Gain       -> magenta
-    startColor   = palette(1,:);    % Start point -> emerald
-    finalColor   = palette(10,:);   % Final point -> rose quartz
+    colorSim     = [0 1 0];   % Simulation -> turquoise
+    colorPhantom =[1.0 0.4 0.0] ;   % Phantom    -> tanzanite
+    colorRef     = [0 0 0];        % Reference  -> black
+    colorGain    = [1 0 1];        % Gain       -> magenta
+    startColor = [0 0 1];      % clean vivid green
+    finalColor = [1 0 0];   % Final point -> RED (RGB format)
 
     % ---------------- Phantom Actual ----------------
     if hasPdata && isfield(Pdata,'Pdata')
@@ -329,14 +330,19 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
         hRef = [];
     end
     
-    % Target points (filled pentagrams)
     if ~isempty(xTarget)
         nTargets = size(xTarget, 1);
         targetHandles = gobjects(nTargets,1);
         targetLabels  = cell(nTargets,1);
         for k = 1:nTargets
+            if k == 2
+                color = [0.5 0.5 0.5]; % grey for Target 2
+            else
+                color = 'k';           % black for others
+            end
+    
             targetHandles(k) = plot3(xTarget(k,1), xTarget(k,2), xTarget(k,3), ...
-                'p', 'MarkerSize', 12, 'MarkerFaceColor', 'k', 'MarkerEdgeColor','k', ...
+                'p', 'MarkerSize', 12, 'MarkerFaceColor', color, 'MarkerEdgeColor', color, ...
                 'DisplayName', sprintf('Target %d', k));
             targetLabels{k} = sprintf('Target %d', k);
         end
