@@ -27,12 +27,16 @@ xTarget = Sdata.xTarget(1:5,:); % first 5 targets
 
 %% --- colors ---
 colorSim     = [0 0 1]; % blue
-colorPhantom = [0 1 0]; % green
+colorPhantom = [1 0 0]; % red
 colorRef     = [0 0 0]; % black
-homeColor    = [0 0 0]; % black for home
-targetColor  = [210 105 30]/255; % brownish for targets
-ctrlColor    = [1 0 1]; % magenta for control points
-sphereColor  = [0 0 1]; % blue for control point spheres
+homeColor    = [0 0 0]; % black
+targetColor  = [0 1 1]; % brownish
+ctrlColor    = [0 1 0]; % green
+sphereColor  = [0 0 1]; % blue
+
+%% --- marker sizes ---
+markerSizeDefault = 10;
+markerSizeProj    = markerSizeDefault + 2; % +2 for projections
 
 %% --- Figure 1: 3D Cartesian ---
 figure('Name',sprintf('DataSet%d - 3D Cartesian',i),'Position',[100 100 1200 800]);
@@ -48,45 +52,56 @@ ylim([-0.06 0.03]);
 zlim([-0.03 0.05]);
 
 %% --- define planes for projections ---
-zLimits = zlim;       % get current z-axis limits [zmin zmax]
-yLimits = ylim;       % get current y-axis limits [ymin ymax]
-planes.z = zLimits(1);  % XY plane at bottom
-planes.y = yLimits(2);  % XZ plane at back
+zLimits = zlim;       
+yLimits = ylim;       
+planes.z = zLimits(1);  
+planes.y = yLimits(2);  
 
 %% --- plot Home position ---
 h = gobjects(0); labels = {};
-h(end+1) = plot3(0,0,0,'o','MarkerFaceColor',homeColor,'MarkerEdgeColor','k','MarkerSize',10); 
+homePos = [0 0 0];
+h(end+1) = plot3(homePos(1), homePos(2), homePos(3), 'o', ...
+    'MarkerFaceColor',homeColor,'MarkerEdgeColor','k','MarkerSize',markerSizeDefault);
 labels{end+1} = 'Home';
+
+% projections of Home
+plot3(homePos(1), homePos(2), planes.z, 'o', 'MarkerSize', markerSizeProj, ...
+    'MarkerFaceColor',[0.6 0.6 0.6],'MarkerEdgeColor','none','HandleVisibility','off'); % XY
+plot3(homePos(1), planes.y, homePos(3), 'o', 'MarkerSize', markerSizeProj, ...
+    'MarkerFaceColor',[0.6 0.6 0.6],'MarkerEdgeColor','none','HandleVisibility','off'); % XZ
 
 %% --- plot trajectories ---
 h(end+1) = plot3(SxAct,SyAct,SzAct,'-','LineWidth',2,'Color',colorSim);    labels{end+1} = 'Simulation';
 h(end+1) = plot3(PxAct,PyAct,PzAct,'-','LineWidth',2,'Color',colorPhantom); labels{end+1} = 'Phantom';
-h(end+1) = plot3(SxDes,SyDes,SzDes,'--','LineWidth',1.5,'Color',colorRef); labels{end+1} = 'Reference';
+h(end+1) = plot3(SxDes,SyDes,SzDes,'--','LineWidth',2,'Color',colorRef); labels{end+1} = 'Reference';
 
 %% --- plot target points (all 5) ---
 for k = 1:5
     hTarget(k) = plot3(xTarget(k,1), xTarget(k,2), xTarget(k,3), ...
-        'p','MarkerSize',10,'MarkerFaceColor',targetColor,'MarkerEdgeColor',targetColor);
+        'p','MarkerSize',12,'MarkerFaceColor',targetColor,'MarkerEdgeColor',targetColor);
 end
-% add only one legend entry for all targets
-h(end+1) = hTarget(1);
+h(end+1) = hTarget(1); 
 labels{end+1} = 'Targets';
 
 %% --- plot control points and spheres ---
-ctrlPts = Sdata.Opt(end-8:end);  % 9x1 column vector
+ctrlPts = Sdata.Opt(end-8:end);  
 ctrlPts1 = ctrlPts(1:3);
 ctrlPts2 = ctrlPts(4:6);
 ctrlPts3 = ctrlPts(7:9);
 
 ctrlCenters = {ctrlPts1, ctrlPts2, ctrlPts3};
-radii = [0.0132, 0.005, 0.0112];  % radii for the three control points
+radii = [0.0132, 0.005, 0.0112];  
 
+hCtrl = []; % handle for legend
 for k = 1:3
-    % Plot control points as diamonds
-    plot3(ctrlCenters{k}(1), ctrlCenters{k}(2), ctrlCenters{k}(3), ...
-        'd','MarkerFaceColor',ctrlColor,'MarkerEdgeColor',ctrlColor,'MarkerSize',10);
+    % control point diamond
+    hTmp = plot3(ctrlCenters{k}(1), ctrlCenters{k}(2), ctrlCenters{k}(3), ...
+        'd','MarkerFaceColor',ctrlColor,'MarkerEdgeColor',ctrlColor,'MarkerSize',markerSizeProj);
+    if k == 1
+        hCtrl = hTmp;
+    end
     
-    % Plot sphere around control point
+    % sphere
     [sx, sy, sz] = sphere(30);
     xSphere = sx * radii(k) + ctrlCenters{k}(1);
     ySphere = sy * radii(k) + ctrlCenters{k}(2);
@@ -94,24 +109,26 @@ for k = 1:3
     surf(xSphere, ySphere, zSphere, ...
         'FaceColor', sphereColor, 'FaceAlpha', 0.3, 'EdgeColor', 'none');
     
-    % --- projections of control points ---
-    % XY plane
+    % projections of control points
     plot3(ctrlCenters{k}(1), ctrlCenters{k}(2), planes.z, 'd', ...
-        'MarkerFaceColor', [0.6 0.6 0.6], 'MarkerEdgeColor', 'none', 'HandleVisibility','off');
-    % XZ plane
+        'MarkerFaceColor', [0.6 0.6 0.6], 'MarkerEdgeColor', 'none', ...
+        'MarkerSize', markerSizeProj, 'HandleVisibility','off'); % XY
     plot3(ctrlCenters{k}(1), planes.y, ctrlCenters{k}(3), 'd', ...
-        'MarkerFaceColor', [0.6 0.6 0.6], 'MarkerEdgeColor', 'none', 'HandleVisibility','off');
+        'MarkerFaceColor', [0.6 0.6 0.6], 'MarkerEdgeColor', 'none', ...
+        'MarkerSize', markerSizeProj, 'HandleVisibility','off'); % XZ
     
-    % --- projections of spheres ---
+    % projections of spheres
     surf(sx*radii(k)+ctrlCenters{k}(1), ...
          sy*radii(k)+ctrlCenters{k}(2), ...
          planes.z*ones(size(sz)), ...
-         'FaceColor', sphereColor, 'FaceAlpha', 0.1, 'EdgeColor', 'none', 'HandleVisibility','off');
+         'FaceColor', sphereColor, 'FaceAlpha', 0.1, 'EdgeColor', 'none', 'HandleVisibility','off'); % XY
     surf(sx*radii(k)+ctrlCenters{k}(1), ...
          planes.y*ones(size(sy)), ...
          sz*radii(k)+ctrlCenters{k}(3), ...
-         'FaceColor', sphereColor, 'FaceAlpha', 0.1, 'EdgeColor', 'none', 'HandleVisibility','off');
+         'FaceColor', sphereColor, 'FaceAlpha', 0.1, 'EdgeColor', 'none', 'HandleVisibility','off'); % XZ
 end
+h(end+1) = hCtrl;
+labels{end+1} = 'Control Points';
 
 %% --- projections (XY and XZ only) ---
 % Simulation
@@ -126,13 +143,20 @@ plot3(PxAct, planes.y*ones(size(PyAct)), PzAct, ':','LineWidth',1.2,'Color',colo
 plot3(SxDes, SyDes, planes.z*ones(size(SzDes)), ':','LineWidth',1.2,'Color',colorRef,'HandleVisibility','off'); % XY
 plot3(SxDes, planes.y*ones(size(SyDes)), SzDes, ':','LineWidth',1.2,'Color',colorRef,'HandleVisibility','off'); % XZ
 
-% Targets projections
+% Targets projections (+2 size)
 for k = 1:5
     xt = xTarget(k,:);
-    plot3(xt(1), xt(2), planes.z,'p','MarkerFaceColor',[0.6 0.6 0.6],'MarkerEdgeColor','none','HandleVisibility','off'); % XY
-    plot3(xt(1), planes.y, xt(3),'p','MarkerFaceColor',[0.6 0.6 0.6],'MarkerEdgeColor','none','HandleVisibility','off'); % XZ
+    plot3(xt(1), xt(2), planes.z,'p','MarkerSize',markerSizeProj,'MarkerFaceColor',[0.6 0.6 0.6], ...
+        'MarkerEdgeColor','none','HandleVisibility','off'); % XY
+    plot3(xt(1), planes.y, xt(3),'p','MarkerSize',markerSizeProj,'MarkerFaceColor',[0.6 0.6 0.6], ...
+        'MarkerEdgeColor','none','HandleVisibility','off'); % XZ
 end
 
 %% --- legend ---
 legend(h, labels, 'Location', 'eastoutside');
 hold off;
+rotate3d on;
+disp('Adjust the view using the mouse. Press Enter in the Command Window when ready to save.');
+pause; % wa
+exportgraphics(gcf, sprintf('DataSet%d_3D_plot.png', i), 'Resolution', 1000);
+disp('Figure saved as PNG.');
