@@ -1,7 +1,8 @@
-close all
-% publish('plottingData.m', 'html');
+% process_and_plot.m
+% Loads datasets 4:5 and plots according to your preferred palette & markers.
+clear; clc; close all;
 
-for i = 4:5
+for i = 4:4
     % Construct filenames
     PdataFile = sprintf('Pdata%d.mat', i);
     SdataFile = sprintf('Sdata%d.mat', i);
@@ -69,12 +70,15 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
         ];
 
     palette      = gem;
-    colorSim     = palette(7,:);    % Simulation -> turquoise
-    colorPhantom = palette(9,:);    % Phantom    -> tanzanite
+    colorSim     = [0 1 0];   % Simulation -> turquoise
+    colorPhantom = [1.0 0.4 0.0] ; % Phantom    -> tanzanite
     colorRef     = [0 0 0];         % Reference  -> black
     colorGain    = [1 0 1];         % Gain       -> magenta
-    startColor   = palette(1,:);    % Start point -> emerald
-    finalColor   = palette(10,:);   % Final point -> rose quartz
+    startColor   = [0 0 1];    % Start point -> emerald
+    finalColor   = [1 0 0];   % Final point -> rose quartz
+
+    % Use 'color' variable for target plotting exactly as you requested:
+    color = [0 0 0];  % bright green for target markers (kept as 'color')
 
     % ---------------- Phantom Actual ----------------
     if hasPdata && isfield(Pdata,'Pdata')
@@ -224,9 +228,6 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     end
 
     % ==================== RMSE (Position & Velocity) ====================
-    % RMSE is computed w.r.t. the Reference (SqDes/SqdDes) where available.
-    % Each actual series uses its own native time grid; the reference
-    % is interpolated to that grid before RMSE is computed.
     fprintf('===== RMSE vs Reference =====\n');
     fprintf('(Units: position in rad, velocity in rad/s)\n\n');
 
@@ -274,18 +275,18 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     plotHandles = gobjects(0);
     plotLabels  = {};
 
-    % Start point (origin)
+    % Start point (origin) - face color startColor, black edge
     hStart = plot3(0, 0, 0, 'o', 'LineWidth', 1.5, 'MarkerSize', 7, ...
-        'MarkerFaceColor', startColor, 'MarkerEdgeColor', startColor, ...
+        'MarkerFaceColor', startColor, 'MarkerEdgeColor', 'k', ...
         'DisplayName', 'Start Point');
     plotHandles(end+1) = hStart;
     plotLabels{end+1}  = 'Start Point';
 
-    % End/Final point (only if Sdata available)
+    % End/Final point (only if Sdata available) - face finalColor, black edge
     if hasSdata && isfield(Sdata,'xFinal') && numel(Sdata.xFinal) >= 3
         hEnd = plot3(Sdata.xFinal(1),Sdata.xFinal(2),Sdata.xFinal(3), ...
             'o', 'LineWidth', 1.5, 'MarkerSize', 7, ...
-            'MarkerFaceColor', finalColor, 'MarkerEdgeColor', finalColor, ...
+            'MarkerFaceColor', finalColor, 'MarkerEdgeColor', 'k', ...
             'DisplayName', 'Final Point');
         plotHandles(end+1) = hEnd;
         plotLabels{end+1}  = 'Final Point';
@@ -329,14 +330,14 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
         hRef = [];
     end
     
-    % Target points (filled pentagrams)
+    % Target points (filled pentagrams) - use your requested 'color' variable
     if ~isempty(xTarget)
         nTargets = size(xTarget, 1);
         targetHandles = gobjects(nTargets,1);
         targetLabels  = cell(nTargets,1);
         for k = 1:nTargets
             targetHandles(k) = plot3(xTarget(k,1), xTarget(k,2), xTarget(k,3), ...
-                'p', 'MarkerSize', 12, 'MarkerFaceColor', 'k', 'MarkerEdgeColor','k', ...
+                'p', 'MarkerSize', 12, 'MarkerFaceColor', color, 'MarkerEdgeColor', color, ...
                 'DisplayName', sprintf('Target %d', k));
             targetLabels{k} = sprintf('Target %d', k);
         end
@@ -359,7 +360,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
 
     % Keep XY at z = zmin, keep XZ at y = ymin, move YZ to x = xmax + 1 cm
     planes.z = zl(1);          % XY @ zmin
-    planes.y = yl(1);          % XZ @ ymin
+    planes.y = yl (1);          % XZ @ ymin
     planes.x = xl(2) + offset; % YZ shifted
 
     % Expand axes to include shifted YZ plane
@@ -387,10 +388,10 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
         addTargetProjections(ax, xTarget, planes);
     end
 
-    % Project START and FINAL points; projections use the SAME color as the points
-    addPointProjections(ax, [0 0 0], planes, get(hStart,'MarkerFaceColor'));
+    % Project START and FINAL points; projections use the SAME face color but black edges
+    addPointProjections(ax, [0 0 0], planes, startColor);
     if ~isempty(hEnd)
-        addPointProjections(ax, Sdata.xFinal(1:3), planes, get(hEnd,'MarkerFaceColor'));
+        addPointProjections(ax, Sdata.xFinal(1:3), planes, finalColor);
     end
     % --------------------------------------------------------------------
 
@@ -504,7 +505,7 @@ function add3DProjections(ax, X, Y, Z, planes, color)
     % XY projection
     plot3(ax, X, Y, planes.z*ones(size(Z)), ':', 'Color', color, 'LineWidth', 1.2, ...
         'HandleVisibility','off');
-    % XZ projection (unchanged plane)
+    % XZ projection
     plot3(ax, X, planes.y*ones(size(Y)), Z, ':', 'Color', color, 'LineWidth', 1.2, ...
         'HandleVisibility','off');
     % YZ projection (shifted plane)
@@ -531,30 +532,27 @@ end
 % ---------- Helper: project single points (Start/Final) ----------
 function addPointProjections(ax, pt, planes, color)
     % Projects a single 3D point onto XY (z=planes.z), XZ (y=planes.y),
-    % and YZ (x=planes.x) using the SAME color as the original point.
+    % and YZ (x=planes.x) using the SAME face color but black edge.
     x = pt(1); y = pt(2); z = pt(3);
     % XY projection
     plot3(ax, x, y, planes.z, 'o', 'MarkerSize', 8, ...
-        'MarkerFaceColor', color, 'MarkerEdgeColor', color, 'HandleVisibility','off');
-    % XZ projection (unchanged)
+        'MarkerFaceColor', color, 'MarkerEdgeColor', 'k', 'HandleVisibility','off');
+    % XZ projection
     plot3(ax, x, planes.y, z, 'o', 'MarkerSize', 8, ...
-        'MarkerFaceColor', color, 'MarkerEdgeColor', color, 'HandleVisibility','off');
+        'MarkerFaceColor', color, 'MarkerEdgeColor', 'k', 'HandleVisibility','off');
     % YZ projection (shifted +1 cm)
     plot3(ax, planes.x, y, z, 'o', 'MarkerSize', 8, ...
-        'MarkerFaceColor', color, 'MarkerEdgeColor', color, 'HandleVisibility','off');
+        'MarkerFaceColor', color, 'MarkerEdgeColor', 'k', 'HandleVisibility','off');
 end
 
 % ---------- Helper: order legend entries (Simulation, Phantom, Reference first) ----------
 function [hOrdered, lOrdered] = orderLegend(h, l)
-    % h: array of handles; l: cell array of labels
-    % Ensures legends start with Simulation, then Phantom, then Reference (if present).
     desired = {'Simulation','Phantom','Reference'};
     idx = [];
     for k = 1:numel(desired)
         m = find(contains(l, desired{k}), 1, 'first');
         if ~isempty(m), idx(end+1) = m; end %#ok<AGROW>
     end
-    % Keep remaining entries in original order
     rest = setdiff(1:numel(l), idx, 'stable');
     idx = [idx, rest];
     hOrdered = h(idx);
@@ -563,16 +561,12 @@ end
 
 % ---------- Helper: shade time sections on current axes ----------
 function shadeTimeSections(ax, sectionEdges, sectionLabels)
-    % sectionEdges: Nx2 [tStart tEnd]
-    % sectionLabels: Nx1 cellstr
     hold(ax, 'on');
 
-    % Subtle alternating shading
     baseAlpha = 0.08;
     yL = ylim(ax);
     ySpan = [yL(1) yL(2)];
 
-    % Vertical lines at section boundaries
     if ~isempty(sectionEdges)
         allBounds = unique(sectionEdges(:));
         for k = 1:numel(allBounds)
@@ -588,13 +582,11 @@ function shadeTimeSections(ax, sectionEdges, sectionLabels)
             continue
         end
 
-        % Alternating light gray fills
-        col = 0.5 + 0.1*mod(i,2); % 0.6 or 0.7 gray
+        col = 0.5 + 0.1*mod(i,2); % alternating gray
         ph = patch(ax, [x0 x1 x1 x0], [ySpan(1) ySpan(1) ySpan(2) ySpan(2)], col*[1 1 1], ...
             'FaceAlpha', baseAlpha, 'EdgeColor','none', ...
             'HandleVisibility','off', 'HitTest','off');
 
-        % Label near the top-center
         xC = (x0 + x1)/2;
         yC = ySpan(1) + 0.92*(ySpan(2)-ySpan(1));
         if i <= numel(sectionLabels)
@@ -603,17 +595,12 @@ function shadeTimeSections(ax, sectionEdges, sectionLabels)
                 'FontSize', 9, 'Color', [0 0 0], 'Interpreter','none', ...
                 'HitTest','off');
         end
-        uistack(ph, 'bottom'); % keep data on top
+        uistack(ph, 'bottom');
     end
 end
 
 % ---------- Helper: RMSE between a series and a reference ----------
 function e = rmse_vs_ref(tA, A, tRef, Aref)
-%RMSE_VS_REF Compute RMSE between signal A(tA) and reference Aref(tRef).
-% - Interpolates the reference onto tA (with extrapolation disabled).
-% - Ignores NaNs in either series.
-% - Returns NaN if inputs are insufficient.
-
     e = NaN;
     if isempty(tA) || isempty(A) || isempty(tRef) || isempty(Aref)
         return
@@ -622,16 +609,13 @@ function e = rmse_vs_ref(tA, A, tRef, Aref)
         return
     end
 
-    % Ensure column vectors
     tA   = tA(:);
     A    = A(:);
     tRef = tRef(:);
     Aref = Aref(:);
 
-    % Interpolate reference to measured/sim time grid (no extrapolation)
     ArefOnA = interp1(tRef, Aref, tA, 'pchip', NaN);
 
-    % Mask finite pairs only
     mask = isfinite(A) & isfinite(ArefOnA);
     if nnz(mask) < 2
         return
