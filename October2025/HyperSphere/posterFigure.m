@@ -11,9 +11,14 @@ Pdata = load(Pfile); % expects field Pdata.Pdata
 Sdata = load(Sfile); % expects fields yOpt, tOpt, xTarget, Opt
 
 %% --- extract data ---
-PqAct  = Pdata.Pdata(:,7:9);
-SqDes  = Sdata.yOpt(:,1:3);
-SqAct  = Sdata.yOpt(:,7:9);
+PqAct   = Pdata.Pdata(:,7:9);    % hardware joint positions
+PqdAct  = Pdata.Pdata(:,10:12);  % hardware joint velocities (added)
+
+SqDes   = Sdata.yOpt(:,1:3);     % reference joint positions
+SqdDes  = Sdata.yOpt(:,4:6);     % reference joint velocities (added)
+
+SqAct   = Sdata.yOpt(:,7:9);     % simulation joint positions
+SqdAct  = Sdata.yOpt(:,10:12);   % simulation joint velocities (added)
 
 Stime = Sdata.tOpt;
 Ptime = linspace(0, Stime(end), size(PqAct,1));
@@ -226,3 +231,44 @@ end
 for k = 1:5
     fprintf('Minimum distance from target %d to reference trajectory: %.5f m\n', k, minDist(k));
 end
+
+
+
+%% --- Figure 2: Joint Velocities with Sections ---
+figure('Name',sprintf('DataSet%d - Joint Velocities', i),'Position',[100 100 1200 800]);
+jointNames = {'q1', 'q2', 'q3'};
+colors = [0 0 1; 1 0 0; 0 0 0]; % simulation-blue, hardware-red, reference-black
+
+% Define section boundaries and labels
+sections = [0 0.82; 0.82 2.12; 2.12 3.45; 3.45 5];
+sectionLabels = {'Section 1','Section 2','Section 3','Section 4'};
+sectionCenters = mean(sections,2); % middle of each section
+
+for j = 1:3
+    subplot(3,1,j); hold on; grid on;
+    
+    % Plot velocities
+    plot(Ptime, PqdAct(:,j), '-', 'LineWidth', 2, 'Color', colors(2,:));  % Hardware
+
+    plot(Stime, SqdDes(:,j), '--', 'LineWidth', 2, 'Color', colors(3,:));  % Reference
+    plot(Stime, SqdAct(:,j), '-', 'LineWidth', 2, 'Color', colors(1,:));  % Simulation
+    
+    % Add vertical dashed lines for section boundaries
+    for s = 2:size(sections,1)
+        xline(sections(s,1), '--k', 'LineWidth', 1.2); % dashed line
+    end
+    
+    % Add section labels at the middle
+    yLimits = ylim; % current y-limits
+    for s = 1:size(sections,1)
+        text(sectionCenters(s), yLimits(2)*0.9, sectionLabels{s}, 'HorizontalAlignment','center','FontWeight','bold');
+    end
+    
+    ylabel(['$\dot{' jointNames{j} '}$ (rad/s)'],'Interpreter','latex');
+    
+    if j == 1
+        title('Joint Velocities');
+        legend('Reference','Simulation','Hardware','Location','best');
+    end
+end
+xlabel('Time (s)');
