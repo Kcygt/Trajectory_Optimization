@@ -31,12 +31,12 @@ xTarget = Sdata.xTarget(1:5,:); % first 5 targets
 [SxDes, SyDes, SzDes] = FK(SqDes(:,1), SqDes(:,2), SqDes(:,3));
 
 %% --- colors ---
-colorSim     = [0 0 1]; % blue
+colorSim     = [0 1 0]; % blue
 colorPhantom = [1 0 0]; % red
 colorRef     = [0 0 0]; % black
 homeColor    = [0 0 0]; % black
-targetColor  = [0 1 1]; % brownish
-ctrlColor    = [0 1 0]; % green
+targetColor  = [0 1 1]; % brownish/cyan
+ctrlColor    = [1 .5 0]; % green
 sphereColor  = [0 0 1]; % blue
 
 %% --- marker sizes ---
@@ -235,40 +235,61 @@ end
 
 
 %% --- Figure 2: Joint Velocities with Sections ---
-figure('Name',sprintf('DataSet%d - Joint Velocities', i),'Position',[100 100 1200 800]);
+%% --- Figure 2: Joint Velocities with Sections ---
+fig = figure('Name',sprintf('DataSet%d - Joint Velocities', i), ...
+             'Position',[100 100 1200 800]);
+
 jointNames = {'q1', 'q2', 'q3'};
-colors = [0 0 1; 1 0 0; 0 0 0]; % simulation-blue, hardware-red, reference-black
+colors = [0 1 0; 1 0 0; 0 0 0]; % simulation (green), hardware (red), reference (black)
 
 % Define section boundaries and labels
 sections = [0 0.82; 0.82 2.12; 2.12 3.45; 3.45 5];
 sectionLabels = {'Section 1','Section 2','Section 3','Section 4'};
-sectionCenters = mean(sections,2); % middle of each section
+sectionCenters = mean(sections,2);
+
+% Use tiledlayout for proper main title + subplot subtitles
+tl = tiledlayout(3,1,'TileSpacing','compact','Padding','compact');
 
 for j = 1:3
-    subplot(3,1,j); hold on; grid on;
-    
-    % Plot velocities
-    plot(Ptime, PqdAct(:,j), '-', 'LineWidth', 2, 'Color', colors(2,:));  % Hardware
+    ax = nexttile; 
+    hold(ax,'on'); grid(ax,'on');
 
-    plot(Stime, SqdDes(:,j), '--', 'LineWidth', 2, 'Color', colors(3,:));  % Reference
-    plot(Stime, SqdAct(:,j), '-', 'LineWidth', 2, 'Color', colors(1,:));  % Simulation
-    
-    % Add vertical dashed lines for section boundaries
+    % --- Plot velocities ---
+    plot(ax, Ptime, PqdAct(:,j), '-', 'LineWidth', 2, 'Color', colors(2,:));  % Hardware
+    plot(ax, Stime, SqdAct(:,j), '-', 'LineWidth', 2, 'Color', colors(1,:));  % Simulation
+    plot(ax, Stime, SqdDes(:,j), '--', 'LineWidth', 2, 'Color', colors(3,:)); % Reference
+
+    % --- Vertical dashed lines for section boundaries ---
     for s = 2:size(sections,1)
-        xline(sections(s,1), '--k', 'LineWidth', 1.2); % dashed line
+        xline(ax, sections(s,1), '--k', 'LineWidth', 1.2);
     end
-    
-    % Add section labels at the middle
-    yLimits = ylim; % current y-limits
+
+    % --- Section labels at middle of each section ---
+    yL = ylim(ax);
     for s = 1:size(sections,1)
-        text(sectionCenters(s), yLimits(2)*0.9, sectionLabels{s}, 'HorizontalAlignment','center','FontWeight','bold');
+        text(ax, sectionCenters(s), yL(2)*0.9, sectionLabels{s}, ...
+            'HorizontalAlignment','center','FontWeight','bold');
     end
-    
-    ylabel(['$\dot{' jointNames{j} '}$ (rad/s)'],'Interpreter','latex');
-    
+
+    % --- Y-label with LaTeX derivative and units ---
+    ylabel(ax, sprintf('$\\dot{%s}\\,\\mathrm{(rad/s)}$', jointNames{j}), ...
+           'Interpreter','latex', 'FontSize', 12);
+
+    % --- Subplot title / subtitle ---
+    title(ax, sprintf('Joint %d', j), 'FontWeight','bold');
+
+    % --- Legend only on first subplot ---
     if j == 1
-        title('Joint Velocities');
-        legend('Reference','Simulation','Hardware','Location','best');
+        legend(ax, {'Hardware','Simulation','Reference'}, 'Location','best');
     end
+
+    % --- X label only on bottom subplot ---
+    if j == 3
+        xlabel(ax, 'Time (s)');
+    end
+
+    hold(ax,'off');
 end
-xlabel('Time (s)');
+
+% --- Main figure title ---
+sgtitle(tl, 'Joint Velocities', 'FontWeight','bold', 'FontSize', 16);

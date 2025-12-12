@@ -31,12 +31,12 @@ xTarget = Sdata.xTarget(1:3,:); % first 3 targets (you used 3 in plotting)
 [SxDes, SyDes, SzDes] = FK(SqDes(:,1), SqDes(:,2), SqDes(:,3));
 
 %% --- colors ---
-colorSim     = [0 0 1]; % blue
+colorSim     = [0 1 0]; % blue
 colorPhantom = [1 0 0]; % red
 colorRef     = [0 0 0]; % black
 homeColor    = [0 0 0]; % black
 targetColor  = [0 1 1]; % brownish/cyan
-ctrlColor    = [0 1 0]; % green
+ctrlColor    = [1 .5 0]; % green
 
 %% --- marker sizes ---
 markerSizeDefault = 10;
@@ -240,14 +240,17 @@ hold off;
 leg_names1 = {'Hardware','Simulation','Reference'};
 
 %% --- Joint velocities (3 subplots, stacked) using provided velocities ---
-%% --- Joint velocities (3 subplots, stacked) using provided velocities ---
-figVel = figure('Name',sprintf('DataSet%d - Joint Velocities',i),'Position',[200 200 900 800]);
+figVel = figure('Name',sprintf('DataSet%d - Joint Velocities',i),...
+                'Position',[200 200 900 800]);
 
 cols = {colorRef, colorSim, colorPhantom};
 leg_names1 = {'Hardware','Reference','Simulation'};
 
 % Total simulation end time
 t_end = t(end);
+
+% Use tiledlayout for reliable spacing
+tl = tiledlayout(3,1,'Padding','compact','TileSpacing','compact');
 
 % --- Loop over joints ---
 for j = 1:3
@@ -261,34 +264,46 @@ for j = 1:3
     mid_sec2 = t_switch1 + (1 / wn_values(2))/2;
     mid_sec3 = t_switch2 + (t_end - t_switch2)/2;
 
-    subplot(3,1,j); hold on; grid on;
+    ax = nexttile; hold(ax,'on'); grid(ax,'on');
 
     % Plot velocities
-    plot(Ptime, PqdAct(:,j), '-','LineWidth',1.2,'Color',cols{3});
-    plot(t, vel_sim(:,j), '-','LineWidth',2,'Color',[0 1 0]);
-    plot(t, vel_ref(:,j), '--','LineWidth',1.6,'Color',cols{1});
+    plot(ax, Ptime, PqdAct(:,j), '-','LineWidth',1.2,'Color',cols{3});
+    plot(ax, t, vel_sim(:,j), '-','LineWidth',2,'Color',[0 1 0]);
+    plot(ax, t, vel_ref(:,j), '--','LineWidth',1.6,'Color',cols{1});
 
-    ylabel(sprintf('\\dot{q}_{%d} (rad/s)', j),'Interpreter','tex');
+    % --- Correct ylabel using LaTeX interpreter ---
+    % Example produced label:  \dot{q}_1 (rad/s)
+    ylabel(ax, sprintf('$\\dot{q}_{%d}\\,\\mathrm{(rad/s)}$', j), 'Interpreter', 'latex', 'FontSize', 11,'FontWeight','bold');
 
     % Vertical dashed lines at switching times
-    xline(t_switch1,'--k','HandleVisibility','off');
-    xline(t_switch2,'--k','HandleVisibility','off');
+    xline(ax, t_switch1,'--k','HandleVisibility','off');
+    xline(ax, t_switch2,'--k','HandleVisibility','off');
 
     % Section labels in the middle of each section
-    ylims = ylim; ytext = ylims(2)*0.9; % slightly below top
-    text(mid_sec1, ytext, 'Section 1','HorizontalAlignment','center','FontWeight','bold');
-    text(mid_sec2, ytext, 'Section 2','HorizontalAlignment','center','FontWeight','bold');
-    text(mid_sec3, ytext, 'Section 3','HorizontalAlignment','center','FontWeight','bold');
+    ylims = ylim(ax);
+    ytext = ylims(2) * 0.9; % slightly below top
+    text(ax, mid_sec1, ytext, 'Section 1','HorizontalAlignment','center','FontWeight','bold');
+    text(ax, mid_sec2, ytext, 'Section 2','HorizontalAlignment','center','FontWeight','bold');
+    text(ax, mid_sec3, ytext, 'Section 3','HorizontalAlignment','center','FontWeight','bold');
 
+    % Add per-subplot small title (this is your "subtitle" for each subplot)
+    title(ax, sprintf('Joint %d', j), 'FontWeight','normal');
+
+    % Put legend only on the first subplot
     if j == 1
-        title('Joint Velocities (measured/provided)');
-        legend(leg_names1,'Location','best');
+        legend(ax, leg_names1, 'Location', 'best');
     end
+
+    % X label only on bottom subplot
     if j == 3
-        xlabel('Time (s)');
+        xlabel(ax, 'Time (s)');
     end
+
+    hold(ax,'off');
 end
-hold off;
+
+% === Figure-wide main title ===
+sgtitle(tl, 'Joint Velocities', 'FontWeight', 'bold', 'FontSize', 14);
 
 
 %% --- Minimum distance from targets to reference trajectory ---
