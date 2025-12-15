@@ -5,14 +5,19 @@ clear; clc; close all;
 i = 8;
 Pfile = sprintf('Pdata%d.mat', i);
 Sfile = sprintf('Sdata%d.mat', i);
+Pfile4x = sprintf('Pdata10.mat');
 
 %% --- load data ---
 Pdata = load(Pfile); % expects field Pdata.Pdata
 Sdata = load(Sfile); % expects fields yOpt, tOpt, xTarget, Opt
+Pdata4x = load(Pfile4x); % expects fields yOpt, tOpt, xTarget, Opt
 
 %% --- extract data (positions + measured velocities) ---
 PqAct   = Pdata.Pdata(:,7:9);    % hardware joint positions
 PqdAct  = Pdata.Pdata(:,10:12);  % hardware joint velocities (added)
+
+PqAct4x   = Pdata4x.Pdata(:,7:9);    % hardware joint positions
+PqdAct4x  = Pdata4x.Pdata(:,10:12);  % hardware joint velocities (added)
 
 SqDes   = Sdata.yOpt(:,1:3);     % reference joint positions
 SqdDes  = Sdata.yOpt(:,4:6);     % reference joint velocities (added)
@@ -28,11 +33,14 @@ xTarget = Sdata.xTarget(1:3,:); % first 3 targets (you used 3 in plotting)
 %% --- forward kinematics ---
 [SxAct,SyAct,SzAct] = FK(SqAct(:,1), SqAct(:,2), SqAct(:,3));
 [PxAct,PyAct,PzAct] = FK(PqAct(:,1), PqAct(:,2), PqAct(:,3));
+[PxAct4x,PyAct4x,PzAct4x] = FK(PqAct4x(:,1), PqAct4x(:,2), PqAct4x(:,3));
+
 [SxDes, SyDes, SzDes] = FK(SqDes(:,1), SqDes(:,2), SqDes(:,3));
 
 %% --- colors ---
 colorSim     = [0 1 0]; % blue
 colorPhantom = [1 0 0]; % red
+colorPhantom4x = [0 0 1]; % red
 colorRef     = [0 0 0]; % black
 homeColor    = [0 0 0]; % black
 targetColor  = [0 1 1]; % brownish/cyan
@@ -80,7 +88,8 @@ plot3(planes.x, homePos(2), homePos(3), 'o', 'MarkerSize', markerSizeProj, ...
 
 %% --- plot trajectories ---
 h(end+1) = plot3(SxAct,SyAct,SzAct,'-','LineWidth',2,'Color',colorSim);    labels{end+1} = 'Simulation';
-h(end+1) = plot3(PxAct,PyAct,PzAct,'-','LineWidth',2,'Color',colorPhantom); labels{end+1} = 'Hardware';
+h(end+1) = plot3(PxAct,PyAct,PzAct,'-','LineWidth',2,'Color',colorPhantom); labels{end+1} = 'Pyhsical Robot (1x)';
+h(end+1) = plot3(PxAct4x,PyAct4x,PzAct4x,'-','LineWidth',2,'Color',colorPhantom4x); labels{end+1} = 'Pyhsical Robot (4x)';
 h(end+1) = plot3(SxDes,SyDes,SzDes,'--','LineWidth',2,'Color',colorRef); labels{end+1} = 'Reference';
 
 %% --- plot target points (first 3 as before) ---
@@ -137,6 +146,12 @@ plot3(planes.x*ones(size(PxAct)), PyAct, PzAct, ':','LineWidth',1.2,'Color',colo
 plot3(SxDes, SyDes, planes.z*ones(size(SzDes)), ':','LineWidth',1.2,'Color',colorRef,'HandleVisibility','off'); % XY
 plot3(SxDes, planes.y*ones(size(SyDes)), SzDes, ':','LineWidth',1.2,'Color',colorRef,'HandleVisibility','off'); % XZ
 plot3(planes.x*ones(size(SxDes)), SyDes, SzDes, ':','LineWidth',1.2,'Color',colorRef,'HandleVisibility','off'); % YZ (opposite)
+
+% 4x
+plot3(PxAct4x, PyAct4x, planes.z*ones(size(PzAct4x)), ':','LineWidth',1.2,'Color',colorPhantom4x,'HandleVisibility','off'); % XY
+plot3(PxAct4x, planes.y*ones(size(PyAct4x)), PzAct4x, ':','LineWidth',1.2,'Color',colorPhantom4x,'HandleVisibility','off'); % XZ
+plot3(planes.x*ones(size(PxAct4x)), PyAct4x, PzAct4x, ':','LineWidth',1.2,'Color',colorPhantom4x,'HandleVisibility','off'); % YZ (opposite)
+
 
 % Targets projections (+2 size) for XY, XZ, YZ (opposite)
 for k = 1:3

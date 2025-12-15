@@ -6,13 +6,20 @@ i = 5;
 Pfile = sprintf('Pdata%d.mat', i);
 Sfile = sprintf('Sdata%d.mat', i);
 
+Pfile4x = sprintf('Pdata7.mat');
+
+
 %% --- load data ---
 Pdata = load(Pfile); % expects field Pdata.Pdata
 Sdata = load(Sfile); % expects fields yOpt, tOpt, xTarget, Opt
+Pdata4x = load(Pfile4x); % expects fields yOpt, tOpt, xTarget, Opt
 
 %% --- extract data ---
 PqAct   = Pdata.Pdata(:,7:9);    % hardware joint positions
 PqdAct  = Pdata.Pdata(:,10:12);  % hardware joint velocities (added)
+
+PqAct4x   = Pdata4x.Pdata(:,7:9);    % hardware joint positions
+PqdAct4x  = Pdata4x.Pdata(:,10:12);  % hardware joint velocities (added)
 
 SqDes   = Sdata.yOpt(:,1:3);     % reference joint positions
 SqdDes  = Sdata.yOpt(:,4:6);     % reference joint velocities (added)
@@ -29,10 +36,12 @@ xTarget = Sdata.xTarget(1:5,:); % first 5 targets
 [SxAct,SyAct,SzAct] = FK(SqAct(:,1), SqAct(:,2), SqAct(:,3));
 [PxAct,PyAct,PzAct] = FK(PqAct(:,1), PqAct(:,2), PqAct(:,3));
 [SxDes, SyDes, SzDes] = FK(SqDes(:,1), SqDes(:,2), SqDes(:,3));
+[PxAct4x,PyAct4x,PzAct4x] = FK(PqAct4x(:,1), PqAct4x(:,2), PqAct4x(:,3));
 
 %% --- colors ---
 colorSim     = [0 1 0]; % blue
 colorPhantom = [1 0 0]; % red
+colorPhantom4x = [0 0 1]; % red
 colorRef     = [0 0 0]; % black
 homeColor    = [0 0 0]; % black
 targetColor  = [0 1 1]; % brownish/cyan
@@ -77,7 +86,8 @@ plot3(homePos(1), planes.y, homePos(3), 'o', 'MarkerSize', markerSizeProj, ...
 
 %% --- plot trajectories ---
 h(end+1) = plot3(SxAct,SyAct,SzAct,'-','LineWidth',2,'Color',colorSim);    labels{end+1} = 'Simulation';
-h(end+1) = plot3(PxAct,PyAct,PzAct,'-','LineWidth',2,'Color',colorPhantom); labels{end+1} = 'Hardware';
+h(end+1) = plot3(PxAct,PyAct,PzAct,'-','LineWidth',2,'Color',colorPhantom); labels{end+1} = 'Pyhsical Robot (1x)';
+h(end+1) = plot3(PxAct4x,PyAct4x,PzAct4x,'-','LineWidth',2,'Color',colorPhantom4x); labels{end+1} = 'Pyhsical Robot (4x)';
 h(end+1) = plot3(SxDes,SyDes,SzDes,'--','LineWidth',2,'Color',colorRef); labels{end+1} = 'Reference';
 
 %% --- plot target points (all 5) ---
@@ -143,6 +153,11 @@ plot3(SxAct, planes.y*ones(size(SyAct)), SzAct, ':','LineWidth',1.2,'Color',colo
 % Phantom
 plot3(PxAct, PyAct, planes.z*ones(size(PzAct)), ':','LineWidth',1.2,'Color',colorPhantom,'HandleVisibility','off'); % XY
 plot3(PxAct, planes.y*ones(size(PyAct)), PzAct, ':','LineWidth',1.2,'Color',colorPhantom,'HandleVisibility','off'); % XZ
+
+% Phantom 4x
+plot3(PxAct4x, PyAct4x, planes.z*ones(size(PzAct4x)), ':','LineWidth',1.2,'Color',colorPhantom,'HandleVisibility','off'); % XY
+plot3(PxAct4x, planes.y*ones(size(PyAct4x)), PzAct4x, ':','LineWidth',1.2,'Color',colorPhantom4x,'HandleVisibility','off'); % XZ
+
 
 % Reference
 plot3(SxDes, SyDes, planes.z*ones(size(SzDes)), ':','LineWidth',1.2,'Color',colorRef,'HandleVisibility','off'); % XY
