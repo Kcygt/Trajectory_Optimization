@@ -125,7 +125,7 @@
             <mxPoint x="793" y="465.0344827586207" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="NrLznRH7-sIE1-OWkmvC-42" value="Actuator" style="rounded=1;whiteSpace=wrap;html=1;fontStyle=1" parent="1" vertex="1">
+        <mxCell id="NrLznRH7-sIE1-OWkmvC-42" value="Electronics and Actuator" style="rounded=1;whiteSpace=wrap;html=1;fontStyle=1" parent="1" vertex="1">
           <mxGeometry x="686" y="445" width="50" height="40" as="geometry" />
         </mxCell>
         <mxCell id="NrLznRH7-sIE1-OWkmvC-44" value="&lt;font style=&quot;font-size: 8px;&quot;&gt;+&lt;/font&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontStyle=1" parent="1" vertex="1">
@@ -370,7 +370,7 @@
         <mxCell id="G3rOWK0NmVXB-cGWXbq6-5" value="&lt;span&gt;IK&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontStyle=1" parent="1" vertex="1">
           <mxGeometry x="90.5" y="429" width="50" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="NWIIlrQfnwKv7fwIlsTL-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="x-4UGz_nqAvkyMKMnh3g-2" target="x-4UGz_nqAvkyMKMnh3g-2">
+        <mxCell id="NWIIlrQfnwKv7fwIlsTL-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="x-4UGz_nqAvkyMKMnh3g-2" target="x-4UGz_nqAvkyMKMnh3g-2" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
       </root>
