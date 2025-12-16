@@ -87,7 +87,7 @@ plot3(planes.x, homePos(2), homePos(3), 'o', 'MarkerSize', markerSizeProj, ...
     'MarkerFaceColor',[0.6 0.6 0.6],'MarkerEdgeColor','none','HandleVisibility','off'); % YZ (opposite)
 
 %% --- plot trajectories ---
-h(end+1) = plot3(SxDes,SyDes,SzDes,'--','LineWidth',2,'Color',colorRef); labels{end+1} = 'Reference Trajectory';
+h(end+1) = plot3(SxDes,SyDes,SzDes,'--','LineWidth',2,'Color',colorRef); labels{end+1} = 'Reference trajectory followed by optimization';
 h(end+1) = plot3(SxAct,SyAct,SzAct,'-','LineWidth',2,'Color',colorSim);    labels{end+1} = 'Simulation on digital twin';
 h(end+1) = plot3(PxAct,PyAct,PzAct,'-','LineWidth',2,'Color',colorPhantom); labels{end+1} = 'Physical Robot at normal speed';
 h(end+1) = plot3(PxAct4x,PyAct4x,PzAct4x,'-','LineWidth',2,'Color',colorPhantom4x); labels{end+1} = 'Physical Robot at 4x speed';
@@ -252,14 +252,14 @@ for j = 1:3
 end
 hold off;
 
-leg_names1 = {'Hardware','Simulation','Reference'};
+leg_names1 = {'Physical robot at normal speed','Simulation on digital twin','Reference trajectory followed by optimization'};
 
 %% --- Joint velocities (3 subplots, stacked) using provided velocities ---
 figVel = figure('Name',sprintf('DataSet%d - Joint Velocities',i),...
                 'Position',[200 200 900 800]);
 
 cols = {colorRef, colorSim, colorPhantom};
-leg_names1 = {'Hardware','Reference','Simulation'};
+leg_names1 = {'Physical robot at normal speed','Simulation on digital twin','Reference trajectory followed by optimization'};
 
 % Total simulation end time
 t_end = t(end);
@@ -318,7 +318,7 @@ for j = 1:3
 end
 
 % === Figure-wide main title ===
-sgtitle(tl, 'Joint Velocities', 'FontWeight', 'bold', 'FontSize', 14);
+sgtitle(tl, '', 'FontWeight', 'bold', 'FontSize', 14);
 
 
 %% --- Minimum distance from targets to reference trajectory ---
