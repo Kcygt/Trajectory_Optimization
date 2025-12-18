@@ -2,24 +2,31 @@
 clear; clc; close all;
 
 %% --- dataset index ---
-i = 4;
+i = 5;
 Pfile = sprintf('Pdata%d.mat', i);
 Sfile = sprintf('Sdata%d.mat', i);
-
+Pfile2x = sprintf('Pdata6.mat');
 Pfile4x = sprintf('Pdata7.mat');
+
 
 
 %% --- load data ---
 Pdata = load(Pfile); % expects field Pdata.Pdata
 Sdata = load(Sfile); % expects fields yOpt, tOpt, xTarget, Opt
-Pdata4x = load(Pfile4x); % expects fields yOpt, tOpt, xTarget, Opt
+Pdata2x = load(Pfile2x);   % hardware 2x
+Pdata4x = load(Pfile4x);   % hardware 4x
+
 
 %% --- extract data ---
 PqAct   = Pdata.Pdata(:,7:9);    % hardware joint positions
 PqdAct  = Pdata.Pdata(:,10:12);  % hardware joint velocities (added)
 
-PqAct4x   = Pdata4x.Pdata(:,7:9);    % hardware joint positions
-PqdAct4x  = Pdata4x.Pdata(:,10:12);  % hardware joint velocities (added)
+PqAct_2x = Pdata2x.Pdata(:,7:9);
+PqAct_4x = Pdata4x.Pdata(:,7:9);
+
+PqdAct_2x = Pdata2x.Pdata(:,10:12);
+PqdAct_4x = Pdata4x.Pdata(:,10:12);
+
 
 SqDes   = Sdata.yOpt(:,1:3);     % reference joint positions
 SqdDes  = Sdata.yOpt(:,4:6);     % reference joint velocities (added)
@@ -36,17 +43,19 @@ xTarget = Sdata.xTarget(1:5,:); % first 5 targets
 [SxAct,SyAct,SzAct] = FK(SqAct(:,1), SqAct(:,2), SqAct(:,3));
 [PxAct,PyAct,PzAct] = FK(PqAct(:,1), PqAct(:,2), PqAct(:,3));
 [SxDes, SyDes, SzDes] = FK(SqDes(:,1), SqDes(:,2), SqDes(:,3));
-[PxAct4x,PyAct4x,PzAct4x] = FK(PqAct4x(:,1), PqAct4x(:,2), PqAct4x(:,3));
+[PxAct2x,PyAct2x,PzAct2x] = FK(PqAct_2x(:,1), PqAct_2x(:,2), PqAct_2x(:,3));
+[PxAct4x,PyAct4x,PzAct4x] = FK(PqAct_4x(:,1), PqAct_4x(:,2), PqAct_4x(:,3));
 
 %% --- colors ---
 colorSim     = [0 1 0]; % blue
 colorPhantom = [1 0 0]; % red
-colorPhantom4x = [0 0 1]; % red
 colorRef     = [0 0 0]; % black
 homeColor    = [0 0 0]; % black
 targetColor  = [0 1 1]; % brownish/cyan
 ctrlColor    = [1 .5 0]; % green
 sphereColor  = [0 0 1]; % blue
+colorPhantom2x = [1 0 1]; % red
+colorPhantom4x = [1 1 0]; % red
 
 %% --- marker sizes ---
 markerSizeDefault = 10;
@@ -85,10 +94,11 @@ plot3(homePos(1), planes.y, homePos(3), 'o', 'MarkerSize', markerSizeProj, ...
     'MarkerFaceColor',[0.6 0.6 0.6],'MarkerEdgeColor','none','HandleVisibility','off'); % XZ
 
 %% --- plot trajectories ---
-h(end+1) = plot3(SxDes,SyDes,SzDes,'--','LineWidth',2,'Color',colorRef); labels{end+1} = 'Reference trajectory followed by optimization';
-h(end+1) = plot3(SxAct,SyAct,SzAct,'-','LineWidth',2,'Color',colorSim);    labels{end+1} = 'Simulation on digital twin';
-h(end+1) = plot3(PxAct,PyAct,PzAct,'-','LineWidth',2,'Color',colorPhantom); labels{end+1} = 'Physical Robot at normal speed';
-h(end+1) = plot3(PxAct4x,PyAct4x,PzAct4x,'-','LineWidth',2,'Color',colorPhantom4x); labels{end+1} = 'Physical Robot at 4x speed';
+h(end+1) = plot3(SxDes,SyDes,SzDes,'--','LineWidth',2,'Color',colorRef); labels{end+1} = 'Reference trajectory';
+h(end+1) = plot3(SxAct,SyAct,SzAct,'-','LineWidth',2,'Color',colorSim);    labels{end+1} = 'Simulation';
+h(end+1) = plot3(PxAct,PyAct,PzAct,'-','LineWidth',2,'Color',colorPhantom); labels{end+1} = 'Hardware(1x)';
+h(end+1) = plot3(PxAct2x,PyAct2x,PzAct2x,'-','LineWidth',2,'Color',colorPhantom2x); labels{end+1} = 'Hardware(2x)';
+h(end+1) = plot3(PxAct4x,PyAct4x,PzAct4x,'-','LineWidth',2,'Color',colorPhantom4x); labels{end+1} = 'Hardware(4x)';
 
 %% --- plot target points (all 5) ---
 for k = 1:5
@@ -153,10 +163,6 @@ plot3(SxAct, planes.y*ones(size(SyAct)), SzAct, ':','LineWidth',1.2,'Color',colo
 % Phantom
 plot3(PxAct, PyAct, planes.z*ones(size(PzAct)), ':','LineWidth',1.2,'Color',colorPhantom,'HandleVisibility','off'); % XY
 plot3(PxAct, planes.y*ones(size(PyAct)), PzAct, ':','LineWidth',1.2,'Color',colorPhantom,'HandleVisibility','off'); % XZ
-
-% Phantom 4x
-plot3(PxAct4x, PyAct4x, planes.z*ones(size(PzAct4x)), ':','LineWidth',1.2,'Color',colorPhantom,'HandleVisibility','off'); % XY
-plot3(PxAct4x, planes.y*ones(size(PyAct4x)), PzAct4x, ':','LineWidth',1.2,'Color',colorPhantom4x,'HandleVisibility','off'); % XZ
 
 
 % Reference
@@ -295,7 +301,7 @@ for j = 1:3
 
     % --- Legend only on first subplot ---
     if j == 1
-        legend(ax, {'Physical robot at normal speed','Simulation on digital twin','Reference trajectory followed by optimization'}, 'Location','best');
+        legend(ax, {'Hardware trajectory','Simulation trajectory','Reference trajectory'}, 'Location','best');
     end
 
     % --- X label only on bottom subplot ---
@@ -307,4 +313,67 @@ for j = 1:3
 end
 
 % --- Main figure title ---
-sgtitle(tl, '', 'FontWeight','bold', 'FontSize', 16);
+sgtitle(tl, 'Joint Velocity', 'FontWeight','bold', 'FontSize', 16);
+
+
+%% --- Figure 3: Joint Positions with Sections ---
+fig = figure('Name',sprintf('DataSet%d - Joint Positions', i), ...
+             'Position',[100 100 1200 800]);
+
+jointNames = {'q1', 'q2', 'q3'};
+colors = [0 1 0; 1 0 0; 0 0 0]; % simulation (green), hardware (red), reference (black)
+
+% Reuse section definitions
+sections = [0 0.82; 0.82 2.12; 2.12 3.45; 3.45 5];
+sectionLabels = {'Section 1','Section 2','Section 3','Section 4'};
+sectionCenters = mean(sections,2);
+
+% Tiled layout
+tl = tiledlayout(3,1,'TileSpacing','compact','Padding','compact');
+
+for j = 1:3
+    ax = nexttile; 
+    hold(ax,'on'); grid(ax,'on');
+
+    % --- Plot joint positions ---
+    plot(ax, Ptime, PqAct(:,j), '-', 'LineWidth', 2, 'Color', colors(2,:));  % Hardware
+    plot(ax, Stime, SqAct(:,j), '-', 'LineWidth', 2, 'Color', colors(1,:));  % Simulation
+    plot(ax, Stime, SqDes(:,j), '--', 'LineWidth', 2, 'Color', colors(3,:)); % Reference
+
+    % --- Vertical dashed section boundaries ---
+    for s = 2:size(sections,1)
+        xline(ax, sections(s,1), '--k', 'LineWidth', 1.2);
+    end
+
+    % --- Section labels ---
+    yL = ylim(ax);
+    for s = 1:size(sections,1)
+        text(ax, sectionCenters(s), yL(2)*0.9, sectionLabels{s}, ...
+            'HorizontalAlignment','center','FontWeight','bold');
+    end
+
+    % --- Y-label (joint position with units) ---
+    ylabel(ax, sprintf('$%s\\,\\mathrm{(rad)}$', jointNames{j}), ...
+           'Interpreter','latex', 'FontSize', 12);
+
+    % --- Subplot title ---
+    title(ax, sprintf('Joint %d', j), 'FontWeight','bold');
+
+    % --- Legend only once ---
+    if j == 1
+        legend(ax, {'Hardware', ...
+                    'Simulation ', ...
+                    'Reference trajectory'}, ...
+               'Location','best');
+    end
+
+    % --- X-label only on bottom subplot ---
+    if j == 3
+        xlabel(ax, 'Time (s)');
+    end
+
+    hold(ax,'off');
+end
+
+% --- Main title ---
+sgtitle(tl, 'Joint Position', 'FontWeight','bold', 'FontSize', 16);

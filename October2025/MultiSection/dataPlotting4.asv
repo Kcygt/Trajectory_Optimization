@@ -305,9 +305,9 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     end
     if ~isempty(PxAct)
         hPhantom = plot3(PxAct, PyAct, PzAct, '-', 'LineWidth', 2, ...
-            'Color', colorPhantom, 'DisplayName', 'Hardware ($X_{\mathrm{hw}}$)');
+            'Color', colorPhantom, 'DisplayName', 'Hardware ($X_{\mathrm{ph}}$)');
         plotHandles(end+1) = hPhantom;
-        plotLabels{end+1}  = 'Hardware ($X_{\mathrm{hw}}$)';
+        plotLabels{end+1}  = 'Hard ($X_{\mathrm{ph}}$)';
     else
         hPhantom = [];
     end
@@ -418,7 +418,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
             if ~isempty(PqAct)
                 hP = plot(Ptime, PqAct(:,j), '-', 'LineWidth', 1.2, 'Color', colorPhantom);
                 subplotHandles(end+1) = hP;
-                subplotLabels{end+1}  = 'Hardware ($q_{hw}$)';
+                subplotLabels{end+1}  = 'Phantom ($q_{ph}$)';
             end
             
             if ~isempty(SqDes)
@@ -464,7 +464,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
             if ~isempty(PqdAct)
                 hP = plot(Ptime, PqdAct(:,j), '-', 'LineWidth', 1.2, 'Color', colorPhantom);
                 subplotHandles(end+1) = hP;
-                subplotLabels{end+1}  = 'Hardware ($\dot{q}_{hw}$)';
+                subplotLabels{end+1}  = 'Phantom ($\dot{q}_{ph}$)';
             end
             
             if ~isempty(SqdDes)
@@ -554,7 +554,7 @@ end
 function [hOrdered, lOrdered] = orderLegend(h, l)
     % h: array of handles; l: cell array of labels
     % Ensures legends start with Simulation, then Phantom, then Reference (if present).
-    desired = {'Simulation','Hardware','Reference'};
+    desired = {'Simulation','Phantom','Reference'};
     idx = [];
     for k = 1:numel(desired)
         m = find(contains(l, desired{k}), 1, 'first');
