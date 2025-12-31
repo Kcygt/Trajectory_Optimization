@@ -15,12 +15,10 @@ updTargetColor  = [0.0 1.0 1.0];  % CYAN (updated targets)
 
 % Radii of spheres around control points
 radius = [0.009, 0.005, 0.0085];
-radius = [0.009, 0.005, 0.0085];
-radius = [0.0098, 0.006, 0.012];
 
 % Dataset range
-startData = 3;
-endData   = 4;
+startData = 1;
+endData   = 1;
 
 % Spring constant and desired force
 k = 222.9073;
@@ -80,7 +78,7 @@ for dataNum = startData:endData
         'MarkerSize', 8, 'LineWidth', 1.5);
 
     legend([hForce hTarget], {'Measured Force','Force at Target Points'}, 'Location','best')
-    title('Measured Force Along the Z-Axis')
+    title('Force vs Time')
     xlabel('Time [s]')
     ylabel('Fz [N]')
 
@@ -146,13 +144,12 @@ for dataNum = startData:endData
     lighting gouraud
     camlight headlight
     set(gca,'FontSize',12,'LineWidth',1.2)
-    xlabel('X [m]'); ylabel('Y [m]'); zlabel('Z [m]');
-    title(' Cartesian Space Trajectories ')
+    xlabel('X'); ylabel('Y'); zlabel('Z');
+    title(['3D Trajectory for Dataset ', num2str(dataNum)])
 
     %% ---------------- PLOT 3: Y vs X Trajectories ----------------
     figure; hold on; grid on;
-    hHome = plot(0,0,'o', 'MarkerFaceColor', [0 0 0], ...
-                  'MarkerEdgeColor', colorRef, 'MarkerSize',6,'LineWidth',1.5);
+
     hDes2 = plot(xDes, yDes, 'Color', colorSim, 'LineWidth', 2);
     hAct2 = plot(xAct, yAct, 'Color', colorPhantom, 'LineWidth', 2);
     hInit2 = plot(xTarget(:,1), xTarget(:,2), 'o', 'MarkerFaceColor', initTargetColor, ...
@@ -174,14 +171,14 @@ for dataNum = startData:endData
                     'MarkerFaceColor', sphereColor, 'MarkerSize',10, 'LineWidth',2);
 
     % Legend
-    legend([hHome hDes2 hAct2 hInit2 hUpd2 hCtrl2 hRegion2], ...
-           {'Home position','Reference Trajectory','Hardware Trajectory','Initial Targets','Updated Targets','Control Points','Control Point Sphere'}, ...
+    legend([hDes2 hAct2 hInit2 hUpd2 hCtrl2 hRegion2], ...
+           {'Reference Trajectory','Hardware Trajectory','Initial Targets','Updated Targets','Control Points','Control Point Sphere'}, ...
            'Location','best')
 
     axis equal
     set(gca,'FontSize',12,'LineWidth',1.2)
-    title('2D Cartesian Space Trajectories')
-    xlabel('X [m]'); ylabel('Y [m]')
+    title(['X-Trajectory for Dataset ', num2str(dataNum)])
+    xlabel('X'); ylabel('Y')
 
 end
 

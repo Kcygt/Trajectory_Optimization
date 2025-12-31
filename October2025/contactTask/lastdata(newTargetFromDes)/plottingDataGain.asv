@@ -1,3 +1,26 @@
+PqDes_2x = Pdata2x.Pdata(:,1:3); 
+PqdDes_2x = Pdata2x.Pdata(:,4:6); 
+PqAct_2x = Pdata2x.Pdata(:,7:9); 
+PqdAct_2x = Pdata2x.Pdata(:,10:12); 
+F_2xz = Pdata2x.Pdata(:,); 
+
+PqDes_4x = Pdata4x.Pdata(:,1:3); 
+PqdDes_4x = Pdata4x.Pdata(:,4:6);
+PqAct_4x = Pdata4x.Pdata(:,7:9); 
+PqdAct_4x = Pdata4x.Pdata(:,10:12); 
+
+Pfile    = sprintf('Pdata%d.mat', i);
+Sfile    = sprintf('Sdata%d.mat', i);
+Pfile2x  = 'Pdata9.mat';  % Hardware 2x
+Pfile4x  = 'Pdata10.mat';  % Hardware 4x
+
+%% --- Load data ---
+Pdata     = load(Pfile);    % expects field Pdata.Pdata
+Sdata     = load(Sfile);    % expects fields yOpt, tOpt, xTarget, Opt
+Pdata2x   = load(Pfile2x);
+Pdata4x   = load(Pfile4x);
+
+
 close all
 clear
 clc

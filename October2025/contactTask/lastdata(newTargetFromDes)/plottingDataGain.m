@@ -1,3 +1,12 @@
+
+
+%% --- Load data ---
+Pdata     = load(Pfile);    % expects field Pdata.Pdata
+Sdata     = load(Sfile);    % expects fields yOpt, tOpt, xTarget, Opt
+Pdata2x   = load(Pfile2x);
+Pdata4x   = load(Pfile4x);
+
+
 close all
 clear
 clc
