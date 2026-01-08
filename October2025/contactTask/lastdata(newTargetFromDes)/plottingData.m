@@ -19,8 +19,8 @@ radius = [0.009, 0.005, 0.0085];
 radius = [0.0098, 0.006, 0.012];
 
 % Dataset range
-startData = 3;
-endData   = 4;
+startData = 5;
+endData   = 8;
 
 % Spring constant and desired force
 k = 222.9073;
