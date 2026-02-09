@@ -22,6 +22,55 @@ q_g1   = G1.G1p5data1(:,7:9); qd_g1 = G1.G1p5data1(:,10:12);
 q_g2   = G2.G2data1(:,7:9);   qd_g2 = G2.G2data1(:,10:12);
 q_g4   = G4.G4data1(:,7:9);   qd_g4 = G4.G4data1(:,10:12);
 
+
+
+q_simD  = S.Pdata(:,1:3);  qd_simD = S.Pdata(:,4:6);
+q_g1D   = G1.G1p5data1(:,1:3); qd_g1D = G1.G1p5data1(:,4:6);
+q_g2D   = G2.G2data1(:,1:3);   qd_g2D = G2.G2data1(:,4:6);
+q_g4D   = G4.G4data1(:,1:3);   qd_g4D = G4.G4data1(:,4:6);
+
+
+% Position RMSE
+rmse_pos_sim = sqrt(mean((q_sim - q_simD).^2, 1));
+rmse_pos_g1  = sqrt(mean((q_g1  - q_g1D).^2, 1));
+rmse_pos_g2  = sqrt(mean((q_g2  - q_g2D).^2, 1));
+rmse_pos_g4  = sqrt(mean((q_g4  - q_g4D).^2, 1));
+
+% Velocity RMSE
+rmse_vel_sim = sqrt(mean((qd_sim - qd_simD).^2, 1));
+rmse_vel_g1  = sqrt(mean((qd_g1  - qd_g1D).^2, 1));
+rmse_vel_g2  = sqrt(mean((qd_g2  - qd_g2D).^2, 1));
+rmse_vel_g4  = sqrt(mean((qd_g4  - qd_g4D).^2, 1));
+
+
+
+%% ------------------------
+% RMSE Table: Joint Position & Velocity
+%% ------------------------
+
+% Dataset names
+datasets = {'Simulation','1.5×','2×','4×'};
+
+% RMSE values (per joint)
+RMSE_pos = [rmse_pos_sim; rmse_pos_g1; rmse_pos_g2; rmse_pos_g4];
+RMSE_vel = [rmse_vel_sim; rmse_vel_g1; rmse_vel_g2; rmse_vel_g4];
+
+% Compute scalar RMSE (all joints combined)
+RMSE_pos_total = sqrt(sum(RMSE_pos.^2,2)/3);  % total RMSE for positions
+RMSE_vel_total = sqrt(sum(RMSE_vel.^2,2)/3);  % total RMSE for velocities
+
+% Create table
+T = table(datasets', ...
+    RMSE_pos(:,1), RMSE_pos(:,2), RMSE_pos(:,3), RMSE_pos_total, ...
+    RMSE_vel(:,1), RMSE_vel(:,2), RMSE_vel(:,3), RMSE_vel_total, ...
+    'VariableNames', {'Dataset', ...
+                      'Pos_RMSE_q1','Pos_RMSE_q2','Pos_RMSE_q3','Pos_RMSE_total', ...
+                      'Vel_RMSE_q1','Vel_RMSE_q2','Vel_RMSE_q3','Vel_RMSE_total'});
+
+disp('==== RMSE: Joint Position & Velocity ====')
+disp(T)
+
+
 %% ---------- Time vectors ----------
 if isfield(S,'tOpt')
     tS = S.tOpt(:);

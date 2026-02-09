@@ -19,6 +19,55 @@ qG1 = G1.yInit(:,7:9); qdG1 = G1.yInit(:,10:12);
 qG2 = G2.yInit(:,7:9); qdG2 = G2.yInit(:,10:12);
 qG4 = G4.yInit(:,7:9); qdG4 = G4.yInit(:,10:12);
 
+
+qSD  = S.yOpt(:,1:3);  qdSD  = S.yOpt(:,7:9);
+qG1D = G1.yInit(:,1:3); qdG1D = G1.yInit(:,7:9);
+qG2D = G2.yInit(:,1:3); qdG2D = G2.yInit(:,7:9);
+qG4D = G4.yInit(:,1:3); qdG4D = G4.yInit(:,7:9);
+
+rmse_pos_joint1 = sqrt(mean((qS - qSD).^2, 1));
+rmse_pos_joint2 = sqrt(mean((qG1 - qG1D).^2, 1));
+rmse_pos_joint3 = sqrt(mean((qG2 - qG2D).^2, 1));
+rmse_pos_joint4 = sqrt(mean((qG4 - qG4D).^2, 1));
+
+rmse_vel_joint1 = sqrt(mean((qdS - qdSD).^2, 1));
+rmse_vel_joint2 = sqrt(mean((qdG1 - qdG1D).^2, 1));
+rmse_vel_joint3 = sqrt(mean((qdG2 - qdG2D).^2, 1));
+rmse_vel_joint4 = sqrt(mean((qdG4 - qdG4D).^2, 1));
+
+
+
+
+%% ------------------------
+% RMSE Table: Joint Position & Velocity
+%% ------------------------
+
+% Joint datasets
+datasets = {'S','G1','G2','G4'};
+
+% RMSE values (per joint)
+RMSE_pos = [rmse_pos_joint1; rmse_pos_joint2; rmse_pos_joint3; rmse_pos_joint4];
+RMSE_vel = [rmse_vel_joint1; rmse_vel_joint2; rmse_vel_joint3; rmse_vel_joint4];
+
+% Compute scalar RMSE (all joints combined)
+RMSE_pos_total = sqrt(sum(RMSE_pos.^2,2)/3);  % sqrt(mean of squares)
+RMSE_vel_total = sqrt(sum(RMSE_vel.^2,2)/3);
+
+% Create table
+T = table(datasets', ...
+    RMSE_pos(:,1), RMSE_pos(:,2), RMSE_pos(:,3), RMSE_pos_total, ...
+    RMSE_vel(:,1), RMSE_vel(:,2), RMSE_vel(:,3), RMSE_vel_total, ...
+    'VariableNames', {'Dataset', ...
+                      'Pos_RMSE_q1','Pos_RMSE_q2','Pos_RMSE_q3','Pos_RMSE_total', ...
+                      'Vel_RMSE_q1','Vel_RMSE_q2','Vel_RMSE_q3','Vel_RMSE_total'});
+
+disp('==== RMSE: Joint Position & Velocity ====')
+disp(T)
+
+
+
+
+
 % Time vectors
 if isfield(S,'tOpt'), tS = S.tOpt(:); else tS = (0:size(qS,1)-1)'; end
 tG1 = linspace(0, tS(end)/1.5, size(qG1,1))';
@@ -144,3 +193,5 @@ function addPointProjections(ax,pt,planes,color,isFinal)
     plot3(ax,pt(1),planes.y,pt(3),mrk,'MarkerFaceColor',color,'MarkerEdgeColor','k','HandleVisibility','off');
     plot3(ax,planes.x,pt(2),pt(3),mrk,'MarkerFaceColor',color,'MarkerEdgeColor','k','HandleVisibility','off');
 end
+
+
