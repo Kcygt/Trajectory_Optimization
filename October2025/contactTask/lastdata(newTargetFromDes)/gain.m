@@ -23,8 +23,8 @@ speedColors = [
 radius = [0.009 0.005 0.0085];
 
 %% ================= DATA RANGE =================
-startData = 1;
-endData   = 4;
+startData = 5;
+endData   = 8;
 
 %% ================= CONTROL PARAMETERS =================
 k    = 222.9073;

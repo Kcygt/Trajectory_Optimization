@@ -65,7 +65,7 @@ for dataNum = startData:endData
     load(['Sdata' dataStr '.mat'], 'xTarget', 'Opt');
     tmp = load(['Pdata' dataStr '.mat']);
     Pdata = tmp.(['Pdata' dataStr]);
-
+    
     time = linspace(0, Opt(1), length(Pdata));
 
     %% -------- Forward Kinematics --------
@@ -73,7 +73,7 @@ for dataNum = startData:endData
     [xDes, yDes, zDes] = FK(Pdata(:,10), Pdata(:,11), Pdata(:,12));
     Fz = Pdata(:,6);
 
-    xCtrl = [Opt(14:16); Opt(17:19); Opt(20:22)];
+    % xCtrl = [Opt(14:16); Opt(17:19); Opt(20:22)];
 
     numTargets = size(xTarget,1);
     if dataNum == startData
@@ -82,6 +82,9 @@ for dataNum = startData:endData
 
     %% ================= FIGURE 1: FORCE =================
     figure(1); hold on; grid on;
+    
+    
+    
 
     hForceAll(idx) = plot(time, Fz, ...
         'Color', trajColors{idx}, 'LineWidth',1.5);
@@ -119,8 +122,8 @@ for dataNum = startData:endData
     if dataNum == startData
         hDes = plot3(xDes,yDes,zDes,'Color',colorSim,'LineWidth',2);
         hHome = plot3(0,0,0,'o','MarkerFaceColor',homeColor);
-        hCtrl = plot3(xCtrl(:,1),xCtrl(:,2),xCtrl(:,3),'d',...
-            'MarkerFaceColor',ctrlColor,'MarkerEdgeColor',colorRef);
+        % hCtrl = plot3(xCtrl(:,1),xCtrl(:,2),xCtrl(:,3),'d',...
+            % 'MarkerFaceColor',ctrlColor,'MarkerEdgeColor',colorRef);
         hInit = plot3(xTarget(:,1),xTarget(:,2),xTarget(:,3),'o',...
             'MarkerFaceColor',initTargetColor);
     end
@@ -131,16 +134,16 @@ for dataNum = startData:endData
     plot3(xTarget(:,1), newTarget, xTarget(:,3), 'o', ...
         'MarkerFaceColor', updTargetColor, 'MarkerEdgeColor', colorRef);
 
-    [sx,sy,sz] = sphere(30);
-    for i = 1:3
-        surf(radius(i)*sx+xCtrl(i,1), ...
-             radius(i)*sy+xCtrl(i,2), ...
-             radius(i)*sz+xCtrl(i,3), ...
-             'FaceColor',sphereColor,'FaceAlpha',0.35, ...
-             'EdgeColor','none','HandleVisibility','off');
-    end
-
-    hRegion = plot3(NaN,NaN,NaN,'o','MarkerFaceColor',sphereColor,'MarkerEdgeColor','none');
+    % [sx,sy,sz] = sphere(30);
+    % for i = 1:3
+    %     surf(radius(i)*sx+xCtrl(i,1), ...
+    %          radius(i)*sy+xCtrl(i,2), ...
+    %          radius(i)*sz+xCtrl(i,3), ...
+    %          'FaceColor',sphereColor,'FaceAlpha',0.35, ...
+    %          'EdgeColor','none','HandleVisibility','off');
+    % end
+    % 
+    % hRegion = plot3(NaN,NaN,NaN,'o','MarkerFaceColor',sphereColor,'MarkerEdgeColor','none');
 
     axis equal
     view(135,25)
@@ -156,22 +159,22 @@ for dataNum = startData:endData
         hHome2 = plot(0,0,'o','MarkerFaceColor',homeColor);
         hDes2  = plot(xDes,yDes,'Color',colorSim,'LineWidth',2);
         hInit2 = plot(xTarget(:,1),xTarget(:,2),'o','MarkerFaceColor',initTargetColor);
-        hCtrl2 = plot(xCtrl(:,1),xCtrl(:,2),'d','MarkerFaceColor',ctrlColor);
+        % hCtrl2 = plot(xCtrl(:,1),xCtrl(:,2),'d','MarkerFaceColor',ctrlColor);
     end
 
     hAct2D(idx) = plot(xAct,yAct,'Color',trajColors{idx},'LineWidth',2);
 
     % Updated targets plotted but not in legend
     plot(xTarget(:,1), newTarget,'o','MarkerFaceColor',updTargetColor);
+    % 
+    % for i = 1:3
+    %     th = linspace(0,2*pi,200);
+    %     fill(xCtrl(i,1)+radius(i)*cos(th), ...
+    %          xCtrl(i,2)+radius(i)*sin(th), ...
+    %          sphereColor,'FaceAlpha',0.25,'EdgeColor','none');
+    % end
 
-    for i = 1:3
-        th = linspace(0,2*pi,200);
-        fill(xCtrl(i,1)+radius(i)*cos(th), ...
-             xCtrl(i,2)+radius(i)*sin(th), ...
-             sphereColor,'FaceAlpha',0.25,'EdgeColor','none');
-    end
-
-    hRegion2 = plot(NaN,NaN,'o','MarkerFaceColor',sphereColor,'MarkerEdgeColor','none');
+    % hRegion2 = plot(NaN,NaN,'o','MarkerFaceColor',sphereColor,'MarkerEdgeColor','none');
 
     axis equal
     xlabel('X [m]'); ylabel('Y [m]');
@@ -192,14 +195,14 @@ ylabel('Fz [N]')
 
 % ---- Figure 2
 figure(2)
-legend([hDes; hAct3D; hHome; hCtrl; hInit; hRegion], ...
+legend([hDes; hAct3D; hHome;  hInit], ...
        [{'Reference Trajectory'}; trajLabels(:); ...
         {'Home';'Control Points';'Initial Targets';'Control Point Sphere'}], ...
        'Location','best')
 
 % ---- Figure 3
 figure(3)
-legend([hHome2; hDes2; hAct2D; hInit2; hCtrl2; hRegion2], ...
+legend([hHome2; hDes2; hAct2D; hInit2; hCtrl2], ...
        [{'Home';'Reference Trajectory'}; trajLabels(:); ...
         {'Initial Targets';'Control Points';'Control Point Sphere'}], ...
        'Location','best')
