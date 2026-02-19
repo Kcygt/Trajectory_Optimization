@@ -23,8 +23,8 @@ colorPhantom4x  = palette(5,:); % 4x speed
 trajColors = {colorPhantom, colorPhantom2x, colorPhantom4x};
 
 %% ================= DATA RANGE & PARAMETERS =================
-startData = 6;
-endData   = 8;
+startData = 2;
+endData   = 4;
 numData   = endData - startData + 1;
 
 k    = 222.9073;
@@ -202,7 +202,7 @@ legend([hDes; hAct3D; hHome;  hInit], ...
 
 % ---- Figure 3
 figure(3)
-legend([hHome2; hDes2; hAct2D; hInit2; hCtrl2], ...
+legend([hHome2; hDes2; hAct2D; hInit2], ...
        [{'Home';'Reference Trajectory'}; trajLabels(:); ...
         {'Initial Targets';'Control Points';'Control Point Sphere'}], ...
        'Location','best')
@@ -213,3 +213,10 @@ for i = 1:numTargets
     fprintf('Target %d: ', i);
     fprintf('%.3f N (normal), %.3f N (2x), %.3f N (4x)\n', targetForces(i,:));
 end
+
+
+% axinsert=axes;
+% axinsert.Position=[.5 .12 .2 .15];
+% plot(axinsert,hDes2.XData,hDes2.YData)
+% axinsert.XTickLabel='';
+% axinsert.YTickLabel='';

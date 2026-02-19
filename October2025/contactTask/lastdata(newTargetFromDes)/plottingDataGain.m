@@ -23,8 +23,8 @@ colorPhantom4x  = palette(5,:); % 4x speed
 trajColors = {colorPhantom, colorPhantom2x, colorPhantom4x};
 
 %% ================= DATA RANGE & PARAMETERS =================
-startData = 6;
-endData   = 8;
+startData = 1;
+endData   = 4;
 numData   = endData - startData + 1;
 
 k    = 222.9073;
