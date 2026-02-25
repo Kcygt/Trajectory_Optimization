@@ -3,7 +3,7 @@ clear
 clc
 
 %% ================= COLORS =================
-colorSim      = [0.0 0.8 0.9];
+colorSim      = [0.0 0.8 0.0];
 colorRef      = [0 0 0];
 homeColor     = [0 0 0];
 ctrlColor     = [0.9 0.3 0.5];
@@ -44,9 +44,9 @@ forceLegendLabels = {
 };
 
 targetLegendLabels = {
-    'Force on Target points (normal speed)'
-    'Force on Target points (2x speed)'
-    'Force on Target points (4x speed)'
+    'Target points (normal speed)'
+    'Target points (2x speed)'
+    'Target points (4x speed)'
 };
 
 %% ================= HANDLE STORAGE =================
@@ -146,9 +146,9 @@ for dataNum = startData:endData
     hAct3D(idx) = plot3(xAct,yAct,zAct,...
         'Color',trajColors{idx},'LineWidth',2);
 
-    % plot3(xTarget(:,1), newTarget, xTarget(:,3), 'o', ...
-    %     'MarkerFaceColor', updTargetColor, ...
-    %     'MarkerEdgeColor', colorRef);
+    plot3(xTarget(:,1), newTarget, xTarget(:,3), 'o', ...
+        'MarkerFaceColor', updTargetColor, ...
+        'MarkerEdgeColor', colorRef);
 
     axis equal
     view(135,25)
@@ -191,20 +191,14 @@ for dataNum = startData:endData
     hAct2D(idx) = plot(xAct,yAct,...
         'Color',trajColors{idx},'LineWidth',2);
 
-    % plot(xTarget(:,1), newTarget,'o',...
-    %     'MarkerFaceColor',updTargetColor);
+    plot(xTarget(:,1), newTarget,'o',...
+        'MarkerFaceColor',updTargetColor);
 
     axis equal
     xlabel('X [m]')
     ylabel('Y [m]')
 
     title('2D Cartesian Space Trajectories')
-
-
-    % Force and Position plots
-    figure; hold on; grid on;
-    plot(xAct,Fy)
-
 
 end
 
@@ -222,13 +216,13 @@ ylabel('Fz [N]')
 figure(2)
 legend([hDes; hAct3D; hHome; hCtrl; hInit; hRegion], ...
        [{'Reference Trajectory'}; trajLabels(:); ...
-        {'Home';'Control Points';'Target Points';'Control Point Sphere'}], ...
+        {'Home';'Control Points';'Initial Targets';'Control Point Sphere'}], ...
        'Location','best')
 
 figure(3)
 legend([hHome2; hDes2; hAct2D; hInit2; hCtrl2; hRegion2], ...
        [{'Home';'Reference Trajectory'}; trajLabels(:); ...
-        {'Target Points';'Control Points';'Control Point Sphere'}], ...
+        {'Initial Targets';'Control Points';'Control Point Sphere'}], ...
        'Location','best')
 
 %% ================= DISPLAY FORCES =================
