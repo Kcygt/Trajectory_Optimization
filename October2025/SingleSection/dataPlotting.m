@@ -208,7 +208,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     xlabel('$X$ (m)','Interpreter','latex');
     ylabel('$Y$ (m)','Interpreter','latex');
     zlabel('$Z$ (m)','Interpreter','latex');
-    title('Cartesian Space Position');
+    title('Cartesian Space Trajectory');
 
     % Collect legend handles/labels
     plotHandles = gobjects(0);
@@ -244,9 +244,9 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
     end
     if ~isempty(PxAct)
         hPhantom = plot3(PxAct, PyAct, PzAct, '-', 'LineWidth', 2, ...
-            'Color', colorPhantom, 'DisplayName', 'Phantom ($X_{\mathrm{ph}}$)');
+            'Color', colorPhantom, 'DisplayName', 'Hardware ($X_{\mathrm{hw}}$)');
         plotHandles(end+1) = hPhantom;
-        plotLabels{end+1}  = 'Phantom ($X_{\mathrm{ph}}$)';
+        plotLabels{end+1}  = 'Hardware ($X_{\mathrm{hw}}$)';
     else
         hPhantom = [];
     end
@@ -353,7 +353,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
             if hasPdata && ~isempty(PqAct)
                 hP = plot(Ptime, PqAct(:,j), '-', 'LineWidth', 1.2, 'Color', colorPhantom);
                 subplotHandles(end+1) = hP;
-                subplotLabels{end+1}  = 'Phantom ($q_{ph}$)';
+                subplotLabels{end+1}  = 'Hardware ($q_{hw}$)';
             end
             
             if hasSdata && ~isempty(SqDes)
@@ -393,7 +393,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
             if hasPdata && ~isempty(PqdAct)
                 hP = plot(Ptime, PqdAct(:,j), '-', 'LineWidth', 1.2, 'Color', colorPhantom);
                 subplotHandles(end+1) = hP;
-                subplotLabels{end+1}  = sprintf('Phantom ($\\dot{q}_{ph}$)');
+                subplotLabels{end+1}  = sprintf('Hardware ($\\dot{q}_{hw}$)');
             end
             
             if hasSdata && ~isempty(SqdDes)

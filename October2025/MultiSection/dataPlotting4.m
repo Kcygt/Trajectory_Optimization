@@ -112,7 +112,7 @@ function plotPhantomSimulation(Pdata, Sdata, Gdata, figPrefix)
         t3 = Sdata.optimalTimes(3);
         % Sections: 1) [0, t1], 2) [t1, t2], 3) [t2, t3]
         sectionEdges  = [0, t1; t1, t2; t2, t3];
-        sectionLabels = {'Section 1','Section 2','Section 3'};
+        sectionLabels = {'Segment 1','Segment 2','Segment 3'};
     else
         sectionEdges  = [];
         sectionLabels = {};

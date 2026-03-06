@@ -1,24 +1,24 @@
 clear; clc;
 close all;
-dataNumber = 7;
+dataNumber = 77;
 
 %% ===== CONFIGURATION SECTION =====
 % Change these parameters to modify the number of targets and control points
 
 % Define target points (N x 3 matrix where N is number of targets)
-% xTarget = [  0.01, -0.03, 0;
-%              0.04, -0.03, 0;
-%              0.07, -0.03, 0;
-%              0.1,  -0.03, 0;
-%              0.13, -0.03, 0];
+xTarget = [  0.01, -0.03, 0;
+             0.04, -0.03, 0;
+             0.07, -0.03, 0;
+             0.1,  -0.03, 0;
+             0.13, -0.03, 0];
 % xTarget = [    0.015, -0.035, 0.01;
 %                0.09, -0.07, 0.01;
 %                0.13, -0.005, -0.01];
 
 
-xTarget = [    0.015, -0.035, 0.01;
-               0.07, -0.035, 0.015;
-               0.1 , -0.01, -0.01];
+% xTarget = [    0.015, -0.035, 0.01;
+%                0.07, -0.035, 0.015;
+%                0.1 , -0.01, -0.01];
 
 % Specify which targets to use as control points (indices)
 controlPointIndices = [1,2,3];   % map to xTarget rows (order = phase order)
