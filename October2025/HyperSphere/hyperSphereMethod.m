@@ -20,7 +20,7 @@ xTarget = [  0.01, -0.03, 0;
 
 % Specify which targets to use as control points (indices)
 controlPointIndices = [1,3, 5]; % Use first and last targets as control points
-controlPointIndices = [1,2, 3]; % Use first and last targets as control points
+% controlPointIndices = [1,2, 3]; % Use first and last targets as control points
 
 % Final desired configuration
 qDes = [0, 0, 0];
