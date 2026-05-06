@@ -1,28 +1,121 @@
+
 figure('Color','w','Units','inches','Position',[1 1 4.5 3]);
 
-% Data
-rmse_data = [
-    0.01208 0.00661 0.00798;  % Simulation
-    0.05963 0.08583 0.07030;  % Hardware 1x
-    0.10469 0.12189 0.07206;  % Hardware 2x
-    0.43581 0.18387 0.10528   % Hardware 4x
+% Distance data (mm)
+cart_data = [
+    2.954 5.019 1.987;   % Reference
+    3.089 5.205 2.019;   % Simulation
+    3.170 5.165 5.165    % Hardware
 ];
 
-traj = {'Simulation','1x','2x','4x'};
-
-% Plot
-bar(rmse_data);
+% Plot (transpose so targets are on x-axis)
+bar(cart_data');
 grid on;
 
-% Formatting
+% Axis formatting
 set(gca,'FontName','Times New Roman','FontSize',9,'LineWidth',1);
-set(gca,'XTickLabel',traj);
+set(gca,'XTickLabel',{'Target 1','Target 2','Target 3'});
 
-ylabel('RMSE (rad/s)','FontName','Times New Roman','FontSize',10);
-title('Joint Velocity RMSE','FontName','Times New Roman','FontSize',10);
+xlabel('Target Points','FontName','Times New Roman','FontSize',10);
+ylabel('Distance Error (mm)','FontName','Times New Roman','FontSize',10);
 
-legend({'Joint 1','Joint 2','Joint 3'},...
-       'Location','northwest','FontSize',8);
+title('Minimum Distance Between Trajectories and Targets',...
+      'FontName','Times New Roman','FontSize',10);
+
+% Legend
+legend({'Reference','Simulation','Hardware'},...
+       'Location','best','FontSize',8);
+
+
+
+
+% figure('Color','w','Units','inches','Position',[1 1 4.5 3]);
+% 
+% % Distance data from table
+% cart_data = [
+%     0.004421 0.003005;   % Simulation
+%     0.004687 0.002540;   % Real
+%     0.004790 0.002428;   % 1.5x
+%     0.004859 0.002258;   % 2x
+%     0.004673 0.002105    % 4x
+% ];
+% 
+% % Plot (transpose to match targets on x-axis)
+% bar(cart_data');
+% grid on;
+% 
+% % Axis formatting
+% set(gca,'FontName','Times New Roman','FontSize',9,'LineWidth',1);
+% set(gca,'XTickLabel',{'Target 1','Target 2'});
+% 
+% xlabel('Target Points','FontName','Times New Roman','FontSize',10);
+% ylabel('Distance Error (m)','FontName','Times New Roman','FontSize',10);
+% 
+% title('Cartesian Accuracy at Target Points',...
+%       'FontName','Times New Roman','FontSize',10);
+% 
+% % Legend
+% legend({'Simulation','Real','1.5x','2x','4x'},...
+%        'Location','best','FontSize',8);
+% 
+
+
+
+
+
+
+
+% figure('Color','w','Units','inches','Position',[1 1 4.5 3]);
+% 
+% % Force data from table
+% force_data = [
+%    -0.952  -0.918  -0.960  -1.020  -0.898;   % 1x
+%    -1.006  -0.974  -0.979  -1.038  -0.932;   % 2x
+%    -0.912  -0.922  -0.958  -1.035  -0.941    % 4x
+% ];
+% 
+% % Plot (transpose to match targets on x-axis)
+% bar(force_data');
+% grid on;
+% 
+% % Axis formatting
+% set(gca,'FontName','Times New Roman','FontSize',9,'LineWidth',1);
+% set(gca,'XTickLabel',{'T1','T2','T3','T4','T5'});
+% 
+% xlabel('Target Points','FontName','Times New Roman','FontSize',10);
+% ylabel('Force (N)','FontName','Times New Roman','FontSize',10);
+% 
+% title('Force at Target Points for Different Speeds',...
+%       'FontName','Times New Roman','FontSize',10);
+% 
+% % Legend
+% legend({'1x','2x','4x'},'Location','best','FontSize',8);
+
+% figure('Color','w','Units','inches','Position',[1 1 4.5 3]);
+% 
+% % Data
+% rmse_data = [
+%     0.01208 0.00661 0.00798;  % Simulation
+%     0.05963 0.08583 0.07030;  % Hardware 1x
+%     0.10469 0.12189 0.07206;  % Hardware 2x
+%     0.43581 0.18387 0.10528   % Hardware 4x
+% ];
+% 
+% traj = {'Simulation','1x','2x','4x'};
+% 
+% % Plot
+% bar(rmse_data);
+% grid on;
+% 
+% % Formatting
+% set(gca,'FontName','Times New Roman','FontSize',9,'LineWidth',1);
+% set(gca,'XTickLabel',traj);
+% 
+% ylabel('RMSE (rad/s)','FontName','Times New Roman','FontSize',10);
+% title('Joint Velocity RMSE','FontName','Times New Roman','FontSize',10);
+% 
+% legend({'Joint 1','Joint 2','Joint 3'},...
+%        'Location','northwest','FontSize',8);
 
 
 % figure('Color','w','Units','inches','Position',[1 1 4.5 3]);

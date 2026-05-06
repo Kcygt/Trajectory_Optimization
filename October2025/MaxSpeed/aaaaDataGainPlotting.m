@@ -121,11 +121,11 @@ for k = 1:2
         'MarkerFaceColor',ctrlColor,'MarkerEdgeColor',ctrlColor,'MarkerSize',markerSizeProj);
     if k == 1, hCtrl = hTmp; end
     
-    % Sphere
-    [sx,sy,sz] = sphere(30);
-    surf(sx*radii(k)+ctrlCenters{k}(1), sy*radii(k)+ctrlCenters{k}(2), sz*radii(k)+ctrlCenters{k}(3), ...
-        'FaceColor',sphereColor,'FaceAlpha',0.3,'EdgeColor','none');
-    
+    % % Sphere
+    % [sx,sy,sz] = sphere(30);
+    % surf(sx*radii(k)+ctrlCenters{k}(1), sy*radii(k)+ctrlCenters{k}(2), sz*radii(k)+ctrlCenters{k}(3), ...
+    %     'FaceColor',sphereColor,'FaceAlpha',0.3,'EdgeColor','none');
+    % 
     % Projections
     plot3(ctrlCenters{k}(1), ctrlCenters{k}(2), planes.z, 'd','MarkerFaceColor',[0.6 0.6 0.6], ...
         'MarkerEdgeColor','none','MarkerSize',markerSizeProj,'HandleVisibility','off'); % XY
@@ -134,20 +134,20 @@ for k = 1:2
     plot3(planes.x,ctrlCenters{k}(2),  ctrlCenters{k}(3), 'd','MarkerFaceColor',[0.6 0.6 0.6], ...
         'MarkerEdgeColor','none','MarkerSize',markerSizeProj,'HandleVisibility','off'); % XZ
         
-    % Sphere projections
-    surf(sx*radii(k)+ctrlCenters{k}(1), sy*radii(k)+ctrlCenters{k}(2), planes.z*ones(size(sz)), ...
-        'FaceColor',sphereColor,'FaceAlpha',0.1,'EdgeColor','none','HandleVisibility','off'); % XY
-    surf(sx*radii(k)+ctrlCenters{k}(1), planes.y*ones(size(sy)), sz*radii(k)+ctrlCenters{k}(3), ...
-        'FaceColor',sphereColor,'FaceAlpha',0.1,'EdgeColor','none','HandleVisibility','off'); % XZ
-     surf(planes.x*ones(size(sx)), sy*radii(k)+ctrlCenters{k}(2), sz*radii(k)+ctrlCenters{k}(3), ...
-        'FaceColor',sphereColor,'FaceAlpha',0.1,'EdgeColor','none','HandleVisibility','off'); % XZ
+    % % Sphere projections
+    % surf(sx*radii(k)+ctrlCenters{k}(1), sy*radii(k)+ctrlCenters{k}(2), planes.z*ones(size(sz)), ...
+    %     'FaceColor',sphereColor,'FaceAlpha',0.1,'EdgeColor','none','HandleVisibility','off'); % XY
+    % surf(sx*radii(k)+ctrlCenters{k}(1), planes.y*ones(size(sy)), sz*radii(k)+ctrlCenters{k}(3), ...
+    %     'FaceColor',sphereColor,'FaceAlpha',0.1,'EdgeColor','none','HandleVisibility','off'); % XZ
+    %  surf(planes.x*ones(size(sx)), sy*radii(k)+ctrlCenters{k}(2), sz*radii(k)+ctrlCenters{k}(3), ...
+    %     'FaceColor',sphereColor,'FaceAlpha',0.1,'EdgeColor','none','HandleVisibility','off'); % XZ
 end
 
 h(end+1) = hCtrl; labels{end+1} = 'Control Points';
 
 % Legend for sphere only
 hLegendSphere = plot3(NaN,NaN,NaN,'o','MarkerFaceColor',sphereColor,'MarkerEdgeColor','none','MarkerSize',10);
-h(end+1) = hLegendSphere; labels{end+1} = 'Control Point Sphere';
+% h(end+1) = hLegendSphere; labels{end+1} = 'Control Point Sphere';
 
 %% --- Projections of trajectories ---
 % Simulation
