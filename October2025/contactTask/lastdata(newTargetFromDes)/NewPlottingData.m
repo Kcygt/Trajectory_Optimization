@@ -13,6 +13,19 @@ sphereColor  = [0.2 0.2 1.0];     % vivid blue (control regions)
 initTargetColor = [1.0 0.0 0.0];  % RED (initial targets)
 updTargetColor  = [0.0 1.0 1.0];  % CYAN (updated targets)
 
+%% ================= CYCLE LABELS & COLORS =================
+cycleLabels = { ...
+    'Cycle 1: Force Data Collection', ...
+    'Cycle 2: Force Data Update', ...
+    'Cycle 3: 2x Speed-up', ...
+    'Cycle 4: 4x Speed-up'};
+
+cycleColors = [ ...
+    0.00 0.45 0.74;   % blue
+    0.85 0.33 0.10;   % orange-red
+    0.47 0.67 0.19;   % green
+    0.49 0.18 0.56];  % purple
+
 % Radii of spheres around control points
 radius = [0.009, 0.005, 0.0085];
 radius = [0.009, 0.005, 0.0085];
@@ -22,7 +35,6 @@ radius = [0.0098, 0.006, 0.012];
 startData = 1;
 endData   = 4;
 
-% Spring constant and desired force
 k = 222.9073;
 Fdes = -1;
 
@@ -45,7 +57,7 @@ for dataNum = startData:endData
     Fz = Pdata(:,6);
     Fx = Pdata(:,4);
     Fy = Pdata(:,5);
-    
+
     % Control points
     xCtrl = [Opt(14:16); Opt(17:19); Opt(20:22)];
 
@@ -184,22 +196,31 @@ for dataNum = startData:endData
     set(gca,'FontSize',12,'LineWidth',1.2)
     title('2D Cartesian Space Trajectories')
     xlabel('X [m]'); ylabel('Y [m]')
-    
 
-
-    %%%%%%%%% Figure Force X-Y-Z  %%%%%%%%%%%
+    %%%%%%%%% Figure Force X %%%%%%%%%%%
     figure(16); hold on; grid on;
-    plot(time,Fx)
-    
+    plot(time, Fx, 'Color', cycleColors(dataNum,:), ...
+        'LineWidth', 1.8, 'DisplayName', cycleLabels{dataNum});
 
-        %%%%%%%%% Figure Force X-Y-Z  %%%%%%%%%%%
+    %%%%%%%%% Figure Force Y %%%%%%%%%%%
     figure(17); hold on; grid on;
-    plot(time,Fy)
-
-
-
-
+    plot(time, Fy, 'Color', cycleColors(dataNum,:), ...
+        'LineWidth', 1.8, 'DisplayName', cycleLabels{dataNum});
 
 end
+
+%% ---------------- Finalize Force X Figure ----------------
+figure(16);
+legend('show', 'Location', 'best', 'FontSize', 11);
+set(gca, 'FontSize', 12, 'LineWidth', 1.2);
+title('Force Along the X-Axis Across Cycles');
+xlabel('Time [s]'); ylabel('Fx [N]');
+
+%% ---------------- Finalize Force Y Figure ----------------
+figure(17);
+legend('show', 'Location', 'best', 'FontSize', 11);
+set(gca, 'FontSize', 12, 'LineWidth', 1.2);
+title('Force Along the Y-Axis Across Cycles');
+xlabel('Time [s]'); ylabel('Fy [N]');
 
 newTarget

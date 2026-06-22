@@ -13,6 +13,20 @@ sphereColor  = [0.2 0.2 1.0];     % vivid blue (control regions)
 initTargetColor = [1.0 0.0 0.0];  % RED (initial targets)
 updTargetColor  = [0.0 1.0 1.0];  % CYAN (updated targets)
 
+%% ================= CYCLE LABELS & COLORS =================
+cycleLabels = { ...
+    'Measured Force(1x-not updated)', ...
+    'Measured Force(1x)', ...
+    'Measured Force(2x)', ...
+    'Measured Force(4x)'};
+
+% Colors matched to Fig. 14 palette (cycle 1 not plotted)
+cycleColors = [ ...
+    0.50 0.50 0.50;   % grey  (cycle 1 - not plotted)
+    0.30 0.75 0.93;   % light blue (cycle 2 - Force Data Update)
+    0.49 0.18 0.56;   % purple     (cycle 3 - 2x Speed-up)
+    0.47 0.67 0.19];  % green      (cycle 4 - 4x Speed-up)
+
 % Radii of spheres around control points
 radius = [0.009, 0.005, 0.0085];
 radius = [0.009, 0.005, 0.0085];
@@ -22,7 +36,6 @@ radius = [0.0098, 0.006, 0.012];
 startData = 1;
 endData   = 4;
 
-% Spring constant and desired force
 k = 222.9073;
 Fdes = -1;
 
@@ -45,7 +58,7 @@ for dataNum = startData:endData
     Fz = Pdata(:,6);
     Fx = Pdata(:,4);
     Fy = Pdata(:,5);
-    
+
     % Control points
     xCtrl = [Opt(14:16); Opt(17:19); Opt(20:22)];
 
@@ -184,22 +197,40 @@ for dataNum = startData:endData
     set(gca,'FontSize',12,'LineWidth',1.2)
     title('2D Cartesian Space Trajectories')
     xlabel('X [m]'); ylabel('Y [m]')
-    
 
+    %%%%%%%%% Figure Force X & Y (side-by-side subplots) %%%%%%%%%%%
+    figure(16);
 
-    %%%%%%%%% Figure Force X-Y-Z  %%%%%%%%%%%
-    figure(16); hold on; grid on;
-    plot(time,Fx)
-    
+        % --- Left subplot: Fx ---
+    subplot(1,2,1); hold on; grid on;
+    plot(time, Fx, 'Color', cycleColors(dataNum,:), ...
+            'LineWidth', 1.8, 'DisplayName', cycleLabels{dataNum});
 
-        %%%%%%%%% Figure Force X-Y-Z  %%%%%%%%%%%
-    figure(17); hold on; grid on;
-    plot(time,Fy)
-
-
-
+        % --- Right subplot: Fy ---
+    subplot(1,2,2); hold on; grid on;
+    plot(time, Fy, 'Color', cycleColors(dataNum,:), ...
+        'LineWidth', 1.8, 'DisplayName', cycleLabels{dataNum});
 
 
 end
+
+%% ---------------- Finalize Force Figure (subplots) ----------------
+figure(16);
+
+% --- Left subplot: Fx ---
+subplot(1,2,1);
+legend('show', 'Location', 'best', 'FontSize', 11);
+set(gca, 'FontSize', 12, 'LineWidth', 1.2);
+title('Force Along the X-Axis ');
+xlabel('Time [s]'); ylabel('Fx [N]');
+
+% --- Right subplot: Fy ---
+subplot(1,2,2);
+legend('show', 'Location', 'best', 'FontSize', 11);
+set(gca, 'FontSize', 12, 'LineWidth', 1.2);
+title('Force Along the Y-Axis ');
+xlabel('Time [s]'); ylabel('Fy [N]');
+
+sgtitle('Cartesian Forces ', 'FontSize', 14, 'FontWeight', 'bold');
 
 newTarget

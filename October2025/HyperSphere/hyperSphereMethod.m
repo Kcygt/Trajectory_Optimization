@@ -444,3 +444,39 @@ function stop = outputFunction(x, optimValues, state, numTargets, numControlPoin
             fprintf('--- End Run %d ---\n\n', runCount);
     end
 end 
+
+
+
+
+For all experiments, $K_p = 70$, $K_d = 120$, and $\zeta = 1$ (critical damping) 
+
+are fixed a priori to reduce the optimization search space, while position and 
+
+velocity tracking errors are still penalized through weights $w_4$ and $w_5$. 
+
+Natural frequencies are bounded as $\omega_n \in [0, 10]$~rad/s. 
+
+% Cost weights are  set to $w_1 = 600$, $w_2 = 0.01$, $w_3 = 100$, and $w_4 = w_5 = 0.1$. 
+
+Speed-up experiments at $2\times$ and $4\times$ are conducted by scaling $\omega_n$ 
+
+and $t_f$ accordingly.
+
+
+
+
+
+
+
+buraya bazi acikalmalar eklemek istiyotiyorum.
+
+computional cost is about 1.5-2 minutes.
+
+fmincon is used for optimization and fmincon is offline.
+
+contraints are that minimum distance between target point and trajectory should be lower than 10mm.
+
+
+
+
+
